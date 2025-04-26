@@ -1,0 +1,23 @@
+prompts used to generate this code using cursor + claude-3.7-sonnet
+
+---
+
+i want to create a MCP ser@https://modelcontextprotocol.io/introductionthat ) that provides weather data as resource.
+the goal is to give LLM users access to current weather data as well as forecasts and answer general questions ("where is it snowing?", "where will be a sunny day for hiking next saturday?", "whats the weather like in zurich today?" 
+
+the data is publicly hosted via HTTP, mosty JSON files and some textdata is HTML format.
+some content is available in multiple languages (de,fr,it,en).
+in general the data is organized by location, mostly by zipcode (4 or 6 numbers, like 8001 or 800100 fur zurich).
+the data is versioned by update time, with references in versions.json files. we always want to use the newest data.
+
+lets start by making a plan.
+
+* analyse the available data. i've downloaded a useful subset as a snapshot for the current date.  they are mostly UI-specific as this is not really an API but more of a "backend for frontend". so the analysis should identify which of the data would be most usefull for the MCP server (is ot complete? to big?). we only want to expose the most minimal subset of data for our use case, on not waste bandwidth.
+@measured-values is current measurements (regularly updated) and the rest of the folders in @data-2025-03-26  are a mixture of current and forecast data
+
+* identify any data we'll need that is missing from the data snapshot. for example if there is information missing about the geographical location of places, or a list of all places and there zip codes etc.
+
+* lets keep records of our work as markdown files in this repo. make a "docs" folder or similar with appropriate subfolder. start with a small readme as an overview and a file for the results of the data analysis. 
+we will later also add a software architecture overview for the actual server.
+
+---
