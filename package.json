@@ -1,0 +1,43 @@
+{
+  "name": "mcp-server-meteoswiss-data",
+  "version": "1.0.0",
+  "description": "A Model Context Protocol (MCP) server for MeteoSwiss weather data.",
+  "main": "dist/index.js",
+  "type": "module",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "npm run build && npm run start",
+    "watch": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eins78/mcp-server-meteoswiss-data.git"
+  },
+  "keywords": [
+    "mcp",
+    "weather",
+    "meteoswiss"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eins78/mcp-server-meteoswiss-data/issues"
+  },
+  "homepage": "https://github.com/eins78/mcp-server-meteoswiss-data#readme",
+  "dependencies": {
+    "fastify": "^4.25.2",
+    "jsdom": "^24.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.6",
+    "@types/node": "^20.11.19",
+    "typescript": "^5.3.3"
+  }
+}

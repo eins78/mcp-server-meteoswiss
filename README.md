@@ -6,53 +6,73 @@ A Model Context Protocol (MCP) server for MeteoSwiss weather data.
 
 This project implements an MCP-compliant server that provides weather data from MeteoSwiss to language models and AI tools. It allows LLMs to access current weather conditions, forecasts, weather reports, and historical meteorological data for locations across Switzerland.
 
-## Key Features
+## MVP Demo
 
-- **Current Weather Data**: Access real-time weather conditions for any Swiss location
-- **Weather Forecasts**: Get detailed forecasts up to 10 days in advance
-- **Weather Reports**: Retrieve textual weather reports for different regions of Switzerland
-- **Station Information**: Access data from over 150 weather stations across Switzerland
-- **Historical Data**: Query historical weather measurements for various parameters
-- **Multilingual Support**: Data available in all Swiss national languages (German, French, Italian) plus English
+This MVP demo implements a minimal MCP server that provides access to MeteoSwiss weather reports. It uses static data files and doesn't make HTTP requests to the actual MeteoSwiss API.
 
-## MCP Tools
+### Features Implemented in MVP
 
-The server exposes the following MCP tools:
+- Weather reports for different regions of Switzerland (North, South, West)
+- Support for multiple languages (German, French, Italian, English)
+- MCP-compliant API endpoints
 
-- `getCurrentWeather`: Get current conditions for a specific location
-- `getWeatherForecast`: Get forecast for a specific location
-- `findWeatherCondition`: Find locations with specific weather conditions
-- `getWeatherReport`: Get detailed text-based weather report for a region
-- `listWeatherStations`: Get information about MeteoSwiss weather stations
-- `getStationData`: Get historical measurement data for specific stations
-
-## Documentation
-
-- [API Design](docs/architecture/api-design.md)
-- [Data Schema](docs/analysis/data-schema.md)
-
-## Development
+## Setup and Running
 
 ### Prerequisites
 
-- Node.js 18+
-- TypeScript
-- Access to MeteoSwiss data (API keys or data files)
+- Node.js v22+
+- npm
 
-### Setup
+### Installation
 
 1. Clone this repository
-2. Install dependencies: `npm install`
-3. Configure environment variables
-4. Start the development server: `npm run dev`
+2. Install dependencies:
 
-## Testing
-
-Test fixtures containing sample MeteoSwiss data are available in the `test/__fixtures__` directory.
-
+```bash
+npm install
 ```
-npm test
+
+### Running the Server
+
+Build and start the server:
+
+```bash
+npm run dev
 ```
+
+The server will be available at <http://localhost:3000>
+
+## Usage Examples
+
+### Get Available Tools
+
+```bash
+curl http://localhost:3000/api/tools
+```
+
+### Get Weather Report
+
+```bash
+curl -X POST http://localhost:3000/api/tools \
+  -H "Content-Type: application/json" \
+  -d '{"name":"getWeatherReport","parameters":{"region":"north","language":"en"}}'
+```
+
+## Documentation
+
+- [User Guide](docs/user-guide.md)
+- [API Design](docs/architecture/api-design.md)
+- [Data Schema](docs/analysis/data-schema.md)
+
+## Full Implementation Roadmap
+
+The MVP is just the first step. The complete implementation will include:
+
+- Current weather conditions
+- Weather forecasts
+- Station data
+- Historical measurements
+- Weather search capabilities
 
 ## License
 

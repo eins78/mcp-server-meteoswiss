@@ -42,3 +42,16 @@ we want to keep the workflow of always documenting our work – for humans to re
 the rules should otherwise be simple and mostly refer to the docs we have, for example regarding the tech stack we'll use.
 
 ---
+
+lets plan and implement a MVP-like small demo for our server.
+just the bare minimum so i can test it with a MCP client, nothing else.
+its doesnt even make HTTP requests and just reads the static files.
+
+lets just use the "weather report" data.
+
+generate the following:
+* server code
+* minimal dev docs in main README (how to run it)
+* new md file with end-user docs (how to use it, what features are available)
+
+---
