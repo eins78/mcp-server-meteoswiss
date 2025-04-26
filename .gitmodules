@@ -1,0 +1,3 @@
+[submodule "test/__fixtures__/product-output"]
+	path = test/__fixtures__/product-output
+	url = https://github.com/eins78/meteoswiss-testdata.git
