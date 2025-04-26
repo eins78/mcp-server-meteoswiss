@@ -1,0 +1,18 @@
+---
+description: Technology Stack and Architecture
+globs: "src/**/*.ts"
+---
+
+# Technology Stack and Architecture
+
+This project follows these technical guidelines:
+
+- Use Node.js v22 with TypeScript
+- Follow the MCP TypeScript SDK patterns
+- Use Zod for schema validation and type generation
+- Implement proper error handling with typed exceptions
+- Follow the component architecture outlined in our docs
+
+See the architecture overview for detailed guidance on components.
+
+@docs/architecture/overview.md

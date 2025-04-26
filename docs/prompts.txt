@@ -36,3 +36,9 @@ the api design talks about "available tools". i would have expected that the MCP
 thanks, please make sure this is explained in the docs. keep it short, a summary is enough.
 
 ---
+
+please generate appropriate cursor rules (@https://docs.cursor.com/context/rules) for this project. 
+we want to keep the workflow of always documenting our work – for humans to read, but mostly for the LLM coding agents helping us. 
+the rules should otherwise be simple and mostly refer to the docs we have, for example regarding the tech stack we'll use.
+
+---

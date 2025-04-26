@@ -1,0 +1,15 @@
+---
+description: Data Transformation Guidelines
+globs: "src/**/transformer/*.ts"
+---
+
+# Data Transformation Guidelines
+
+When transforming MeteoSwiss data:
+
+- Use Zod schemas for validation during transformation
+- Maintain proper type definitions between raw data and schema data
+- Follow the data schema defined in docs/analysis/data-schema.md
+- Cache appropriately based on data update frequency
+
+@docs/analysis/data-schema.md

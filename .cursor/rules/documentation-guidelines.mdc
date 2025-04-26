@@ -1,0 +1,15 @@
+---
+description: MeteoSwiss MCP Server Documentation Guidelines
+alwaysApply: true
+---
+
+# MeteoSwiss MCP Server Documentation Guidelines
+
+Always prioritize clear documentation for both humans and LLM agents:
+
+1. Every module should include JSDoc comments for all exported functions, classes, and interfaces
+2. Document parameter types, return types, and thrown exceptions
+3. Include example usage where appropriate
+4. Update relevant documentation when changing functionality
+
+Reference our existing documentation structure when developing new features or making changes.
