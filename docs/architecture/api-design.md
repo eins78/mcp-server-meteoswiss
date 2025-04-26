@@ -1,334 +1,317 @@
-# MCP Server API Design
+# MeteoSwiss MCP Server API Design
 
-This document describes the API design for the MeteoSwiss MCP server, including resources and tools that will be exposed to LLM clients.
+This document outlines the API design for the MeteoSwiss MCP (Multimodal Chat Protocol) server, which provides structured access to weather data from MeteoSwiss.
 
-## Resources
+## MCP Resources vs Tools
 
-The server will expose the following resource types:
+The MCP server implements both Resources and Tools to provide optimal access to weather data:
 
-### 1. CurrentWeather
+- **Resources**: Client-controlled, read-only data that provides context (weather station metadata, parameter definitions)
+- **Tools**: Model-controlled functions that the AI can autonomously invoke to retrieve specific weather information or perform searches
 
-Provides current weather conditions for a specific location.
+This dual approach allows both client applications to explicitly select relevant weather data as context and enables AI models to autonomously query for specific weather information as needed.
 
-**Path**: `/weather/current/{location}`
+## MCP Tool Interface
 
-**Parameters**:
+The server implements the MCP protocol, exposing a set of tools that can be called by client applications to retrieve weather data.
 
-- `location`: Location name or ZIP code
+### Base URL
 
-**Example**:
+```
+https://api.meteoswiss.ch/mcp/v1
+```
+
+## Available Tools
+
+### getCurrentWeather
+
+Retrieves current weather conditions for a specified location.
+
+**Parameters:**
+
+```typescript
+{
+  location: string; // Location name or postal code
+  language?: "de" | "fr" | "it" | "en"; // Default: "en"
+}
+```
+
+**Response:**
+
+Returns a `CurrentWeather` object as defined in the data schema.
+
+**Example Request:**
 
 ```json
 {
-  "location": {
-    "name": "Zurich",
-    "zip": "8001",
-    "coordinates": {
-      "lat": 47.37,
-      "lon": 8.54
-    }
-  },
-  "timestamp": 1745638234350,
-  "measurements": {
-    "temperature": {
-      "value": 15.7,
-      "unit": "°C"
-    },
-    "humidity": {
-      "value": 65,
-      "unit": "%"
-    },
-    "precipitation": {
-      "value": 0,
-      "unit": "mm"
-    },
-    "wind": {
-      "speed": {
-        "value": 8,
-        "unit": "km/h"
-      },
-      "direction": {
-        "value": 270,
-        "unit": "°"
-      }
-    },
-    "pressure": {
-      "value": 1015,
-      "unit": "hPa"
-    },
-    "sunshine": {
-      "value": 10,
-      "unit": "min"
-    }
-  },
-  "condition": {
-    "id": "2",
-    "description": "Partly cloudy"
+  "name": "getCurrentWeather",
+  "parameters": {
+    "location": "Zurich",
+    "language": "en"
   }
 }
 ```
 
-### 2. WeatherForecast
+### getWeatherForecast
 
-Provides weather forecast for a specific location.
+Retrieves weather forecast for a specified location.
 
-**Path**: `/weather/forecast/{location}`
+**Parameters:**
 
-**Parameters**:
+```typescript
+{
+  location: string; // Location name or postal code
+  days?: number; // Number of days to forecast (1-10, default: 7)
+  includeHourly?: boolean; // Whether to include hourly forecast (default: false)
+  language?: "de" | "fr" | "it" | "en"; // Default: "en"
+}
+```
 
-- `location`: Location name or ZIP code
-- `days` (optional): Number of days to forecast (default: 7)
+**Response:**
 
-**Example**:
+Returns a `WeatherForecast` object as defined in the data schema.
+
+**Example Request:**
 
 ```json
 {
-  "location": {
-    "name": "Zurich",
-    "zip": "8001",
-    "coordinates": {
-      "lat": 47.37,
-      "lon": 8.54
-    }
-  },
-  "forecasts": [
-    {
-      "date": "2025-04-27",
-      "weekday": "Sunday",
-      "temperature": {
-        "min": 8,
-        "max": 16,
-        "unit": "°C"
-      },
-      "condition": {
-        "id": "3",
-        "description": "Cloudy with some rain"
-      },
-      "precipitation": {
-        "probability": 60,
-        "unit": "%"
-      }
-    },
-    {
-      "date": "2025-04-28",
-      "weekday": "Monday",
-      "temperature": {
-        "min": 7,
-        "max": 17,
-        "unit": "°C"
-      },
-      "condition": {
-        "id": "2",
-        "description": "Partly cloudy"
-      },
-      "precipitation": {
-        "probability": 20,
-        "unit": "%"
-      }
-    }
-    // Additional days...
-  ],
-  "text_forecast": {
-    "short": "Partly cloudy with occasional rain on Sunday, improving conditions later in the week.",
-    "detailed": "A low-pressure system will bring cloudy conditions and occasional rain on Sunday. Conditions will improve on Monday with partly cloudy skies. Tuesday through Thursday will be mostly sunny with temperatures rising to 22°C by Thursday."
+  "name": "getWeatherForecast",
+  "parameters": {
+    "location": "Geneva",
+    "days": 5,
+    "includeHourly": true,
+    "language": "fr"
   }
 }
 ```
 
-### 3. WeatherStation
+### findWeatherCondition
 
-Provides metadata about a specific weather station.
+Searches for locations matching specific weather conditions.
 
-**Path**: `/weather/stations/{stationId}`
+**Parameters:**
 
-**Parameters**:
-
-- `stationId`: Weather station ID
-
-**Example**:
-
-```json
+```typescript
 {
-  "id": "GVE",
-  "name": "Genève / Cointrin",
-  "coordinates": {
-    "lat": 46.25,
-    "lon": 6.13,
-    "ch": {
-      "x": 2498904,
-      "y": 1122632
-    }
-  },
-  "altitude": 411,
-  "canton": "GE",
-  "measurements": [
-    {
-      "parameter": "temperature",
-      "since": -504921600000,
-      "measurement_height": "2.00 m"
-    },
-    {
-      "parameter": "precipitation",
-      "since": -631152000000,
-      "measurement_height": "1.50 m"
-    }
-    // Additional measurements...
-  ]
+  condition: string; // Weather condition (e.g., "rain", "snow", "sunny")
+  date?: string; // Date for the condition (ISO format or "today", "tomorrow")
+  region?: string; // Limit search to region (e.g., "north", "south", "alps")
+  language?: "de" | "fr" | "it" | "en"; // Default: "en"
 }
 ```
 
-### 4. WeatherParameter
+**Response:**
 
-Provides information about a specific weather parameter.
-
-**Path**: `/weather/parameters/{parameterId}`
-
-**Parameters**:
-
-- `parameterId`: Parameter ID
-
-**Example**:
-
-```json
+```typescript
 {
-  "id": "temperature",
-  "name": "Air temperature",
-  "description": "Measurement of air temperature at 2 meters above ground",
-  "unit": "°C",
-  "sub_parameters": [
-    {
-      "id": "min_temperature",
-      "name": "Minimum temperature",
-      "description": "Minimum temperature recorded in the past 24 hours"
-    },
-    {
-      "id": "max_temperature",
-      "name": "Maximum temperature",
-      "description": "Maximum temperature recorded in the past 24 hours"
-    }
-  ]
+  locations: Array<{
+    name: string;
+    condition: {
+      code: string;
+      description: string;
+    };
+    timestamp: string; // ISO 8601 format
+  }>;
 }
 ```
 
-## Tools
-
-The server will expose the following tools for LLMs to use:
-
-### 1. getCurrentWeather
-
-Gets the current weather conditions for a specific location.
-
-**Input**:
+**Example Request:**
 
 ```json
 {
-  "location": "String", // Location name or ZIP code
-  "language": "String"  // Language code (en, de, fr, it)
-}
-```
-
-**Output**: CurrentWeather resource
-
-### 2. getWeatherForecast
-
-Gets the weather forecast for a specific location.
-
-**Input**:
-
-```json
-{
-  "location": "String", // Location name or ZIP code
-  "days": "Number",     // Number of days to forecast
-  "language": "String"  // Language code (en, de, fr, it)
-}
-```
-
-**Output**: WeatherForecast resource
-
-### 3. findWeatherCondition
-
-Finds locations with specific weather conditions.
-
-**Input**:
-
-```json
-{
-  "condition": "String", // Weather condition (e.g., "snow", "rain", "sunny")
-  "date": "String",      // Date for the condition (e.g., "today", "tomorrow", "2025-04-30")
-  "language": "String"   // Language code (en, de, fr, it)
-}
-```
-
-**Output**:
-
-```json
-{
-  "locations": [
-    {
-      "name": "String",
-      "condition": {
-        "id": "String",
-        "description": "String"
-      },
-      "temperature": {
-        "value": "Number",
-        "unit": "String"
-      }
-    }
-  ]
-}
-```
-
-### 4. getWeatherReport
-
-Gets a textual weather report for a specific region.
-
-**Input**:
-
-```json
-{
-  "region": "String",   // Region (north, south, west)
-  "language": "String"  // Language code (en, de, fr, it)
-}
-```
-
-**Output**:
-
-```json
-{
-  "region": "String",
-  "report": {
-    "current": "String",
-    "forecast": "String",
-    "outlook": "String"
+  "name": "findWeatherCondition",
+  "parameters": {
+    "condition": "snow",
+    "date": "tomorrow",
+    "region": "alps",
+    "language": "de"
   }
 }
 ```
 
-## Additional Considerations
+### getWeatherReport
 
-### Error Handling
+Retrieves the latest weather report for a specified region.
 
-All resources and tools will return appropriate error responses when:
+**Parameters:**
 
-- The requested location or station does not exist
-- The data is temporarily unavailable
-- Invalid parameters are provided
+```typescript
+{
+  region: "north" | "south" | "west"; // Region for the report
+  language?: "de" | "fr" | "it" | "en"; // Default: "en"
+}
+```
 
-### Versioning
+**Response:**
 
-The API will be versioned to ensure backward compatibility:
+Returns a `WeatherReport` object as defined in the data schema.
 
-- Resources will include a `version` field
-- The MCP server will support multiple concurrent versions if needed
+**Example Request:**
 
-### Rate Limiting
+```json
+{
+  "name": "getWeatherReport",
+  "parameters": {
+    "region": "north",
+    "language": "en"
+  }
+}
+```
 
-To prevent abuse, the server will implement rate limiting:
+### listWeatherStations
 
-- Per-client rate limits
-- Overall rate limits to protect the upstream MeteoSwiss APIs
+Lists weather stations with optional filtering.
 
-### Data Freshness
+**Parameters:**
 
-All resources will include a `timestamp` field indicating when the data was last updated. Tools will always return the freshest available data.
+```typescript
+{
+  canton?: string; // Filter by canton (e.g., "ZH", "GE")
+  type?: string; // Filter by station type
+  parameter?: string; // Filter by available parameter
+  language?: "de" | "fr" | "it" | "en"; // Default: "en"
+}
+```
+
+**Response:**
+
+```typescript
+{
+  stations: Array<WeatherStation>; // As defined in data schema
+}
+```
+
+**Example Request:**
+
+```json
+{
+  "name": "listWeatherStations",
+  "parameters": {
+    "canton": "TI",
+    "type": "automatic",
+    "language": "it"
+  }
+}
+```
+
+### getStationData
+
+Retrieves historical measurement data for a specific station and parameter.
+
+**Parameters:**
+
+```typescript
+{
+  stationId: string; // Station identifier
+  parameter: string; // Parameter to retrieve (e.g., "temperature", "precipitation")
+  interval: "10min" | "hour" | "day" | "month" | "year"; // Time interval
+  startDate: string; // Start date (ISO format)
+  endDate: string; // End date (ISO format)
+  language?: "de" | "fr" | "it" | "en"; // Default: "en"
+}
+```
+
+**Response:**
+
+Returns a `StationData` object as defined in the data schema.
+
+**Example Request:**
+
+```json
+{
+  "name": "getStationData",
+  "parameters": {
+    "stationId": "LUG",
+    "parameter": "temperature",
+    "interval": "hour",
+    "startDate": "2025-04-01",
+    "endDate": "2025-04-07",
+    "language": "it"
+  }
+}
+```
+
+## Error Handling
+
+The API follows standard HTTP status codes for error responses:
+
+- `200 OK`: Successful request
+- `400 Bad Request`: Invalid parameters
+- `404 Not Found`: Requested resource not found
+- `429 Too Many Requests`: Rate limit exceeded
+- `500 Internal Server Error`: Server error
+
+Error response format:
+
+```typescript
+{
+  error: {
+    code: string; // Error code
+    message: string; // Human-readable error message
+    details?: any; // Additional error details
+  };
+}
+```
+
+## Authentication
+
+The API requires authentication using an API key provided in the HTTP header:
+
+```
+X-API-Key: your_api_key_here
+```
+
+## Rate Limiting
+
+The API implements rate limiting to ensure fair usage:
+
+- 100 requests per minute per API key
+- 5,000 requests per day per API key
+
+Rate limit information is provided in the response headers:
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1619766913
+```
+
+## Versioning
+
+The API is versioned through the URL path. The current version is `v1`. Breaking changes will be introduced in new API versions.
+
+## Language Support
+
+All text responses can be localized by specifying the `language` parameter. Supported languages are:
+
+- `de`: German
+- `fr`: French
+- `it`: Italian
+- `en`: English (default)
+
+## Response Format
+
+All responses are in JSON format with the `Content-Type: application/json` header.
+
+## MCP Protocol Compliance
+
+This API follows the Multimodal Chat Protocol specification, allowing it to be integrated with MCP-compatible clients.
+
+The server response format follows the MCP tool response structure:
+
+```json
+{
+  "tool_response": {
+    "name": "getCurrentWeather",
+    "content": {
+      // Response data specific to the tool
+    }
+  }
+}
+```
+
+## Implementation Considerations
+
+1. The server will cache responses to minimize requests to the MeteoSwiss data sources
+2. Data transformations will convert raw MeteoSwiss data to the documented schema
+3. Server-side validation will ensure response data conforms to the defined schemas

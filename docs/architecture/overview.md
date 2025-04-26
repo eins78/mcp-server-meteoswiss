@@ -48,25 +48,111 @@ The MCP server will consist of the following main components:
                            └───────────────┘
 ```
 
+## Technology Stack
+
+The server will be built using the following technology stack:
+
+- **Node.js v22**: Taking advantage of the latest features such as:
+  - Improved performance with the V8 engine
+  - Built-in fetch API for HTTP requests
+  - Enhanced ESM support for cleaner module imports
+  - Better error handling and debugging capabilities
+
+- **TypeScript**: For type safety and better developer experience
+  - Using a strict configuration for maximum type safety
+  - Leveraging modern TypeScript features like template literal types and satisfies operator
+
+- **MCP TypeScript SDK**: For implementing the Model Context Protocol
+  - Using the high-level McpServer class for simplified server setup
+  - Implementing tools and resources via the SDK interfaces
+  - Utilizing the StreamableHTTP transport for modern clients
+
+- **Zod**: For runtime type validation and schema definition
+  - Defining schemas for input validation on tools
+  - Creating type-safe transformers for data
+  - Generating TypeScript types from Zod schemas
+
 ## Component Responsibilities
 
 ### MCP Server Core
 
-- Implements the MCP protocol interface
+- Implements the MCP protocol interface using the TypeScript SDK
 - Manages connections with LLM clients
 - Routes resource and tool requests to the appropriate providers
+- Implements the McpServer class from the SDK
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+
+const server = new McpServer({
+  name: "meteoswiss-weather-server",
+  version: "1.0.0"
+});
+
+// Register tools and resources
+// ...
+
+// Connect to transport
+const transport = new StreamableHTTPServerTransport();
+await server.connect(transport);
+```
 
 ### Data Fetcher
 
 - Fetches raw weather data from MeteoSwiss HTTP endpoints
 - Manages rate limiting and error handling
 - Ensures data freshness by monitoring update times
+- Uses Node.js native fetch API for HTTP requests
 
 ### Data Transformer
 
 - Transforms raw MeteoSwiss data into the defined schema format
 - Applies mappings between different data types
 - Converts units and formats as necessary
+- Uses Zod for schema validation and transformation
+
+```typescript
+import { z } from "zod";
+
+// Define schema with Zod
+const CurrentWeatherSchema = z.object({
+  location: z.object({
+    name: z.string(),
+    zip: z.string(),
+    coordinates: z.object({
+      lat: z.number(),
+      lon: z.number()
+    })
+  }),
+  timestamp: z.number(),
+  measurements: z.object({
+    temperature: z.object({
+      value: z.number(),
+      unit: z.string()
+    }),
+    // ... other measurements
+  }),
+  condition: z.object({
+    id: z.string(),
+    description: z.string()
+  })
+});
+
+// Type derived from schema
+type CurrentWeather = z.infer<typeof CurrentWeatherSchema>;
+
+// Transform function with validation
+function transformCurrentWeather(rawData: unknown): CurrentWeather {
+  // Transform the raw data
+  const transformed = {
+    // ... transformation logic
+  };
+  
+  // Validate and return
+  return CurrentWeatherSchema.parse(transformed);
+}
+```
 
 ### Data Cache
 
@@ -84,11 +170,29 @@ The MCP server will consist of the following main components:
 
 ### Tools Provider
 
-- Implements tools that LLMs can use to query the weather data:
+- Implements tools that LLMs can use to query the weather data using SDK's tool interface:
   - `getCurrentWeather`: Get current weather for a location
   - `getWeatherForecast`: Get forecast for a location
   - `findWeatherCondition`: Find locations with specific weather conditions
   - `getWeatherReport`: Get textual weather report for a region
+
+```typescript
+import { z } from "zod";
+
+// Tool definition with Zod schema for parameters
+const getCurrentWeatherTool = server.tool(
+  "getCurrentWeather",
+  {
+    location: z.string(),
+    language: z.enum(["en", "de", "fr", "it"]).optional().default("en")
+  },
+  async ({ location, language }) => {
+    // Implementation
+    const weather = await weatherService.getCurrentWeather(location, language);
+    return { weather };
+  }
+);
+```
 
 ## Data Flow
 
@@ -105,9 +209,30 @@ The MCP server will consist of the following main components:
 
 ## Implementation Considerations
 
-### Programming Language and Framework
+### TypeScript Configuration
 
-The server will be implemented in Node.js with TypeScript, using the MCP TypeScript SDK.
+The project will use a strict TypeScript configuration based on best practices:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist",
+    "declaration": true,
+    "sourceMap": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```
 
 ### Data Update Strategy
 
@@ -121,6 +246,7 @@ The server will be implemented in Node.js with TypeScript, using the MCP TypeScr
 - Implement robust error handling for data fetch failures
 - Provide fallback data when sources are unavailable
 - Log errors and monitor system health
+- Use Zod's error handling for validation failures
 
 ### Security Considerations
 

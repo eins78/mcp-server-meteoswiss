@@ -21,3 +21,18 @@ lets start by making a plan.
 we will later also add a software architecture overview for the actual server.
 
 ---
+
+we will use nodejs v22, the TS SDK @https://github.com/modelcontextprotocol/typescript-sdk and @https://zod.dev for types.
+use tsconfig best practices @https://www.totaltypescript.com/tsconfig-cheat-sheet 
+
+review the @docs  and make changes if needed.
+
+---
+
+the api design talks about "available tools". i would have expected that the MCP server only needs to expose Resources, why do we need Tools?
+
+---
+
+thanks, please make sure this is explained in the docs. keep it short, a summary is enough.
+
+---

@@ -1,205 +1,249 @@
-# MeteoSwiss Data Schema for MCP Server
+# MeteoSwiss Data Schema
 
-This document outlines the schema design for the MeteoSwiss data that will be exposed via the MCP server.
+This document outlines the data schema for the weather information provided by the MeteoSwiss MCP server.
 
-## Resource Types
+## Weather Data Types
 
-The MCP server will expose the following main resource types:
+### Current Weather
 
-1. **Current Weather**: Current conditions for locations
-2. **Weather Forecast**: Forecasts for locations
-3. **Weather Stations**: Metadata about weather stations
-4. **Weather Parameters**: Information about weather measurement parameters
-
-## Schema Definitions
-
-### 1. Current Weather
-
-```json
-{
-  "location": {
-    "name": "String",         // Name of the location
-    "zip": "String",          // ZIP code
-    "coordinates": {
-      "lat": "Number",        // Latitude
-      "lon": "Number"         // Longitude
-    }
-  },
-  "timestamp": "Number",      // UNIX timestamp of the measurement
-  "measurements": {
-    "temperature": {
-      "value": "Number",      // Temperature value
-      "unit": "String"        // Unit (e.g., "°C")
-    },
-    "humidity": {
-      "value": "Number",      // Humidity value
-      "unit": "String"        // Unit (e.g., "%")
-    },
-    "precipitation": {
-      "value": "Number",      // Precipitation value
-      "unit": "String"        // Unit (e.g., "mm")
-    },
-    "wind": {
-      "speed": {
-        "value": "Number",    // Wind speed
-        "unit": "String"      // Unit (e.g., "km/h")
-      },
-      "direction": {
-        "value": "Number",    // Wind direction in degrees
-        "unit": "String"      // Unit (e.g., "°")
-      }
-    },
-    "pressure": {
-      "value": "Number",      // Pressure value
-      "unit": "String"        // Unit (e.g., "hPa")
-    },
-    "sunshine": {
-      "value": "Number",      // Sunshine duration
-      "unit": "String"        // Unit (e.g., "min")
-    }
-  },
-  "condition": {
-    "id": "String",           // Weather condition ID
-    "description": "String"   // Text description of the weather
-  }
+```typescript
+interface CurrentWeather {
+  location: Location;
+  timestamp: string; // ISO 8601 format
+  temperature: {
+    value: number;
+    unit: "C";
+  };
+  humidity: {
+    value: number;
+    unit: "%";
+  };
+  windSpeed: {
+    value: number;
+    unit: "km/h";
+  };
+  windDirection: {
+    degrees: number;
+    cardinal: string; // N, NE, E, SE, S, SW, W, NW
+  };
+  precipitation: {
+    value: number;
+    unit: "mm";
+  };
+  pressure: {
+    value: number;
+    unit: "hPa";
+  };
+  condition: {
+    code: string;
+    description: string;
+  };
+  dewPoint: {
+    value: number;
+    unit: "C";
+  };
+  uvIndex: number;
+  visibility: {
+    value: number;
+    unit: "km";
+  };
+  sunriseTime: string; // ISO 8601 format
+  sunsetTime: string; // ISO 8601 format
 }
 ```
 
-### 2. Weather Forecast
+### Weather Forecast
 
-```json
-{
-  "location": {
-    "name": "String",         // Name of the location
-    "zip": "String",          // ZIP code
-    "coordinates": {
-      "lat": "Number",        // Latitude
-      "lon": "Number"         // Longitude
-    }
-  },
-  "forecasts": [
-    {
-      "date": "String",       // Date in YYYY-MM-DD format
-      "weekday": "String",    // Day of the week
-      "temperature": {
-        "min": "Number",      // Minimum temperature
-        "max": "Number",      // Maximum temperature
-        "unit": "String"      // Unit (e.g., "°C")
-      },
-      "condition": {
-        "id": "String",       // Weather condition ID
-        "description": "String" // Text description of the weather
-      },
-      "precipitation": {
-        "probability": "Number", // Probability of precipitation (0-100)
-        "unit": "String"      // Unit (e.g., "%")
-      }
-    }
-  ],
-  "text_forecast": {
-    "short": "String",        // Short forecast text
-    "detailed": "String"      // Detailed forecast text
-  }
+```typescript
+interface WeatherForecast {
+  location: Location;
+  issuedAt: string; // ISO 8601 format
+  days: ForecastDay[];
+}
+
+interface ForecastDay {
+  date: string; // YYYY-MM-DD
+  temperatureHigh: {
+    value: number;
+    unit: "C";
+  };
+  temperatureLow: {
+    value: number;
+    unit: "C";
+  };
+  precipitationProbability: {
+    value: number;
+    unit: "%";
+  };
+  precipitationAmount: {
+    value: number;
+    unit: "mm";
+  };
+  condition: {
+    code: string;
+    description: string;
+  };
+  windSpeed: {
+    value: number;
+    unit: "km/h";
+  };
+  windDirection: {
+    degrees: number;
+    cardinal: string;
+  };
+  sunriseTime: string; // ISO 8601 format
+  sunsetTime: string; // ISO 8601 format
+  hourlyForecast: HourlyForecast[];
+}
+
+interface HourlyForecast {
+  timestamp: string; // ISO 8601 format
+  temperature: {
+    value: number;
+    unit: "C";
+  };
+  precipitation: {
+    value: number;
+    unit: "mm";
+  };
+  precipitationProbability: {
+    value: number;
+    unit: "%";
+  };
+  condition: {
+    code: string;
+    description: string;
+  };
+  windSpeed: {
+    value: number;
+    unit: "km/h";
+  };
+  windDirection: {
+    degrees: number;
+    cardinal: string;
+  };
+  humidity: {
+    value: number;
+    unit: "%";
+  };
 }
 ```
 
-### 3. Weather Stations
+### Weather Report
 
-```json
-{
-  "id": "String",             // Station ID
-  "name": "String",           // Station name
-  "coordinates": {
-    "lat": "Number",          // Latitude
-    "lon": "Number",          // Longitude
-    "ch": {                   // Swiss coordinate system
-      "x": "Number",
-      "y": "Number"
-    }
-  },
-  "altitude": "Number",       // Altitude in meters
-  "canton": "String",         // Canton code
-  "measurements": [
-    {
-      "parameter": "String",  // Parameter ID
-      "since": "Number",      // Timestamp since when data is available
-      "measurement_height": "String" // Height above ground
-    }
-  ]
+```typescript
+interface WeatherReport {
+  region: {
+    id: string;
+    name: string;
+  };
+  issuedAt: string; // ISO 8601 format
+  validFrom: string; // ISO 8601 format
+  validTo: string; // ISO 8601 format
+  language: "de" | "fr" | "it" | "en";
+  summary: string;
+  detailedReport: string;
+  forecastDays: WeatherReportDay[];
+  authorName: string;
+}
+
+interface WeatherReportDay {
+  date: string; // YYYY-MM-DD
+  weatherDescription: string;
+  temperatureRange: string; // e.g., "10 to 15°C"
+  precipitationDescription: string;
 }
 ```
 
-### 4. Weather Parameters
+### Weather Station
 
-```json
-{
-  "id": "String",             // Parameter ID
-  "name": "String",           // Parameter name
-  "description": "String",    // Parameter description
-  "unit": "String",           // Unit of measurement
-  "sub_parameters": [
-    {
-      "id": "String",         // Sub-parameter ID
-      "name": "String",       // Sub-parameter name
-      "description": "String" // Sub-parameter description
-    }
-  ]
+```typescript
+interface WeatherStation {
+  id: string;
+  name: string;
+  location: Location;
+  altitude: number;
+  canton: string;
+  type: "automatic" | "manual" | "partner" | "phenology" | "pollen" | "climate";
+  parameters: string[]; // List of available parameters for this station
+  operationalSince: string; // YYYY-MM-DD
 }
 ```
 
-## Mapping Tables
+### Station Data
 
-The following mapping tables will need to be created or sourced:
+```typescript
+interface StationData {
+  stationId: string;
+  stationName: string;
+  parameter: string;
+  unit: string;
+  timeInterval: "10min" | "hour" | "day" | "month" | "year";
+  measurements: Measurement[];
+}
 
-### 1. Location to Station Mapping
-
-```json
-{
-  "location": {
-    "name": "String",         // Location name
-    "zip": "String",          // ZIP code
-    "coordinates": {
-      "lat": "Number",        // Latitude
-      "lon": "Number"         // Longitude
-    }
-  },
-  "nearest_stations": [
-    {
-      "id": "String",         // Station ID
-      "distance": "Number",   // Distance in kilometers
-      "parameters": ["String"] // Available parameters
-    }
-  ]
+interface Measurement {
+  timestamp: string; // ISO 8601 format
+  value: number | null; // null if no measurement available
+  quality: "verified" | "raw" | "estimated" | "interpolated";
 }
 ```
 
-### 2. Weather Symbol Mapping
+### Common Types
 
-```json
-{
-  "id": "String",             // Symbol ID
-  "description": {
-    "en": "String",           // English description
-    "de": "String",           // German description
-    "fr": "String",           // French description
-    "it": "String"            // Italian description
-  },
-  "icon": "String"            // Icon reference
+```typescript
+interface Location {
+  name: string;
+  canton: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  altitude?: number;
 }
 ```
 
-## Data Transformation
+## Weather Condition Codes
 
-The raw data from MeteoSwiss will need to be transformed into the above schema. This transformation will involve:
+MeteoSwiss weather condition codes map to descriptive conditions in multiple languages:
 
-1. Merging data from multiple sources (ChartData, StationMeta, Weather Pill)
-2. Converting timestamps to standardized format
-3. Applying mappings between location IDs, station IDs, and weather symbols
-4. Generating text descriptions from numeric data where appropriate
+| Code | English | German | French | Italian |
+|------|---------|--------|--------|---------|
+| 1    | Clear   | Klar   | Dégagé | Sereno  |
+| 2    | Sunny   | Sonnig | Ensoleillé | Soleggiato |
+| 3    | Partly Cloudy | Teilweise bewölkt | Partiellement nuageux | Parzialmente nuvoloso |
+| 4    | Cloudy  | Bewölkt | Nuageux | Nuvoloso |
+| 5    | Overcast | Bedeckt | Couvert | Coperto |
+| 6    | Fog     | Nebel  | Brouillard | Nebbia |
+| 7    | Light Rain | Leichter Regen | Pluie légère | Pioggia leggera |
+| 8    | Rain    | Regen  | Pluie  | Pioggia |
+| 9    | Heavy Rain | Starker Regen | Forte pluie | Pioggia forte |
+| 10   | Light Snow | Leichter Schnee | Neige légère | Neve leggera |
+| 11   | Snow    | Schnee | Neige  | Neve    |
+| 12   | Heavy Snow | Starker Schnee | Neige abondante | Neve forte |
+| 13   | Thunderstorm | Gewitter | Orage | Temporale |
 
-## Next Steps
+## Parameters
 
-1. Implement the data transformation logic
-2. Create or source the mapping tables
-3. Design the resource fetch and update mechanisms
-4. Document the API endpoints for the MCP server
+Available parameters for station data:
+
+| Parameter ID | Description | Unit |
+|--------------|-------------|------|
+| temperature  | Air temperature | °C |
+| humidity     | Relative humidity | % |
+| precipitation | Precipitation amount | mm |
+| pressure-qfe | Station pressure | hPa |
+| pressure-qff | Sea level pressure | hPa |
+| wind         | Wind speed | km/h |
+| sunshine     | Sunshine duration | min |
+| globalradiation | Global radiation | W/m² |
+| snow         | Snow height | cm |
+| dewpoint     | Dew point | °C |
+| foehn        | Foehn index | - |
+| alnus        | Alder pollen | pollen/m³ |
+| betula       | Birch pollen | pollen/m³ |
+| poaceae      | Grass pollen | pollen/m³ |
+| corylus      | Hazel pollen | pollen/m³ |
+| fraxinus     | Ash pollen | pollen/m³ |
+| quercus      | Oak pollen | pollen/m³ |
+| fagus        | Beech pollen | pollen/m³ |
