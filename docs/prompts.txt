@@ -172,3 +172,23 @@ alwaysApply: true
 Make sure to add a directive at the end of the file that if new files are added, they should be added to the important-files.mdc file.
 
 ***
+
+lets enhance the "weather report" tool MVP to use real live data from the HTTP server.
+keep track of the implementation status in ./docs/implementation-status.md
+
+## Supporting Information
+
+all the "products" are served from endpoint: @https://www.meteoschweiz.admin.ch/product/output/ 
+
+e.g. @weather-report  data is served as @https://www.meteoschweiz.admin.ch/product/output/weather-report/ 
+
+## Steps To Complete
+
+* fetch the weather report data from HTTP instead of reading it from the vendor files
+* add integration test where the external HTTP server is mocked
+  * create new test fixtures in `./test/__fixtures/…` because we cant directly use data in ./vendor
+
+***
+
+* the test are not passing. run `pnpm test` to check to output and fix them.
+* remove the "hybrid" approach. we NEVER want to use the vendor data, its just there for reference
