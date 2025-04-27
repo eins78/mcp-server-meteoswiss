@@ -69,4 +69,5 @@ export function getWeatherData(
 - add unit tests for zod schemas, and for small utils and helpers where not all variants or edge cases will be covered by integration tests
 - for public API (anything the MCP client will call), always add an integration test in `test/integration`
 - never use or reference any files in ./vendor directly, only use them for analysis or if needed as text fixtures, copy a minimal subset to ./test/__fixtures__
+- always run the testswith `pnpm test`  after making to ensure they still pass
 
