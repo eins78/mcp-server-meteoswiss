@@ -26,7 +26,7 @@ async function startServer() {
   // Register tools
   server.tool(
     'getWeatherReport',
-    'Retrieves the latest weather report for a specified region',
+    'Retrieves the latest MeteoSwiss weather report for a specified region (Northern, Southern, Western parts of Switzerland), in German, French, Italian or English',
     GetWeatherReportParamsSchema.shape,
     async (params: GetWeatherReportParams) => {
       try {
