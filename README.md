@@ -60,6 +60,10 @@ The server provides the following MCP tools:
 
 - `getWeatherReport`: Get weather report for a specific region (north, south, west)
 
+## Debugging
+
+For issues with Claude Desktop connections or other debugging needs, see our [Debugging Guide](docs/debugging-guide.md).
+
 ## Contributing
 
 Contributions are welcome! Please ensure you follow the architecture guidelines outlined in the documentation.

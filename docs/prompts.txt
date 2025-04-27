@@ -64,3 +64,9 @@ see docs @https://modelcontextprotocol.io/quickstart/server
 the server should have used @https://github.com/modelcontextprotocol/typescript-sdk 
 
 please first check the docs and cursor rules and explain why the SDK was not used and fix the rules/docs before making changes to the code.
+
+---
+
+please add to our rules and docs information how to debug claude desktop. dont make any other changes.
+
+---

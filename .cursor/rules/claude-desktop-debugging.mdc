@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Claude Desktop Debugging
+
+# Claude Desktop Debugging Guidelines
+
+When working on MCP servers that need to connect to Claude Desktop:
+
+1. Always check the Claude Desktop logs at `~/Library/Logs/Claude/` for connection errors
+2. Use `StdioServerTransport` from the MCP SDK for Claude Desktop integration
+3. Use the `node:` prefix for Node.js built-in modules when working with ESM
+4. Test your server locally before connecting to Claude Desktop
+5. Ensure TypeScript is compiling to ES2022 or higher for modern syntax support
+
+For detailed debugging steps, see [docs/debugging-guide.md](mdc:../../docs/debugging-guide.md)
