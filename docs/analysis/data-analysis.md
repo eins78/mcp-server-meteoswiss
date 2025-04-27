@@ -93,9 +93,9 @@ Based on the analysis, the most valuable datasets for the MCP server are:
 
 Some potential gaps in the data include:
 
-1. **Location Mapping**: There's no clear mapping between place names, zip codes, and station IDs. We may need to create or source this mapping.
-2. **Weather Symbol Mapping**: We need a mapping between weather symbol IDs and their meanings.
-3. **Geographical Coverage**: We should verify that the data covers all significant locations in Switzerland.
+1. **Location Mapping**: The station metadata (`stationMeta`) contains information about station IDs, coordinates, and names. We need to create a mapping utility that connects place names and postal codes (used in Weather Pill data files like `_10.json`) with the corresponding weather station IDs (e.g., 'AIR' for Airolo). This will allow users to query by location name and get data from the nearest weather station.
+
+2. **Weather Symbol Mapping**: The Weather Pill data contains `weather_symbol_id` values (e.g., "1", "2", "3", "26", "29", etc.) that represent weather conditions. We need to create a mapping between these numeric IDs and their meanings (sunny, cloudy, rainy, etc.) to provide human-readable weather descriptions.
 
 ## Next Steps
 

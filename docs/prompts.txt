@@ -122,3 +122,17 @@ remove the `check-node-version.js` script and usage and use `engine` field in @p
 server does not start anymore, please fix the file imports as well
 
 ***
+
+lets clear up the data gaps in @data-analysis.md 
+the geographical coverage is fine, i know the data is complete.
+
+regarding the other points, i can provide more data files and/or sources, just ask.
+
+***
+
+ok for the locations i have 2 datasets. dont use them yet, just analyse what the sets contain and what is more usable for us.
+we could then check in the JSON files so the server can use them directly/internally, we dont need to fetch those.
+* @local-forecast-search 
+* @localForecastLocations 
+
+*** 
