@@ -4,26 +4,16 @@ A Model Context Protocol (MCP) server for MeteoSwiss weather data.
 
 ## Overview
 
-This project implements an MCP-compliant server that provides weather data from MeteoSwiss to language models and AI tools. It allows LLMs to access current weather conditions, forecasts, weather reports, and historical meteorological data for locations across Switzerland.
+This server provides weather data from MeteoSwiss using the [Model Context Protocol](https://github.com/modelcontextprotocol/typescript-sdk) (MCP), allowing AI assistants like Claude to access weather information.
 
-## MVP Demo
+## Features
 
-This MVP demo implements a minimal MCP server that provides access to MeteoSwiss weather reports. It uses static data files and doesn't make HTTP requests to the actual MeteoSwiss API.
+- Weather reports for regions in Switzerland
+- Current weather conditions
+- Weather forecasts
+- Weather station data
 
-### Features Implemented in MVP
-
-- Weather reports for different regions of Switzerland (North, South, West)
-- Support for multiple languages (German, French, Italian, English)
-- MCP-compliant API endpoints
-
-## Setup and Running
-
-### Prerequisites
-
-- Node.js v22+
-- npm
-
-### Installation
+## Installation
 
 1. Clone this repository
 2. Install dependencies:
@@ -32,51 +22,51 @@ This MVP demo implements a minimal MCP server that provides access to MeteoSwiss
 npm install
 ```
 
-### Running the Server
+3. Build the project:
 
-Build and start the server:
+```bash
+npm run build
+```
+
+## Usage
+
+Start the server:
+
+```bash
+npm start
+```
+
+The server will run on <http://localhost:3000> by default.
+
+## MCP SDK Implementation
+
+This server strictly follows the Model Context Protocol using the official TypeScript SDK. All tools and resources are implemented via the SDK interfaces:
+
+- `McpServer` class for server setup
+- `StreamableHTTPServerTransport` for client communication
+- Zod schemas for type validation
+
+## Development
+
+To run in development mode with automatic rebuilding:
 
 ```bash
 npm run dev
 ```
 
-The server will be available at <http://localhost:3000>
+## Tools
 
-## Usage Examples
+The server provides the following MCP tools:
 
-### Get Available Tools
+- `getWeatherReport`: Get weather report for a specific region (north, south, west)
 
-```bash
-curl http://localhost:3000/api/tools
-```
+## Contributing
 
-### Get Weather Report
-
-```bash
-curl -X POST http://localhost:3000/api/tools \
-  -H "Content-Type: application/json" \
-  -d '{"name":"getWeatherReport","parameters":{"region":"north","language":"en"}}'
-```
-
-## Documentation
-
-- [User Guide](docs/user-guide.md)
-- [API Design](docs/architecture/api-design.md)
-- [Data Schema](docs/analysis/data-schema.md)
-
-## Full Implementation Roadmap
-
-The MVP is just the first step. The complete implementation will include:
-
-- Current weather conditions
-- Weather forecasts
-- Station data
-- Historical measurements
-- Weather search capabilities
+Contributions are welcome! Please ensure you follow the architecture guidelines outlined in the documentation.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+ISC
 
 ## Acknowledgments
 

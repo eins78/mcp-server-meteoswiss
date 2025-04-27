@@ -1,101 +1,68 @@
-import Fastify from 'fastify';
-import { GetWeatherReportParamsSchema } from './schemas/weather-report.js';
+#!/usr/bin/env node
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { GetWeatherReportParamsSchema, GetWeatherReportParams } from './schemas/weather-report.js';
 import { getWeatherReport } from './tools/get-weather-report.js';
 
-// Create Fastify instance
-const fastify = Fastify({
-  logger: true
-});
-
-// Define the port
-const PORT = process.env.PORT || 3000;
-
-// Health check endpoint
-fastify.get('/health', async () => {
-  return { status: 'ok' };
-});
-
-// MCP API endpoint for tools
-fastify.post('/api/tools', async (request, reply) => {
-  const body = request.body as any;
+/**
+ * Creates and configures the MCP server for MeteoSwiss weather data
+ * 
+ * This server implementation follows the Model Context Protocol specification
+ * using the official TypeScript SDK to ensure compatibility with Claude Desktop
+ * and other MCP clients.
+ */
+async function startServer() {
+  // Define the port
+  const PORT = process.env.PORT || 3000;
   
-  if (!body || !body.name || !body.parameters) {
-    reply.code(400);
-    return { error: { message: 'Invalid request structure' } };
-  }
+  // Create MCP server instance
+  const server = new McpServer({
+    name: "meteoswiss-weather-server",
+    version: "1.0.0",
+    description: "MCP server for MeteoSwiss weather data"
+  });
   
-  try {
-    // Handle tool requests based on the name
-    switch (body.name) {
-      case 'getWeatherReport': {
-        // Validate parameters
-        const result = GetWeatherReportParamsSchema.safeParse(body.parameters);
-        
-        if (!result.success) {
-          reply.code(400);
-          return { error: { message: 'Invalid parameters', details: result.error.format() } };
-        }
-        
-        // Execute the tool
-        const weatherReport = await getWeatherReport(result.data);
-        return { result: weatherReport };
+  // Register tools
+  server.tool(
+    "getWeatherReport",
+    "Retrieves the latest weather report for a specified region",
+    GetWeatherReportParamsSchema.shape,
+    async (params: GetWeatherReportParams) => {
+      try {
+        const weatherReport = await getWeatherReport(params);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(weatherReport, null, 2)
+          }]
+        };
+      } catch (error: unknown) {
+        console.error('Error in getWeatherReport tool:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{
+            type: "text",
+            text: `Failed to get weather report: ${errorMessage}`
+          }],
+          isError: true
+        };
       }
-      
-      default:
-        reply.code(404);
-        return { error: { message: `Tool '${body.name}' not found` } };
     }
-  } catch (error) {
-    console.error('Error processing tool request:', error);
-    reply.code(500);
-    return { error: { message: 'Internal server error' } };
-  }
-});
+  );
+  
+  // Create StreamableHTTP transport with proper CORS settings for Claude Desktop
+  const transport = new StdioServerTransport();
+  
+  // Connect server to transport
+  await server.connect(transport);
+  
+  console.log(`MCP Server is running via stdio transport`);
+  console.log('Registered tools:');
+  console.log('- getWeatherReport: Retrieves the latest weather report for a specified region');
+}
 
-// MCP discovery endpoint - lists available tools
-fastify.get('/api/tools', async () => {
-  return {
-    tools: [
-      {
-        name: 'getWeatherReport',
-        description: 'Retrieves the latest weather report for a specified region',
-        parameters: {
-          type: 'object',
-          properties: {
-            region: {
-              type: 'string',
-              enum: ['north', 'south', 'west'],
-              description: 'Region for the report'
-            },
-            language: {
-              type: 'string',
-              enum: ['de', 'fr', 'it', 'en'],
-              description: 'Language for the report',
-              default: 'en'
-            }
-          },
-          required: ['region']
-        }
-      }
-    ]
-  };
-});
-
-// Start the server
-const start = async () => {
-  try {
-    await fastify.listen({ port: PORT as number, host: '0.0.0.0' });
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log('Available endpoints:');
-    console.log('- GET  /health          - Health check');
-    console.log('- GET  /api/tools       - List available tools');
-    console.log('- POST /api/tools       - Execute a tool');
-    console.log('\nExample tool usage:');
-    console.log(`curl -X POST http://localhost:${PORT}/api/tools -H "Content-Type: application/json" -d '{"name":"getWeatherReport","parameters":{"region":"north","language":"en"}}'`);
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-};
-
-start(); 
+// Start the server and handle errors
+startServer().catch((error: unknown) => {
+  console.error('Failed to start MCP server:', error);
+  process.exit(1);
+}); 
