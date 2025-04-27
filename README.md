@@ -1,4 +1,4 @@
-# MeteoSwiss MCP Server
+# MCP Server for MeteoSwiss Data
 
 A Model Context Protocol (MCP) server for MeteoSwiss weather data.
 
@@ -13,30 +13,72 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 - Weather forecasts
 - Weather station data
 
-## Installation
+## Development
 
-1. Clone this repository
+This project uses Node.js 23's native TypeScript support, which means there's no build step required. TypeScript files are executed directly by Node.js.
+
+### Prerequisites
+
+- Node.js v23.11.0 or later (we recommend using [nvm](https://github.com/nvm-sh/nvm) for Node.js version management)
+- [pnpm](https://pnpm.io/) for package management
+
+### Setting up the development environment
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/eins78/mcp-server-meteoswiss-data.git
+   cd mcp-server-meteoswiss-data
+   ```
+
 2. Install dependencies:
 
+   ```bash
+   pnpm install
+   ```
+
+3. Use the correct Node.js version:
+
+   ```bash
+   nvm use
+   ```
+
+### Running the application
+
+Start the development server with hot reloading:
+
 ```bash
-pnpm install
+pnpm run dev
 ```
 
-3. Build the project:
+Or run the application without hot reloading:
 
 ```bash
-pnpm run build
+pnpm run start
 ```
 
-## Usage
+### Type checking
 
-Start the server:
+Check TypeScript types without emitting JavaScript files:
 
 ```bash
-pnpm start
+pnpm run lint
 ```
 
-The server will run on <http://localhost:3000> by default.
+## Project Structure
+
+- `src/` - Source code
+  - `index.ts` - Application entry point
+  - `data/` - Data access and transformation
+  - `schemas/` - Zod schemas for data validation
+  - `tools/` - Utility tools and scripts
+  - `utils/` - Common utilities
+
+## Documentation
+
+- `docs/` - Project documentation
+  - `architecture/` - Architecture diagrams and descriptions
+  - `analysis/` - Data analysis and insights
 
 ## MCP SDK Implementation
 
@@ -45,14 +87,6 @@ This server strictly follows the Model Context Protocol using the official TypeS
 - `McpServer` class for server setup
 - `StreamableHTTPServerTransport` for client communication
 - Zod schemas for type validation
-
-## Development
-
-To run in development mode with automatic rebuilding:
-
-```bash
-pnpm run dev
-```
 
 ## Tools
 

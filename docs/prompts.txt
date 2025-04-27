@@ -101,3 +101,24 @@ use pnpm instead of npm. check docs @https://pnpm.io/pnpm-cli
 we dont need an .npmrc, just using default settings
 
 ***
+
+let's add more dev rules and implement them
+
+use node 23 with native typescript. use an .nvrm file for developers.
+
+goal is to not have a build step at all, but still have a "lint" command that does typechecking.
+
+here are some info and docs about this feature:
+* @https://www.totaltypescript.com/typescript-is-coming-to-node-23 
+* @https://nodejs.org/en/learn/typescript/run-natively 
+* @https://nodejs.org/docs/latest-v23.x/api/typescript.html 
+
+***
+
+remove the `check-node-version.js` script and usage and use `engine` field in @package.json to request node 23.11 or later
+
+***
+
+server does not start anymore, please fix the file imports as well
+
+***

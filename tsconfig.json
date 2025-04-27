@@ -1,15 +1,31 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    /* Node Stuff */
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "esModuleInterop": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "outDir": "dist",
+    "noEmit": true,
+    /* If your code doesn't run in the DOM: */
+    "lib": [
+      "es2022"
+    ],
+    /* Additional options */
     "sourceMap": true,
-    "declaration": true,
-    "resolveJsonModule": true
+    "declaration": false
   },
   "include": [
     "src/**/*"
