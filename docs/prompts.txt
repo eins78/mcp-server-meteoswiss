@@ -85,3 +85,9 @@ MCP meteoswiss-weather: No number after minus sign in USON
 at position 1 (line 1 column 2)
 
 ***
+
+let's add more dev rules and implement them
+
+commit messages: always start with a short summary and then more details after an empty line. in the body don't give an comprehensive overview of the changes visible in the diff, instead state goals and non-obvious details like workaround that were needed. 
+
+***

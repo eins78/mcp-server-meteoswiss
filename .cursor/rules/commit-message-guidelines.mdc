@@ -1,0 +1,26 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# MeteoSwiss MCP Server Commit Message Guidelines
+
+When creating commit messages, always follow these standards:
+
+1. Start with a concise summary line (50-72 characters)
+2. Leave one blank line after the summary
+3. Provide a detailed description in the body
+4. Focus on explaining WHY changes were made, not WHAT was changed
+5. Document any non-obvious implementation details or workarounds
+6. Reference issue numbers where applicable
+
+Example:
+```
+Add station metadata caching to improve API response time
+
+Implemented in-memory caching layer to reduce database load for 
+frequently requested station metadata. Required custom serialization 
+due to complex nested objects.
+
+Fixes #123
+```
