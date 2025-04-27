@@ -1,0 +1,16 @@
+Technology Stack and Architecture
+
+# Technology Stack and Architecture
+
+This project follows these technical guidelines:
+
+- Use Node.js v22 with TypeScript
+- MUST import and use the MCP TypeScript SDK (`@modelcontextprotocol/sdk`)
+- All API endpoints MUST be implemented via the SDK's `McpServer` class
+- Use Zod for schema validation and type generation
+- Implement proper error handling with typed exceptions
+- Follow the component architecture outlined in our docs
+
+See the architecture overview for detailed guidance on components.
+
+@docs/architecture/overview.md

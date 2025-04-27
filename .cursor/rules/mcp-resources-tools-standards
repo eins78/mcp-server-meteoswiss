@@ -1,0 +1,17 @@
+MCP Resources and Tools Standards
+
+# MCP Resources and Tools Standards
+
+When implementing MCP Resources or Tools:
+
+- Resources should be client-controlled, read-only data providers
+- Tools should be model-controlled functions with clear parameters
+- Implementation MUST use the `@modelcontextprotocol/sdk` (TypeScript SDK)
+- Follow the schemas defined in docs/analysis/data-schema.md
+- Ensure each Tool and Resource has a clear, concise description
+- Document authentication requirements in the implementation
+- Use the `McpServer` class from the SDK for server setup
+
+Reference the API design document for complete specifications.
+
+@docs/architecture/api-design.md
