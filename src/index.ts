@@ -56,9 +56,10 @@ async function startServer() {
   // Connect server to transport
   await server.connect(transport);
   
-  console.log(`MCP Server is running via stdio transport`);
-  console.log('Registered tools:');
-  console.log('- getWeatherReport: Retrieves the latest weather report for a specified region');
+  // Use console.error instead of console.log for logging as stderr won't interfere with MCP communication
+  console.error(`MCP Server is running via stdio transport`);
+  console.error('Registered tools:');
+  console.error('- getWeatherReport: Retrieves the latest weather report for a specified region');
 }
 
 // Start the server and handle errors

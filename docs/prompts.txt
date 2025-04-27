@@ -1,6 +1,6 @@
 prompts used to generate this code using cursor + claude-3.7-sonnet
 
----
+***
 
 i want to create a MCP ser@https://modelcontextprotocol.io/introductionthat ) that provides weather data as resource.
 the goal is to give LLM users access to current weather data as well as forecasts and answer general questions ("where is it snowing?", "where will be a sunny day for hiking next saturday?", "whats the weather like in zurich today?" 
@@ -20,28 +20,28 @@ lets start by making a plan.
 * lets keep records of our work as markdown files in this repo. make a "docs" folder or similar with appropriate subfolder. start with a small readme as an overview and a file for the results of the data analysis. 
 we will later also add a software architecture overview for the actual server.
 
----
+***
 
 we will use nodejs v22, the TS SDK @https://github.com/modelcontextprotocol/typescript-sdk and @https://zod.dev for types.
 use tsconfig best practices @https://www.totaltypescript.com/tsconfig-cheat-sheet 
 
 review the @docs  and make changes if needed.
 
----
+***
 
 the api design talks about "available tools". i would have expected that the MCP server only needs to expose Resources, why do we need Tools?
 
----
+***
 
 thanks, please make sure this is explained in the docs. keep it short, a summary is enough.
 
----
+***
 
 please generate appropriate cursor rules (@https://docs.cursor.com/context/rules) for this project. 
 we want to keep the workflow of always documenting our work – for humans to read, but mostly for the LLM coding agents helping us. 
 the rules should otherwise be simple and mostly refer to the docs we have, for example regarding the tech stack we'll use.
 
----
+***
 
 lets plan and implement a MVP-like small demo for our server.
 just the bare minimum so i can test it with a MCP client, nothing else.
@@ -54,19 +54,34 @@ generate the following:
 * minimal dev docs in main README (how to run it)
 * new md file with end-user docs (how to use it, what features are available)
 
----
+***
 
 lets add the config needed for our server to @claude_desktop_config.json 
 see docs @https://modelcontextprotocol.io/quickstart/server 
 
----
+***
 
 the server should have used @https://github.com/modelcontextprotocol/typescript-sdk 
 
 please first check the docs and cursor rules and explain why the SDK was not used and fix the rules/docs before making changes to the code.
 
----
+***
 
 please add to our rules and docs information how to debug claude desktop. dont make any other changes.
 
+***
+
+i fixed the @claude_desktop_config.json to the MVP should start correctly.
+now i get new error. check @MCP 
+
 ---
+
+MCP meteoswiss-weather: Unexpected token 'M', "MCP Server".. X
+is not valid JSON
+
+MCP meteoswiss-weather: Unexpected token 'R', "Registered tools:" is not valid JSON
+
+MCP meteoswiss-weather: No number after minus sign in USON
+at position 1 (line 1 column 2)
+
+***
