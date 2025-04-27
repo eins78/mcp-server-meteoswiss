@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "npm run build && npm run start",
+    "dev": "pnpm run build && pnpm run start",
     "watch": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -39,5 +39,6 @@
     "@types/jsdom": "^21.1.6",
     "@types/node": "^20.11.19",
     "typescript": "^5.3.3"
-  }
+  },
+  "packageManager": "pnpm@9.15.5+sha256.8472168c3e1fd0bff287e694b053fccbbf20579a3ff9526b6333beab8df65a8d"
 }

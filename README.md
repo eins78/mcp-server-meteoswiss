@@ -19,13 +19,13 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 2. Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 3. Build the project:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ## Usage
@@ -33,7 +33,7 @@ npm run build
 Start the server:
 
 ```bash
-npm start
+pnpm start
 ```
 
 The server will run on <http://localhost:3000> by default.
@@ -51,7 +51,7 @@ This server strictly follows the Model Context Protocol using the official TypeS
 To run in development mode with automatic rebuilding:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ## Tools
