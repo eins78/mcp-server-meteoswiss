@@ -1,3 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
 # Coding Standards
 
 This project adheres to the following coding standards to ensure consistency and maintainability:
@@ -7,7 +13,8 @@ This project adheres to the following coding standards to ensure consistency and
 - Use explicit return types for functions
 - Use type imports with the `type` keyword
 - Follow verbatim module syntax (as configured in tsconfig.json)
-- Use interface for object shapes and type for unions, intersections, and primitives
+- Use type for object shapes and primities, and interface for intersections and everything that needs to be extended
+- NEVER use enums, instead use simple string unions (`type color = "red" | "blue"`)
 
 ## Documentation
 
@@ -42,14 +49,24 @@ export function getWeatherData(
 ## Naming Conventions
 
 - Use camelCase for variables, parameters, functions, and methods
-- Use PascalCase for classes, interfaces, types, and enums
+- Use PascalCase for classes, interfaces, types
 - Use UPPER_CASE for constants
 - Prefix interfaces with "I" only for interface inheritances (e.g., IDisposable)
 - Use meaningful and descriptive names
 
 ## File Organization
 
+- use kebab-case for folder names
+- Use camelCase for file names
+- Use PascalCase for files where the main exports are classes, interfaces, types
 - One export per file when possible
 - Group related functionality in directories
 - Use index.ts files to re-export from a directory
 - Keep files focused and not too large (< 300 lines if possible)
+
+## Tests
+
+- add unit tests for zod schemas, and for small utils and helpers where not all variants or edge cases will be covered by integration tests
+- for public API (anything the MCP client will call), always add an integration test in `test/integration`
+- never use or reference any files in ./vendor directly, only use them for analysis or if needed as text fixtures, copy a minimal subset to ./test/__fixtures__
+
