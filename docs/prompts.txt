@@ -153,3 +153,22 @@ steps to implement
 * run the test to confirm its working
 
 ***
+
+lets enhance our cursor rules and add a rule to keep track of important files.
+
+file: `.cursor/rules/important-files.mdc`
+
+A file that lists the important files for the project, which should be included in every chat.
+add an initial list of files based on the current implementation of the MCP server.
+
+Use the mdc format, which is a markdown format with these frontmatter fields:
+
+---
+globs: **/**
+alwaysApply: true
+---
+
+...content goes here...
+Make sure to add a directive at the end of the file that if new files are added, they should be added to the important-files.mdc file.
+
+***

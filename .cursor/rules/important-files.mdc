@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Important Files
+
+This is a curated list of important files in the MeteoSwiss MCP Server project that provide context about the implementation, architecture, and functionality.
+
+## Core Server Implementation
+
+- `src/index.ts` - Main entry point that configures and starts the MCP server
+- `package.json` - Project metadata and dependencies
+
+## Schema Definitions
+
+- `src/schemas/weather-report.ts` - Defines schemas for weather report data structure and API parameters
+
+## Tools
+
+- `src/tools/get-weather-report.ts` - Implementation of the getWeatherReport MCP tool
+
+## Data Access and Processing
+
+- `src/data/weather-report-data.ts` - Functions for accessing and parsing weather report data
+
+## Test Fixtures
+
+- `test/__fixtures__/product-output/data-2025-03-26/weather-report/` - Sample weather report data for testing
+
+## Documentation
+
+- `README.md` - Project overview and getting started guide
+- `docs/README.md` - Documentation overview and structure
+- `docs/user-guide.md` - User guide explaining how to use the MeteoSwiss MCP server
+- `docs/debugging-guide.md` - Guide for debugging MCP server connection issues
+- `docs/implementation-plan.md` - Detailed implementation plan for the MeteoSwiss MCP server
+
+### Architecture Documentation
+- `docs/architecture/overview.md` - Software architecture of the MCP server
+- `docs/architecture/api-design.md` - API design for the MCP server resources and tools
+
+### Analysis Documentation
+- `docs/analysis/data-analysis.md` - Analysis of available MeteoSwiss data
+- `docs/analysis/data-schema.md` - Schema definitions for the weather data resources
+
+---
+
+**Note**: When adding new key files to the project, please update this file to ensure they are included in the list of important files for better context sharing.
