@@ -7,7 +7,7 @@ import type { WeatherReport } from '../schemas/weather-report.ts';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_ROOT = path.resolve(
   __dirname,
-  '../../test/__fixtures__/product-output/data-2025-03-26/weather-report'
+  '../../vendor/meteoswiss-product-output/data-2025-03-26/weather-report'
 );
 
 /**
