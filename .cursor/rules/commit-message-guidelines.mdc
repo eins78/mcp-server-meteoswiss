@@ -1,18 +1,19 @@
 ---
-description:
-globs:
+description: Guidelines for writing commit messages
+globs: 
 alwaysApply: false
 ---
 # MeteoSwiss MCP Server Commit Message Guidelines
 
 When creating commit messages, always follow these standards:
 
-1. Start with a concise summary line (50-72 characters)
-2. Leave one blank line after the summary
-3. Provide a detailed description in the body
-4. Focus on explaining WHY changes were made, not WHAT was changed
-5. Document any non-obvious implementation details or workarounds
-6. Reference issue numbers where applicable
+1. Start with a concise summary line (50-72 characters), first character lowercase
+2. prefer simple words (like "add" instead of "implement" and "update" instead of "enhance")
+3. Leave one blank line after the summary
+4. Provide a detailed description in the body
+5. Focus on explaining WHY changes were made, not WHAT was changed. Dont mention changes that are obvious from reading the git diff.
+6. Document any non-obvious implementation details or workarounds
+7. Reference issue numbers where applicable
 
 Example:
 ```

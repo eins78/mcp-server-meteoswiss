@@ -136,3 +136,20 @@ we could then check in the JSON files so the server can use them directly/intern
 * @localForecastLocations 
 
 *** 
+
+lets add some integration tests to catch regressions when extending this MCP server @MCP 
+before making changes, research the best practices @Web for our @technology-stack.mdc .
+i myself only found the @https://github.com/modelcontextprotocol/inspector which seems to more of a manual testing tool, but maybe we can use some of it for our tests.
+
+use @Jest as testing framework
+
+its important to start the actual server and communicate with it like a client (e.g. Claude Desktop) would do.
+
+steps to implement
+* setup tests in top-level `./test/integration`
+* add the necessary dependecies 
+* add `test` command in @package.json to run the test
+* add an integration test for the weather report tool (for all 3 regions)
+* run the test to confirm its working
+
+***
