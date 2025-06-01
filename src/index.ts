@@ -4,6 +4,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { GetWeatherReportParamsSchema } from './schemas/weather-report.ts';
 import type { GetWeatherReportParams } from './schemas/weather-report.ts';
 import { getWeatherReport } from './tools/get-weather-report.ts';
+import { existsSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Creates and configures the MCP server for MeteoSwiss weather data
@@ -15,6 +18,31 @@ import { getWeatherReport } from './tools/get-weather-report.ts';
 async function startServer() {
   // Define the port
   const PORT = process.env.PORT || 3000;
+
+  // Log environment info
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  console.error('MCP Server starting with:');
+  console.error(`- Node.js version: ${process.version}`);
+  console.error(`- Current directory: ${process.cwd()}`);
+  console.error(`- Script directory: ${__dirname}`);
+  console.error(`- Running in TTY: ${process.stdout.isTTY ? 'Yes' : 'No'}`);
+  console.error(`- USE_TEST_FIXTURES: ${process.env.USE_TEST_FIXTURES || 'not set'}`);
+
+  // Check for test fixtures
+  const testFixturesDevPath = path.resolve(__dirname, '../test/__fixtures__/weather-report');
+  const testFixturesProdPath = path.resolve(__dirname, './test/__fixtures__/weather-report');
+  console.error(
+    `- Test fixtures dev path exists: ${existsSync(testFixturesDevPath) ? 'Yes' : 'No'}`
+  );
+  console.error(
+    `- Test fixtures prod path exists: ${existsSync(testFixturesProdPath) ? 'Yes' : 'No'}`
+  );
+
+  // Set USE_TEST_FIXTURES to true by default when using stdio (Claude Desktop)
+  if (!process.env.USE_TEST_FIXTURES && process.stdout.isTTY === false) {
+    process.env.USE_TEST_FIXTURES = 'true';
+    console.error('Running in Claude Desktop, using test fixtures by default');
+  }
 
   // Create MCP server instance
   const server = new McpServer({
@@ -30,7 +58,11 @@ async function startServer() {
     GetWeatherReportParamsSchema.shape,
     async (params: GetWeatherReportParams) => {
       try {
+        console.error(
+          `Processing getWeatherReport request for region: ${params.region}, language: ${params.language}`
+        );
         const weatherReport = await getWeatherReport(params);
+        console.error('Successfully retrieved weather report');
         return {
           content: [
             {

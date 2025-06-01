@@ -19,7 +19,9 @@
     "start": "node src/index.ts",
     "dev": "node --watch src/index.ts",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:windows": "set NODE_OPTIONS=--experimental-vm-modules && jest"
+    "test:windows": "set NODE_OPTIONS=--experimental-vm-modules && jest",
+    "build": "tsc && cp -r test/__fixtures__ dist/test/__fixtures__",
+    "build:windows": "tsc && xcopy test\\__fixtures__ dist\\test\\__fixtures__ /E /I"
   },
   "repository": {
     "type": "git",

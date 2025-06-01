@@ -192,3 +192,28 @@ e.g. @weather-report  data is served as @https://www.meteoschweiz.admin.ch/produ
 
 * the test are not passing. run `pnpm test` to check to output and fix them.
 * remove the "hybrid" approach. we NEVER want to use the vendor data, its just there for reference
+
+***
+
+now the weather report tool is broken in Claude Desktop (check the logs),
+
+quote:
+
+I'll try again to retrieve the weather report for northern Switzerland, but this time in German.
+
+getWeatherReportRequest{
+  `region`: `north`,
+  `language`: `de`
+}
+ResponseFailed to get weather report: Failed to get weather report for region "north" in language "de"
+
+I apologize, but I'm still unable to retrieve the weather report for northern Switzerland, even when requesting it in German. It seems that there's an issue with the weather reporting function for that region.
+
+***
+
+the weather report tool is still broken in Claude Desktop (check the logs).
+
+that means we cant trust our integration test because of the mocking. lets change the strategy:
+* server code handles no mocking/reading fixtures, just HTTP requests
+* server takes env var for api URL, e.g. `API_BASE_URL='https://www.meteoswiss.admin.ch/product/output/'`
+* in tests, a real http server (e.g. npm package `serve`) is used to run on localhost:12345, which is then given to the mcp server as API_BASE_URL
