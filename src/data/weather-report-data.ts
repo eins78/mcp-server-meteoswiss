@@ -171,10 +171,12 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
   const document = dom.window.document;
 
   // Extract the title
-  const title = document.querySelector('h3')?.textContent || '';
+  const h3Element = document.querySelector('h3');
+  const title = h3Element ? h3Element.textContent || '' : '';
 
   // Extract the update time
-  const updatedAt = document.querySelector('p')?.textContent?.trim() || '';
+  const pElement = document.querySelector('p');
+  const updatedAt = pElement && pElement.textContent ? pElement.textContent.trim() : '';
 
   // Extract the forecast by day
   const forecast: { day: string; description: string; temperature?: string }[] = [];
@@ -182,8 +184,10 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
   const dayElements = document.querySelectorAll('h4');
   dayElements.forEach((dayElement) => {
     const day = dayElement.textContent || '';
-    const description = dayElement.nextElementSibling?.textContent || '';
-    const temperature = dayElement.nextElementSibling?.nextElementSibling?.textContent || '';
+    const nextElement = dayElement.nextElementSibling;
+    const description = nextElement && nextElement.textContent ? nextElement.textContent : '';
+    const tempElement = nextElement && nextElement.nextElementSibling;
+    const temperature = tempElement && tempElement.textContent ? tempElement.textContent : '';
 
     forecast.push({
       day,
@@ -193,7 +197,8 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
   });
 
   // Create the full content (useful for showing the entire report)
-  const content = document.querySelector('.textFCK')?.textContent?.trim() || '';
+  const contentElement = document.querySelector('.textFCK');
+  const content = contentElement && contentElement.textContent ? contentElement.textContent.trim() : '';
 
   return {
     region: region as any,

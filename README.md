@@ -21,6 +21,30 @@ This MCP server supports multiple transport mechanisms:
 
 The server is built with a transport-agnostic architecture, allowing the same business logic to work across different communication protocols.
 
+## Quick Start with npx
+
+You can run this MCP server directly without installation using npx:
+
+```bash
+# Run in stdio mode (for Claude Desktop)
+npx github:eins78/mcp-server-meteoswiss-data
+
+# Run in HTTP mode (for remote access)
+npx github:eins78/mcp-server-meteoswiss-data mcp-meteoswiss-http
+
+# Once published to npm, you can use:
+# npx mcp-server-meteoswiss-data
+# npx mcp-server-meteoswiss-data mcp-meteoswiss-http
+```
+
+### Running from a local repository
+
+```bash
+# From within the repository
+npx .                    # Runs stdio mode
+npx . mcp-meteoswiss-http  # Runs HTTP mode
+```
+
 ## Development
 
 This project uses `tsx` for TypeScript execution, providing a smooth development experience with hot reloading.

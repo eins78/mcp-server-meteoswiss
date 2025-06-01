@@ -9,6 +9,11 @@ set -e
 # Log what we're doing
 echo "Preparing MCP server for Claude Desktop..."
 
+# Build the TypeScript code
+echo "Building TypeScript code..."
+pnpm install
+pnpm run build
+
 # Create the dist directory if it doesn't exist
 mkdir -p dist/test/__fixtures__
 

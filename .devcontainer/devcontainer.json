@@ -38,6 +38,8 @@
   },
   "remoteUser": "node",
   "mounts": [
+    // for reading claude code logs:
+    // "source=/Users/mfa/Library/Logs/Claude,target=/workspace/.debug/claude-deskop-logs",
     "source=claude-code-bashhistory,target=/commandhistory,type=volume",
     "source=claude-code-config,target=/home/node/.claude,type=volume"
   ],

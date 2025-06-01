@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+# Binary for running MCP MeteoSwiss server in stdio mode
+# This allows usage via npx for stdio transport
+
+# Get the directory of this script
+DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$DIR/.." && pwd)"
+
+# Check if compiled JS exists
+if [ -f "$ROOT/dist/index.js" ]; then
+  # Use compiled JavaScript
+  exec node "$ROOT/dist/index.js" stdio "$@"
+else
+  # Fall back to tsx for development
+  exec npx tsx "$ROOT/src/index.ts" stdio "$@"
+fi
