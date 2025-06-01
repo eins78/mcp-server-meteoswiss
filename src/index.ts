@@ -7,6 +7,7 @@
 import { createServer } from './server.js';
 import { createStdioTransport } from './transports/stdio.js';
 import { createHttpServer } from './transports/streamable-http.js';
+import { debugMain, initFileLogging } from './utils/logger.js';
 
 /**
  * Parse command line arguments to determine transport type
@@ -25,6 +26,12 @@ function parseArgs(): { transport: 'stdio' | 'http'; port?: number } {
 async function main() {
   const { transport, port } = parseArgs();
   
+  // Initialize logging
+  initFileLogging('meteoswiss');
+  debugMain('Starting MCP server with transport: %s, port: %d', transport, port || 3000);
+  debugMain('Environment: USE_TEST_FIXTURES=%s, DEBUG_MCHMCP=%s', 
+    process.env.USE_TEST_FIXTURES, process.env.DEBUG_MCHMCP);
+  
   // Create the MCP server instance
   const mcpServer = createServer();
   
@@ -35,14 +42,19 @@ async function main() {
         if (!process.env.USE_TEST_FIXTURES && !process.stdout.isTTY) {
           process.env.USE_TEST_FIXTURES = 'true';
           console.error('Running in Claude Desktop, using test fixtures by default');
+          debugMain('Set USE_TEST_FIXTURES=true for Claude Desktop');
         }
         
+        debugMain('Creating stdio transport');
         await createStdioTransport(mcpServer);
+        debugMain('Stdio transport ready');
         break;
         
       case 'http':
+        debugMain('Creating HTTP server on port %d', port || 3000);
         const { start } = await createHttpServer(mcpServer, { port });
         await start();
+        debugMain('HTTP server started');
         break;
         
       default:
@@ -50,6 +62,7 @@ async function main() {
     }
   } catch (error) {
     console.error('Failed to start server:', error);
+    debugMain('Server startup failed: %O', error);
     process.exit(1);
   }
 }
@@ -65,8 +78,22 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
+// Log startup environment information
+console.error('=== MCP Server Startup Debug Info ===');
+console.error(`Node Version: ${process.version}`);
+console.error(`Platform: ${process.platform} ${process.arch}`);
+console.error(`CWD: ${process.cwd()}`);
+console.error(`Script: ${process.argv[1]}`);
+console.error(`Args: ${process.argv.slice(2).join(' ')}`);
+console.error(`ENV USE_TEST_FIXTURES: ${process.env.USE_TEST_FIXTURES}`);
+console.error(`ENV DEBUG_MCHMCP: ${process.env.DEBUG_MCHMCP}`);
+console.error(`ENV DEBUG: ${process.env.DEBUG}`);
+console.error('=====================================');
+
 // Start the server
+debugMain('MeteoSwiss MCP server starting...');
 main().catch((error) => {
   console.error('Unhandled error:', error);
+  debugMain('Unhandled error in main: %O', error);
   process.exit(1);
 });

@@ -20,6 +20,7 @@ RUN apt update && apt install -y \
   iproute2 \
   dnsutils \
   aggregate \
+  curl \
   jq \
   wget
 
