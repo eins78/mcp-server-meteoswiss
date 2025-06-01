@@ -24,6 +24,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Build (when needed)
 - **Build project**: `pnpm run build`
 
+### Git Commands (Devcontainer)
+When running in a devcontainer, use the following for git commits:
+- **Commit without GPG signing**: `git commit --no-gpg-sign -m "commit message"`
+
 ## Architecture Overview
 
 This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, implemented using:
