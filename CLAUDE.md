@@ -65,6 +65,41 @@ import { someFunction, type AnotherType } from './module.ts';
 - All imports must use `.js` extensions (even for `.ts` files)
 - No path aliases from tsconfig.json
 
+### TypeScript Coding Standards
+- **Production Code**: Be strict - avoid `!`, `as`, and `any`. Handle all edge cases explicitly
+- **Test Code**: Be lenient - use `!` and type assertions where it improves readability
+- **Enums**: Never use TypeScript enums. Use const objects/arrays with `as const` instead:
+  ```typescript
+  // ❌ Bad
+  enum Status { Active, Inactive }
+  
+  // ✅ Good
+  const STATUS = ['active', 'inactive'] as const;
+  type Status = typeof STATUS[number];
+  
+  // ✅ Also good
+  const STATUS = {
+    ACTIVE: 'active',
+    INACTIVE: 'inactive'
+  } as const;
+  type Status = typeof STATUS[keyof typeof STATUS];
+  ```
+- **Type Guards**: Always provide type guard functions alongside types:
+  ```typescript
+  type User = { id: string; name: string };
+  
+  function isUser(value: unknown): value is User {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'id' in value &&
+      'name' in value &&
+      typeof value.id === 'string' &&
+      typeof value.name === 'string'
+    );
+  }
+  ```
+
 ### Testing Strategy
 - **Integration tests** in `test/integration/` for all MCP tools
 - **Test fixtures** in `test/__fixtures__/` to avoid external dependencies
