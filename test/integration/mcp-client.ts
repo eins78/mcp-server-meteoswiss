@@ -1,6 +1,8 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { EventEmitter } from 'node:events';
+import net from 'node:net';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,31 +16,66 @@ export type MCPClientOptions = {
    * Environment variables to pass to the server process
    */
   env?: Record<string, string>;
+  /**
+   * Port to run the HTTP server on (default: random)
+   */
+  port?: number;
 };
 
 /**
  * A simple MCP client for testing purposes.
- * This client communicates with the MCP server via stdio.
+ * This client starts an HTTP server and uses mcp-remote to connect to it.
  */
 export class MCPClient {
   private serverProcess: ChildProcess | null = null;
+  private mcpRemoteProcess: ChildProcess | null = null;
   private initialized = false;
   private requestId = 0;
   private responseHandlers: Map<number, (response: any) => void> = new Map();
   private options: MCPClientOptions;
+  private port: number;
 
   constructor(options: MCPClientOptions = {}) {
     this.options = options;
+    this.port = options.port || this.getRandomPort();
+  }
+
+  /**
+   * Get a random port number for testing
+   */
+  private getRandomPort(): number {
+    return Math.floor(Math.random() * 10000) + 30000;
+  }
+
+  /**
+   * Wait for the HTTP server to be ready
+   */
+  private async waitForServer(maxAttempts = 30): Promise<void> {
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        await new Promise((resolve, reject) => {
+          const socket = net.connect(this.port, 'localhost', () => {
+            socket.end();
+            resolve(true);
+          });
+          socket.on('error', reject);
+        });
+        return;
+      } catch (error) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    throw new Error('Server failed to start in time');
   }
 
   /**
    * Start the MCP server process
    */
   async start(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        // Start the server process with merged environment variables
-        this.serverProcess = spawn('node', [SERVER_PATH], {
+        // Start the HTTP server process
+        this.serverProcess = spawn('node', [SERVER_PATH, String(this.port)], {
           env: { ...process.env, NODE_ENV: 'test', ...this.options.env },
         });
 
@@ -56,8 +93,28 @@ export class MCPClient {
           }
         });
 
-        // Process responses from the server
         this.serverProcess.stdout?.on('data', (data) => {
+          if (process.env.DEBUG) {
+            console.error(`MCP Server (stdout): ${data}`);
+          }
+        });
+
+        // Wait for the HTTP server to be ready
+        await this.waitForServer();
+
+        // Start mcp-remote to connect to the HTTP server
+        this.mcpRemoteProcess = spawn('npx', ['mcp-remote', `http://localhost:${this.port}/mcp`], {
+          env: { ...process.env },
+        });
+
+        // Set up error handling for mcp-remote
+        this.mcpRemoteProcess.on('error', (error) => {
+          console.error('mcp-remote process error:', error);
+          reject(error);
+        });
+
+        // Process responses from mcp-remote
+        this.mcpRemoteProcess.stdout?.on('data', (data) => {
           const responses = data.toString().split('\n').filter(Boolean);
           for (const response of responses) {
             try {
@@ -70,8 +127,17 @@ export class MCPClient {
                 }
               }
             } catch (error) {
-              console.error('Error parsing MCP server response:', error);
+              // Ignore non-JSON output
+              if (process.env.DEBUG) {
+                console.error('Non-JSON output from mcp-remote:', response);
+              }
             }
+          }
+        });
+
+        this.mcpRemoteProcess.stderr?.on('data', (data) => {
+          if (process.env.DEBUG) {
+            console.error(`mcp-remote (stderr): ${data}`);
           }
         });
 
@@ -95,7 +161,7 @@ export class MCPClient {
       id: this.getNextId(),
       method: 'initialize',
       params: {
-        protocolVersion: '0.1.0',
+        protocolVersion: '2024-11-05',
         clientInfo: {
           name: 'mcp-integration-tests',
           version: '1.0.0',
@@ -107,7 +173,7 @@ export class MCPClient {
     // Send initialized notification
     this.sendNotification({
       jsonrpc: '2.0',
-      method: 'initialized',
+      method: 'notifications/initialized',
       params: {},
     });
 
@@ -163,8 +229,8 @@ export class MCPClient {
    * Stop the MCP server process
    */
   async stop(): Promise<void> {
-    if (this.serverProcess) {
-      // Try to cleanly shutdown via exit notification
+    // Try to cleanly shutdown via exit notification
+    if (this.mcpRemoteProcess) {
       try {
         await this.sendNotification({
           jsonrpc: '2.0',
@@ -175,11 +241,18 @@ export class MCPClient {
         console.error('Error sending exit notification:', error);
       }
 
-      // Kill the process
+      // Kill the mcp-remote process
+      this.mcpRemoteProcess.kill();
+      this.mcpRemoteProcess = null;
+    }
+
+    // Kill the server process
+    if (this.serverProcess) {
       this.serverProcess.kill();
       this.serverProcess = null;
-      this.initialized = false;
     }
+
+    this.initialized = false;
   }
 
   /**
@@ -189,8 +262,8 @@ export class MCPClient {
    * @returns The response from the server
    */
   private async sendRequest(request: any): Promise<any> {
-    if (!this.serverProcess) {
-      throw new Error('MCP server process not started');
+    if (!this.mcpRemoteProcess) {
+      throw new Error('mcp-remote process not started');
     }
 
     return new Promise((resolve, reject) => {
@@ -223,7 +296,7 @@ export class MCPClient {
           console.error('Sending request:', requestStr);
         }
 
-        this.serverProcess?.stdin?.write(requestStr);
+        this.mcpRemoteProcess?.stdin?.write(requestStr);
       } catch (error) {
         reject(error);
       }
@@ -236,12 +309,12 @@ export class MCPClient {
    * @param notification The notification to send
    */
   private sendNotification(notification: any): void {
-    if (!this.serverProcess) {
-      throw new Error('MCP server process not started');
+    if (!this.mcpRemoteProcess) {
+      throw new Error('mcp-remote process not started');
     }
 
     const notificationStr = JSON.stringify(notification) + '\n';
-    this.serverProcess.stdin?.write(notificationStr);
+    this.mcpRemoteProcess.stdin?.write(notificationStr);
   }
 
   /**

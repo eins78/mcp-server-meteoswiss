@@ -8,41 +8,37 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 
 ## Features
 
-- Weather reports for regions in Switzerland
-- Current weather conditions
-- Weather forecasts
-- Weather station data
+- Weather reports for regions in Switzerland (North, South, West)
+- Multi-language support (German, French, Italian, English)
+- Weather forecasts with daily breakdowns
+- Test fixtures for development
 
 ## Architecture
 
-This MCP server supports multiple transport mechanisms:
-- **stdio**: For integration with Claude Desktop and VS Code (default)
-- **HTTP with SSE**: For remote access and web-based clients
+This MCP server runs as an HTTP service with Server-Sent Events (SSE) for real-time communication. It's designed to be accessed remotely using `mcp-remote` for Claude Desktop integration.
 
-The server is built with a transport-agnostic architecture, allowing the same business logic to work across different communication protocols.
+## Quick Start
 
-## Quick Start with npx
-
-You can run this MCP server directly without installation using npx:
+This server runs as an HTTP service and can be accessed using `mcp-remote`:
 
 ```bash
-# Run in stdio mode (for Claude Desktop)
-npx github:eins78/mcp-server-meteoswiss-data
+# Start the server
+npm start  # or: pnpm start
 
-# Run in HTTP mode (for remote access)
-npx github:eins78/mcp-server-meteoswiss-data mcp-meteoswiss-http
-
-# Once published to npm, you can use:
-# npx mcp-server-meteoswiss-data
-# npx mcp-server-meteoswiss-data mcp-meteoswiss-http
+# In Claude Desktop, use:
+npx mcp-remote http://localhost:3000/mcp
 ```
 
-### Running from a local repository
+### Development Mode
+
+For development with auto-reload:
 
 ```bash
-# From within the repository
-npx .                    # Runs stdio mode
-npx . mcp-meteoswiss-http  # Runs HTTP mode
+# Start with file watching
+npm run dev  # or: pnpm dev
+
+# Test with MCP Inspector
+npm run dev:inspect
 ```
 
 ## Development

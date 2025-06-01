@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 /**
  * Main entry point for MeteoSwiss MCP server
- * Supports both stdio and HTTP transports
+ * HTTP-only server for use with mcp-remote
  */
 
 import { createServer } from './server.js';
-import { createStdioTransport } from './transports/stdio.js';
 import { createHttpServer } from './transports/streamable-http.js';
 import { debugMain, initFileLogging, closeFileLogging } from './utils/logger.js';
 
@@ -46,25 +45,17 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 /**
- * Parse command line arguments to determine transport type
- */
-function parseArgs(): { transport: 'stdio' | 'http'; port?: number } {
-  const args = process.argv.slice(2);
-  const transport = args[0] === 'http' ? 'http' : 'stdio';
-  const port = args[1] ? parseInt(args[1], 10) : undefined;
-  
-  return { transport, port };
-}
-
-/**
  * Main function to start the server
  */
 async function main() {
-  const { transport, port } = parseArgs();
+  // Get port from command line or environment
+  const port = process.argv[2] ? parseInt(process.argv[2], 10) : 
+               process.env.PORT ? parseInt(process.env.PORT, 10) : 
+               3000;
   
   // Initialize logging
   initFileLogging('meteoswiss');
-  debugMain('Starting MCP server with transport: %s, port: %d', transport, port || 3000);
+  debugMain('Starting MCP HTTP server on port: %d', port);
   debugMain('Environment: USE_TEST_FIXTURES=%s, DEBUG_MCHMCP=%s', 
     process.env.USE_TEST_FIXTURES, process.env.DEBUG_MCHMCP);
   
@@ -72,30 +63,12 @@ async function main() {
   const mcpServer = createServer();
   
   try {
-    switch (transport) {
-      case 'stdio':
-        // Set USE_TEST_FIXTURES to true by default when using stdio (Claude Desktop)
-        if (!process.env.USE_TEST_FIXTURES && !process.stdout.isTTY) {
-          process.env.USE_TEST_FIXTURES = 'true';
-          console.error('Running in Claude Desktop, using test fixtures by default');
-          debugMain('Set USE_TEST_FIXTURES=true for Claude Desktop');
-        }
-        
-        debugMain('Creating stdio transport');
-        await createStdioTransport(mcpServer);
-        debugMain('Stdio transport ready');
-        break;
-        
-      case 'http':
-        debugMain('Creating HTTP server on port %d', port || 3000);
-        const { start } = await createHttpServer(mcpServer, { port });
-        await start();
-        debugMain('HTTP server started');
-        break;
-        
-      default:
-        throw new Error(`Unknown transport: ${transport}`);
-    }
+    debugMain('Creating HTTP server on port %d', port);
+    const { start } = await createHttpServer(mcpServer, { port });
+    await start();
+    debugMain('HTTP server started');
+    console.log(`MCP server running at http://localhost:${port}/mcp`);
+    console.log(`Use with: npx mcp-remote http://localhost:${port}/mcp`);
   } catch (error) {
     console.error('Failed to start server:', error);
     debugMain('Server startup failed: %O', error);
@@ -120,7 +93,7 @@ console.error(`Node Version: ${process.version}`);
 console.error(`Platform: ${process.platform} ${process.arch}`);
 console.error(`CWD: ${process.cwd()}`);
 console.error(`Script: ${process.argv[1]}`);
-console.error(`Args: ${process.argv.slice(2).join(' ')}`);
+console.error(`Port: ${process.argv[2] || process.env.PORT || '3000'}`);
 console.error(`ENV USE_TEST_FIXTURES: ${process.env.USE_TEST_FIXTURES}`);
 console.error(`ENV DEBUG_MCHMCP: ${process.env.DEBUG_MCHMCP}`);
 console.error(`ENV DEBUG: ${process.env.DEBUG}`);

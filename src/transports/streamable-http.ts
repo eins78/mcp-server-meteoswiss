@@ -29,8 +29,20 @@ export async function createHttpServer(
   // Store active transports by session ID
   const transports: Record<string, SSEServerTransport> = {};
 
-  // SSE endpoint - establishes the event stream
-  app.get('/sse', async (req: Request, res: Response) => {
+  // Root endpoint - serves information page
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({
+      name: 'MeteoSwiss MCP Server',
+      version: '1.0.0',
+      description: 'Model Context Protocol server for MeteoSwiss weather data',
+      mcp_endpoint: `http://${host}:${port}/mcp`,
+      usage: `npx mcp-remote http://${host}:${port}/mcp`,
+      health: `/health`
+    });
+  });
+
+  // MCP SSE endpoint - establishes the event stream
+  app.get('/mcp', async (req: Request, res: Response) => {
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -94,7 +106,7 @@ export async function createHttpServer(
     res.json({ 
       status: 'ok', 
       sessions: Object.keys(transports).length,
-      endpoint: `http://${host}:${port}/sse`
+      endpoint: `http://${host}:${port}/mcp`
     });
   });
 
@@ -102,7 +114,7 @@ export async function createHttpServer(
     return new Promise((resolve) => {
       app.listen(port, host, () => {
         console.error(`MCP server listening on http://${host}:${port}`);
-        console.error(`SSE endpoint: http://${host}:${port}/sse`);
+        console.error(`MCP endpoint: http://${host}:${port}/mcp`);
         console.error(`Message endpoint: http://${host}:${port}/messages`);
         resolve();
       });
