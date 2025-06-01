@@ -14,32 +14,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 - **Run development server with hot reloading**: `pnpm run dev`
-- **Start server without hot reloading**: `pnpm run start`
+- **Start server in stdio mode**: `pnpm run start` or `pnpm run start:stdio`
+- **Start server in HTTP mode**: `pnpm run start:http`
 - **Type checking**: `pnpm run lint` (runs both TypeScript and ESLint checks)
 - **Run tests**: `pnpm test`
+- **Run integration tests**: `pnpm test:integration`
 - **Format code**: `pnpm run format`
 
 ### Build (when needed)
-- **Build project**: `pnpm run build` (macOS/Linux) or `pnpm run build:windows` (Windows)
+- **Build project**: `pnpm run build`
 
 ## Architecture Overview
 
 This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, implemented using:
-- **Node.js 23**: Native TypeScript support without build step
-- **MCP TypeScript SDK**: Using `McpServer` class with `StdioServerTransport`
+- **Node.js 18+**: Using `tsx` for TypeScript execution
+- **MCP TypeScript SDK**: Using `McpServer` class with multiple transport support
 - **Zod**: For runtime validation and schema definitions
+- **Express + SSE**: For HTTP transport with Server-Sent Events
 
 ### Key Components
 
-1. **MCP Server** (`src/index.ts`): Entry point using StdioServerTransport for Claude Desktop integration
-2. **Tools** (`src/tools/`): MCP tools for weather data queries
+1. **Entry Point** (`src/index.ts`): CLI that supports both stdio and HTTP transports
+2. **Core Server** (`src/server.ts`): Transport-agnostic MCP server implementation
+3. **Transports** (`src/transports/`): Transport implementations
+   - `stdio.ts`: For Claude Desktop and CLI integration
+   - `streamable-http.ts`: HTTP server with SSE for remote access
+4. **Tools** (`src/tools/`): MCP tools for weather data queries
    - `getWeatherReport`: Retrieves weather reports for Swiss regions (north/south/west) in multiple languages
-3. **Data Layer** (`src/data/`): Handles fetching from MeteoSwiss HTTP endpoints
-4. **Schemas** (`src/schemas/`): Zod schemas for input validation
-5. **Utils** (`src/utils/`): HTTP client and other utilities
+5. **Data Layer** (`src/data/`): Handles fetching from MeteoSwiss HTTP endpoints
+6. **Schemas** (`src/schemas/`): Zod schemas for input validation
+7. **Utils** (`src/utils/`): HTTP client and other utilities
 
 ### Data Flow
-1. MCP client (Claude Desktop) connects via stdio
+1. MCP client connects via chosen transport (stdio or HTTP/SSE)
 2. Tool requests are validated using Zod schemas
 3. Data is fetched from MeteoSwiss HTTP endpoints (or test fixtures in dev mode)
 4. Results are returned as JSON through MCP protocol
@@ -53,9 +60,9 @@ import type { MyType } from './types.ts';
 import { someFunction, type AnotherType } from './module.ts';
 ```
 
-### Node.js 23 Limitations
-- No `enum` declarations (use string unions instead)
-- No runtime `namespace` declarations
+### TypeScript with tsx
+- Uses `tsx` for TypeScript execution (no build step needed)
+- All imports must use `.js` extensions (even for `.ts` files)
 - No path aliases from tsconfig.json
 
 ### Testing Strategy
@@ -92,9 +99,14 @@ Prefer comprehensive JSDoc/TSDoc comments for implementation details and README 
 When implementing MCP tools:
 1. Define Zod schema for parameters in `src/schemas/`
 2. Implement tool logic in `src/tools/`
-3. Register tool in `src/index.ts` using `server.tool()`
+3. Register tool in `src/server.ts` using `server.tool()`
 4. Add integration tests in `test/integration/`
 5. Document tool behavior and parameters
+
+### Transport Support
+- **stdio**: Default for Claude Desktop, automatic test fixture usage
+- **HTTP/SSE**: For remote clients, supports session management
+- Both transports use the same server implementation
 
 ## Environment Variables
 - `USE_TEST_FIXTURES`: When `true`, uses local test data instead of HTTP requests

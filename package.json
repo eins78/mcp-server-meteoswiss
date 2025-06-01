@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "type": "module",
   "engines": {
-    "node": ">=23.11.0"
+    "node": ">=18.0.0"
   },
   "directories": {
     "doc": "docs",
@@ -16,12 +16,14 @@
     "lint:ts": "tsc --noEmit",
     "lint:eslint": "eslint 'src/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
-    "start": "node src/index.ts",
-    "dev": "node --watch src/index.ts",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:windows": "set NODE_OPTIONS=--experimental-vm-modules && jest",
-    "build": "tsc && cp -r test/__fixtures__ dist/test/__fixtures__",
-    "build:windows": "tsc && xcopy test\\__fixtures__ dist\\test\\__fixtures__ /E /I"
+    "start": "tsx src/index.ts",
+    "start:stdio": "tsx src/index.ts stdio",
+    "start:http": "tsx src/index.ts http",
+    "dev": "tsx watch src/index.ts",
+    "test": "jest",
+    "test:integration": "jest --testMatch='**/test/integration/**/*.test.ts'",
+    "build": "tsc",
+    "build:windows": "tsc"
   },
   "repository": {
     "type": "git",
@@ -40,15 +42,23 @@
   "homepage": "https://github.com/eins78/mcp-server-meteoswiss-data#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "cors": "^2.8.5",
+    "eventsource-parser": "^3.0.2",
+    "express": "^5.1.0",
     "jsdom": "^24.0.0",
+    "tsx": "^4.19.4",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@modelcontextprotocol/inspector": "^0.13.0",
     "@types/jest": "^29.5.14",
     "@types/jsdom": "^21.1.6",
     "@types/node": "^20.11.19",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-jsdoc": "^48.2.0",

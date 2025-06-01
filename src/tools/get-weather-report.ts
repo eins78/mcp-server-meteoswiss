@@ -1,5 +1,5 @@
-import type { GetWeatherReportParams, WeatherReport } from '../schemas/weather-report.ts';
-import { getLatestWeatherReport } from '../data/weather-report-data.ts';
+import type { GetWeatherReportParams, WeatherReport } from '../schemas/weather-report.js';
+import { getLatestWeatherReport } from '../data/weather-report-data.js';
 
 /**
  * Implementation of the getWeatherReport MCP tool

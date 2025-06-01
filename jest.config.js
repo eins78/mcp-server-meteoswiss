@@ -13,5 +13,8 @@ export default {
       },
     ],
   },
-  testMatch: ['**/test/integration/**/*.test.ts'],
+  testMatch: ['**/test/**/*.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  testTimeout: 30000, // 30 seconds for inspector tests
 };

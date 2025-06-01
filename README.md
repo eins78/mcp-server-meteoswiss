@@ -13,13 +13,21 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 - Weather forecasts
 - Weather station data
 
+## Architecture
+
+This MCP server supports multiple transport mechanisms:
+- **stdio**: For integration with Claude Desktop and VS Code (default)
+- **HTTP with SSE**: For remote access and web-based clients
+
+The server is built with a transport-agnostic architecture, allowing the same business logic to work across different communication protocols.
+
 ## Development
 
-This project uses Node.js 23's native TypeScript support, which means there's no build step required. TypeScript files are executed directly by Node.js.
+This project uses `tsx` for TypeScript execution, providing a smooth development experience with hot reloading.
 
 ### Prerequisites
 
-- Node.js v23.11.0 or later (we recommend using [nvm](https://github.com/nvm-sh/nvm) for Node.js version management)
+- Node.js v18.0.0 or later (we recommend using [nvm](https://github.com/nvm-sh/nvm) for Node.js version management)
 - [pnpm](https://pnpm.io/) for package management
 
 ### Setting up the development environment
@@ -44,6 +52,34 @@ This project uses Node.js 23's native TypeScript support, which means there's no
    ```
 
 ### Running the application
+
+#### Stdio Transport (Claude Desktop)
+
+Start the server in stdio mode (default):
+
+```bash
+pnpm start
+# or
+pnpm start:stdio
+```
+
+#### HTTP Transport (Remote Access)
+
+Start the server with HTTP/SSE transport:
+
+```bash
+pnpm start:http
+# or specify a custom port
+npx tsx src/index.ts http 8080
+```
+
+The HTTP server provides:
+- POST `/sse` - Initialize session
+- GET `/sse?sessionId=...` - Server-Sent Events stream
+- DELETE `/sse?sessionId=...` - Close session
+- GET `/health` - Health check endpoint
+
+#### Development Mode
 
 Start the development server with hot reloading:
 

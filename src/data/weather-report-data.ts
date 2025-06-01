@@ -1,10 +1,10 @@
-import fs from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
-import type { WeatherReport } from '../schemas/weather-report.ts';
-import { fetchHtml, fetchJson, HttpRequestError } from '../utils/http-client.ts';
+import type { WeatherReport } from '../schemas/weather-report.js';
+import { fetchHtml, fetchJson, HttpRequestError } from '../utils/http-client.js';
 
 // Base URL for the MeteoSwiss product output
 const BASE_URL = 'https://www.meteoswiss.admin.ch/product/output/weather-report';
