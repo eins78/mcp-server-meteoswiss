@@ -79,19 +79,6 @@ export function closeFileLogging(): void {
   }
 }
 
-// Log unhandled errors
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught exception:', error);
-  debugMain('Uncaught exception: %O', error);
-  closeFileLogging();
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled rejection at:', promise, 'reason:', reason);
-  debugMain('Unhandled rejection: %O', reason);
-});
-
 // Ensure logs are flushed on exit
 process.on('exit', () => {
   closeFileLogging();

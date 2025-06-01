@@ -7,7 +7,43 @@
 import { createServer } from './server.js';
 import { createStdioTransport } from './transports/stdio.js';
 import { createHttpServer } from './transports/streamable-http.js';
-import { debugMain, initFileLogging } from './utils/logger.js';
+import { debugMain, initFileLogging, closeFileLogging } from './utils/logger.js';
+
+// Check Node.js version requirement
+const MIN_NODE_VERSION = 16;
+const nodeVersionMatch = process.version.match(/^v(\d+)\.(\d+)\.(\d+)/);
+if (nodeVersionMatch) {
+  const majorVersion = parseInt(nodeVersionMatch[1] || '0', 10);
+  if (majorVersion < MIN_NODE_VERSION) {
+    console.error(`ERROR: This MCP server requires Node.js version ${MIN_NODE_VERSION} or higher.`);
+    console.error(`Current version: ${process.version}`);
+    console.error(`Please upgrade Node.js to continue.`);
+    process.exit(1);
+  }
+}
+
+// Set up crash handlers
+process.on('uncaughtException', (error) => {
+  console.error('FATAL: Uncaught exception:', error);
+  debugMain('FATAL: Uncaught exception: %O', error);
+  if (error.stack) {
+    console.error('Stack trace:', error.stack);
+    debugMain('Stack trace: %s', error.stack);
+  }
+  closeFileLogging();
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('FATAL: Unhandled promise rejection at:', promise, 'reason:', reason);
+  debugMain('FATAL: Unhandled rejection: %O', reason);
+  if (reason instanceof Error && reason.stack) {
+    console.error('Stack trace:', reason.stack);
+    debugMain('Stack trace: %s', reason.stack);
+  }
+  closeFileLogging();
+  process.exit(1);
+});
 
 /**
  * Parse command line arguments to determine transport type
