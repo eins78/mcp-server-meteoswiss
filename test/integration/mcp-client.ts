@@ -7,6 +7,16 @@ const __dirname = path.dirname(__filename);
 const SERVER_PATH = path.resolve(__dirname, '../../src/index.ts');
 
 /**
+ * Options for configuring the MCP client
+ */
+export type MCPClientOptions = {
+  /**
+   * Environment variables to pass to the server process
+   */
+  env?: Record<string, string>;
+};
+
+/**
  * A simple MCP client for testing purposes.
  * This client communicates with the MCP server via stdio.
  */
@@ -15,6 +25,11 @@ export class MCPClient {
   private initialized = false;
   private requestId = 0;
   private responseHandlers: Map<number, (response: any) => void> = new Map();
+  private options: MCPClientOptions;
+
+  constructor(options: MCPClientOptions = {}) {
+    this.options = options;
+  }
 
   /**
    * Start the MCP server process
@@ -22,9 +37,9 @@ export class MCPClient {
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        // Start the server process
+        // Start the server process with merged environment variables
         this.serverProcess = spawn('node', [SERVER_PATH], {
-          env: { ...process.env, NODE_ENV: 'test' },
+          env: { ...process.env, NODE_ENV: 'test', ...this.options.env },
         });
 
         // Set up error handling

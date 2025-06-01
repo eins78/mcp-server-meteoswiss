@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run:*)",
+      "Bash(rg:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(timeout 3 pnpm run:*)",
+      "Bash(true)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(npx @modelcontextprotocol/inspector:*)"
+    ],
+    "deny": []
+  }
+}

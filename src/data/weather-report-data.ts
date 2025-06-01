@@ -1,14 +1,26 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
-import type { WeatherReport } from '../schemas/weather-report.ts';
+import type { WeatherReport } from '../schemas/weather-report.js';
+import { fetchHtml, fetchJson, HttpRequestError } from '../utils/http-client.js';
 
+// Base URL for the MeteoSwiss product output
+const BASE_URL = 'https://www.meteoswiss.admin.ch/product/output/weather-report';
+
+// In test mode, use test fixtures instead of HTTP
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_ROOT = path.resolve(
-  __dirname,
-  '../../vendor/meteoswiss-product-output/data-2025-03-26/weather-report'
-);
+// Look for test fixtures in both development and production paths
+const TEST_FIXTURES_DEV_PATH = path.resolve(__dirname, '../../test/__fixtures__/weather-report');
+const TEST_FIXTURES_PROD_PATH = path.resolve(__dirname, '../test/__fixtures__/weather-report');
+// Try the development path first, then fall back to production path
+const TEST_FIXTURES_ROOT = existsSync(TEST_FIXTURES_DEV_PATH)
+  ? TEST_FIXTURES_DEV_PATH
+  : TEST_FIXTURES_PROD_PATH;
+
+// Environment variable to use test fixtures instead of HTTP (for testing only)
+const USE_TEST_FIXTURES = process.env.USE_TEST_FIXTURES === 'true';
 
 /**
  * Gets the latest weather report version for a specific region and language
@@ -30,11 +42,92 @@ export async function getLatestWeatherReport(
   };
 
   const languageDir = languageMap[language] || 'de';
-  const reportPath = path.join(DATA_ROOT, languageDir, region);
+
+  // Use test fixtures if USE_TEST_FIXTURES is set to true, regardless of NODE_ENV
+  if (USE_TEST_FIXTURES) {
+    return fetchWeatherReportFromTestFixtures(region, language, languageDir);
+  }
+
+  // In normal mode, fetch from HTTP
+  return fetchWeatherReportFromHttp(region, language, languageDir);
+}
+
+/**
+ * Fetches weather report data from the HTTP endpoint
+ *
+ * @param region - The region to get the report for
+ * @param language - The language to get the report in
+ * @param languageDir - The language directory to use
+ * @returns The weather report data
+ */
+async function fetchWeatherReportFromHttp(
+  region: string,
+  language: string,
+  languageDir: string
+): Promise<WeatherReport> {
+  // Construct the URL for the versions.json file
+  const versionsUrl = `${BASE_URL}/${languageDir}/${region}/versions.json`;
 
   try {
+    // Fetch the versions.json file to get the latest version
+    const versions = await fetchJson<{ currentVersionDirectory: string }>(versionsUrl);
+    const currentVersionDir = versions.currentVersionDirectory;
+
+    // Determine which file to read based on language
+    const fileSuffix = language === 'en' ? '_en' : `_${language}`;
+    const reportUrl = `${BASE_URL}/${languageDir}/${region}/${currentVersionDir}/textproduct${fileSuffix}.xhtml`;
+
+    // Fetch the report HTML
+    const reportHtml = await fetchHtml(reportUrl);
+    return parseWeatherReportHtml(reportHtml, region, language);
+  } catch (error) {
+    if (error instanceof HttpRequestError) {
+      throw new Error(
+        `Failed to fetch weather report for ${region} in ${language}: HTTP error ${error.statusCode || 'unknown'}`
+      );
+    }
+    throw new Error(
+      `Failed to fetch weather report for ${region} in ${language}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+/**
+ * Fetches weather report data from test fixtures
+ *
+ * @param region - The region to get the report for
+ * @param language - The language to get the report in
+ * @param languageDir - The language directory to use
+ * @returns The weather report data
+ */
+async function fetchWeatherReportFromTestFixtures(
+  region: string,
+  language: string,
+  languageDir: string
+): Promise<WeatherReport> {
+  const reportPath = path.join(TEST_FIXTURES_ROOT, languageDir, region);
+
+  try {
+    // Check if the directory exists
+    try {
+      await fs.access(reportPath);
+    } catch (error) {
+      throw new Error(
+        `Test fixture directory not found: ${reportPath}. Please ensure test fixtures are properly installed.`
+      );
+    }
+
     // Read versions.json to get the latest version
-    const versionsData = await fs.readFile(path.join(reportPath, 'versions.json'), 'utf-8');
+    const versionsFilePath = path.join(reportPath, 'versions.json');
+    let versionsData;
+    try {
+      versionsData = await fs.readFile(versionsFilePath, 'utf-8');
+    } catch (error) {
+      throw new Error(
+        `versions.json not found in ${reportPath}. Full path tried: ${versionsFilePath}`
+      );
+    }
+
     const versions = JSON.parse(versionsData);
     const currentVersionDir = versions.currentVersionDirectory;
 
@@ -47,11 +140,21 @@ export async function getLatestWeatherReport(
     );
 
     // Read and parse the report HTML
-    const reportHtml = await fs.readFile(reportFilePath, 'utf-8');
+    let reportHtml;
+    try {
+      reportHtml = await fs.readFile(reportFilePath, 'utf-8');
+    } catch (error) {
+      throw new Error(
+        `Report file not found: ${reportFilePath}. Please ensure all test fixtures are properly installed.`
+      );
+    }
+
     return parseWeatherReportHtml(reportHtml, region, language);
   } catch (error) {
-    console.error(`Error reading weather report for ${region} in ${language}:`, error);
-    throw new Error(`Failed to get weather report for ${region} in ${language}`);
+    console.error(`Error reading test fixture for ${region} in ${language}:`, error);
+    throw new Error(
+      `Failed to get test fixture for ${region} in ${language}: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 

@@ -23,6 +23,7 @@ pnpm-debug.log*
 .env.production.local
 
 # Editor directories and files
+.debug/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json

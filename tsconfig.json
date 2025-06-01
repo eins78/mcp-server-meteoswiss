@@ -14,11 +14,11 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     /* Node Stuff */
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
+    "allowImportingTsExtensions": false,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "noEmit": true,
+    "noEmit": false,
+    "outDir": "./dist",
     /* If your code doesn't run in the DOM: */
     "lib": [
       "es2022"
