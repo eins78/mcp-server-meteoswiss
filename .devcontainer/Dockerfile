@@ -4,7 +4,8 @@ ARG TZ
 ENV TZ="$TZ"
 
 # Install basic development tools and iptables/ipset
-RUN apt update && apt install -y less \
+RUN apt update && apt install -y \
+  less \
   git \
   procps \
   sudo \
@@ -19,7 +20,17 @@ RUN apt update && apt install -y less \
   iproute2 \
   dnsutils \
   aggregate \
-  jq
+  jq \
+  wget
+
+# install gh cli <https://github.com/cli/cli/blob/trunk/docs/install_linux.md>
+RUN sudo mkdir -p -m 755 /etc/apt/keyrings \
+        && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+	&& sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+	&& sudo apt update \
+	&& sudo apt install -y gh
 
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
@@ -35,6 +46,8 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 
 # Set `DEVCONTAINER` environment variable to help with orientation
 ENV DEVCONTAINER=true
+# Set `EDITOR` so that git etc open editord in the devcontainer window
+ENV EDITOR=code
 
 # Create workspace and config directories and set permissions
 RUN mkdir -p /workspace /home/node/.claude && \
@@ -66,8 +79,11 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
-# Install Claude
-RUN npm install -g @anthropic-ai/claude-code
+# Install npm global packages and Claude. corepack provides pnpm.
+RUN npm install -g \
+  corepack \
+  @antfu/ni \
+  @anthropic-ai/claude-code
 
 # Copy and set up firewall script
 COPY init-firewall.sh /usr/local/bin/
