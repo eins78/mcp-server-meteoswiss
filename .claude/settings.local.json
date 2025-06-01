@@ -9,7 +9,10 @@
       "Bash(rg:*)",
       "Bash(pnpm exec tsc:*)",
       "Bash(timeout 3 pnpm run:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(npx @modelcontextprotocol/inspector:*)"
     ],
     "deny": []
   }

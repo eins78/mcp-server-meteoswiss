@@ -26,78 +26,76 @@ export async function createHttpServer(
   app.use(cors());
   app.use(express.json());
 
-  // Session management
-  const sessions = new Map<string, SSEServerTransport>();
+  // Store active transports by session ID
+  const transports: Record<string, SSEServerTransport> = {};
 
-  // Initialize or handle session
-  app.post('/sse', async (req: Request, res: Response) => {
-    const sessionId = req.query.sessionId as string || generateSessionId();
-    
-    let transport = sessions.get(sessionId);
-    if (!transport) {
-      transport = new SSEServerTransport('/sse', res);
-      await mcpServer.connect(transport);
-      sessions.set(sessionId, transport);
-    }
-
-    res.json({ 
-      url: `/sse?sessionId=${sessionId}`,
-      sessionId
-    });
-  });
-
-  // SSE endpoint for receiving events
+  // SSE endpoint - establishes the event stream
   app.get('/sse', async (req: Request, res: Response) => {
-    const sessionId = req.query.sessionId as string;
-    if (!sessionId) {
-      res.status(400).json({ error: 'sessionId required' });
-      return;
-    }
-
     // Set SSE headers
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no', // Disable Nginx buffering
-    });
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
 
-    // Send initial connection event
-    res.write(':ok\n\n');
-
-    // Create new transport for this connection
-    const transport = new SSEServerTransport('/sse', res);
-    await mcpServer.connect(transport);
-    sessions.set(sessionId, transport);
-
-    // Handle client disconnect
+    // Create transport with the POST endpoint URL
+    const transport = new SSEServerTransport('/messages', res);
+    
+    // Store transport by session ID
+    transports[transport.sessionId] = transport;
+    console.error(`New SSE connection established: ${transport.sessionId}`);
+    
+    // Set up cleanup on close
+    transport.onclose = () => {
+      console.error(`SSE connection closed: ${transport.sessionId}`);
+      delete transports[transport.sessionId];
+    };
+    
+    // Handle errors
     req.on('close', () => {
-      console.error(`Client disconnected from session ${sessionId}`);
       transport.close();
-      sessions.delete(sessionId);
     });
+    
+    req.on('error', (error) => {
+      console.error('SSE connection error:', error);
+      transport.close();
+    });
+    
+    // Connect transport to MCP server
+    // Note: connect() automatically calls start() on the transport
+    await mcpServer.connect(transport);
   });
 
-  // Clean up session
-  app.delete('/sse', (req: Request, res: Response) => {
+  // Message endpoint - receives client messages
+  app.post('/messages', async (req: Request, res: Response) => {
     const sessionId = req.query.sessionId as string;
+    
     if (!sessionId) {
       res.status(400).json({ error: 'sessionId required' });
       return;
     }
-
-    const transport = sessions.get(sessionId);
-    if (transport) {
-      transport.close();
-      sessions.delete(sessionId);
+    
+    const transport = transports[sessionId];
+    if (!transport) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
     }
-
-    res.status(200).json({ message: 'Session closed' });
+    
+    try {
+      // Let the transport handle the message
+      await transport.handlePostMessage(req, res, req.body);
+    } catch (error) {
+      console.error('Error handling message:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   // Health check
   app.get('/health', (_req: Request, res: Response) => {
-    res.json({ status: 'ok', sessions: sessions.size });
+    res.json({ 
+      status: 'ok', 
+      sessions: Object.keys(transports).length,
+      endpoint: `http://${host}:${port}/sse`
+    });
   });
 
   const start = async (): Promise<void> => {
@@ -105,14 +103,11 @@ export async function createHttpServer(
       app.listen(port, host, () => {
         console.error(`MCP server listening on http://${host}:${port}`);
         console.error(`SSE endpoint: http://${host}:${port}/sse`);
+        console.error(`Message endpoint: http://${host}:${port}/messages`);
         resolve();
       });
     });
   };
 
   return { app, start };
-}
-
-function generateSessionId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
