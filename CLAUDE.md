@@ -123,6 +123,11 @@ Fail fast with helpful error messages instead of silent fallbacks:
    - **JSDoc/TSDoc**: Add comprehensive comments to new types, classes, and functions
    - **Code Examples**: Update examples in README when APIs or usage patterns change
 
+### Package Management
+- **Never install packages globally**: Always install dependencies as dev dependencies in the project
+- **Running commands**: Use `npx` for one-off commands in shell, or define scripts in `package.json`
+- **Example**: Instead of `npm install -g typescript`, use `pnpm add -D typescript` and run with `npx tsc` or via package.json scripts
+
 ## Open Tasks and Issues
 <!-- Document outstanding tasks, bugs, or technical debt here -->
 
