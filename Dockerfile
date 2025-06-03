@@ -2,8 +2,8 @@
 
 FROM node:24-alpine
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm using npm and corepack
+RUN npm i -g corepack && pnpm -v
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
