@@ -1,79 +1,52 @@
-# Installation
+# Usage
 
-## For Claude Desktop
+This MeteoSwiss MCP server is hosted and ready to use. No installation required!
 
-1. **Start the server** (if not already running):
-   ```bash
-   npx mcp-server-meteoswiss
-   ```
-   Or run with Docker:
-   ```bash
-   docker run -p 3000:3000 meteoswiss-mcp-server
-   ```
+## Claude Desktop
 
-2. **Configure Claude Desktop**:
-   
-   Open your Claude Desktop configuration file:
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-   
-   Add the MeteoSwiss server to your MCP servers:
-   ```json
-   {
-     "mcpServers": {
-       "meteoswiss": {
-         "command": "npx",
-         "args": ["mcp-remote", "http://localhost:3000/mcp"]
-       }
-     }
-   }
-   ```
+Add the MeteoSwiss server to your Claude Desktop configuration:
 
-3. **Restart Claude Desktop** to load the new configuration.
+1. Open your configuration file:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-## For Claude.ai (Custom MCP Integration)
+2. Add this configuration:
 
-If you're using Claude.ai with a custom MCP integration:
-
-1. **Connect to the server** using the MCP endpoint:
-   ```
-   http://localhost:3000/mcp
-   ```
-
-2. **Use mcp-remote** for the connection:
-   ```bash
-   npx mcp-remote http://localhost:3000/mcp
-   ```
-
-## Running Your Own Instance
-
-### Using Node.js
-
-```bash
-# Clone the repository
-git clone https://github.com/eins78/mcp-server-meteoswiss.git
-cd mcp-server-meteoswiss
-
-# Install dependencies
-pnpm install
-
-# Start the server
-pnpm start
+```json
+{
+  "mcpServers": {
+    "meteoswiss": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://mchmcp.kiste.li/mcp"]
+    }
+  }
+}
 ```
 
-### Using Docker
+3. Restart Claude Desktop
 
-```bash
-# Run the latest version
-docker run -p 3000:3000 -e USE_TEST_FIXTURES=false meteoswiss-mcp-server
+That's it! You can now ask Claude about Swiss weather.
 
-# Or build your own
-docker build -t my-meteoswiss-server .
-docker run -p 3000:3000 my-meteoswiss-server
-```
+## Claude.ai
 
-### Environment Variables
+To use with Claude.ai:
 
-- `PORT` - Server port (default: 3000)
-- `USE_TEST_FIXTURES` - Use test data instead of live API (default: false)
-- `DEBUG_MCHMCP` - Enable debug logging (default: false)
+1. Go to your Claude.ai settings
+2. Navigate to the "MCP Servers" or "Integrations" section
+3. Add a new MCP server with the URL: `https://mchmcp.kiste.li/mcp`
+4. Save your settings
+
+The MeteoSwiss weather data will now be available in your Claude.ai conversations.
+
+## Example Questions
+
+Once configured, you can ask Claude questions like:
+
+- "What's the weather forecast for Northern Switzerland?"
+- "Show me the weather in Western Switzerland in French"
+- "Is it going to rain in Southern Switzerland this week?"
+- "Get me the weather report for the Alps region"
+
+## For Developers
+
+Want to run your own instance? Check out the [GitHub repository](https://github.com/eins78/mcp-server-meteoswiss) for instructions on self-hosting.

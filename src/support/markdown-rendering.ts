@@ -122,7 +122,7 @@ export async function renderHomepage(): Promise<string> {
 <body>
   <div class="container">
     <div class="endpoint-info">
-      <strong>MCP Endpoint:</strong> <code>http://localhost:${process.env.PORT || '3000'}/mcp</code><br>
+      <strong>MCP Endpoint:</strong> <code>${process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || '3000'}`}/mcp</code><br>
       <strong>Health Check:</strong> <a href="/health">/health</a><br>
       <strong>API Version:</strong> 1.0.0
     </div>

@@ -146,6 +146,59 @@ The server provides the following MCP tools:
 
 For issues with Claude Desktop connections or other debugging needs, see our [Debugging Guide](docs/debugging-guide.md).
 
+## Running Your Own Instance
+
+### Using Node.js
+
+```bash
+# Clone the repository
+git clone https://github.com/eins78/mcp-server-meteoswiss.git
+cd mcp-server-meteoswiss
+
+# Install dependencies
+pnpm install
+
+# Start the server
+pnpm start
+
+# The server will be available at http://localhost:3000
+```
+
+### Using Docker
+
+```bash
+# Run the latest version
+docker run -p 3000:3000 -e USE_TEST_FIXTURES=false meteoswiss-mcp-server
+
+# Or build your own
+docker build -t my-meteoswiss-server .
+docker run -p 3000:3000 my-meteoswiss-server
+```
+
+### Environment Variables
+
+- `PORT` - Server port (default: 3000)
+- `USE_TEST_FIXTURES` - Use test data instead of live API (default: false)
+- `DEBUG_MCHMCP` - Enable debug logging (default: false)
+- `BIND_ADDRESS` - Interface to bind to (default: 0.0.0.0)
+- `MAX_SESSIONS` - Maximum concurrent sessions (default: 100)
+- `SESSION_TIMEOUT_MS` - Session timeout in milliseconds (default: 300000)
+
+### Local MCP Configuration
+
+To use your local instance with Claude Desktop, add this to your configuration:
+
+```json
+{
+  "mcpServers": {
+    "meteoswiss-local": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://localhost:3000/mcp"]
+    }
+  }
+}
+```
+
 ## Contributing
 
 Contributions are welcome! Please ensure you follow the architecture guidelines outlined in the documentation.

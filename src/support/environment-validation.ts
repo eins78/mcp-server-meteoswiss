@@ -84,6 +84,9 @@ const envSchema = z.object({
     .string()
     .optional()
     .default('10mb'),
+  PUBLIC_URL: z
+    .string()
+    .optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
