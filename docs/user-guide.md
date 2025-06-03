@@ -51,32 +51,64 @@ Retrieves the latest weather report for a specified region of Switzerland.
 
 Below are examples of how to use the MCP server with different clients.
 
-### Direct HTTP Request
+### Using with MCP Inspector
 
-You can make a direct HTTP request to the server using cURL:
+The easiest way to test the server is with the MCP Inspector:
 
 ```bash
-curl -X POST http://localhost:3000/api/tools \
-  -H "Content-Type: application/json" \
-  -d '{"name":"getWeatherReport","parameters":{"region":"north","language":"en"}}'
+# Start the server
+pnpm start
+
+# In another terminal, launch the inspector
+pnpm run dev:inspect
 ```
 
-### Using with an MCP-Compatible LLM
+This will open a web interface where you can test the available tools.
 
-When using with an MCP-compatible LLM, you would typically register the MCP server with the client, which would then allow the model to call the available tools.
+### Using with Claude Desktop
 
-Example with a hypothetical MCP client:
+To use the server with Claude Desktop, you need to use `mcp-remote` to connect:
+
+1. Start the server:
+   ```bash
+   pnpm start
+   ```
+
+2. In Claude Desktop, configure the MCP server:
+   ```json
+   {
+     "mcpServers": {
+       "meteoswiss": {
+         "command": "npx",
+         "args": ["mcp-remote", "http://localhost:3000/mcp"]
+       }
+     }
+   }
+   ```
+
+3. Restart Claude Desktop to load the new configuration.
+
+### Using with MCP SDK
+
+When building your own MCP client:
 
 ```javascript
-// Register the MCP server with the client
-const mcpClient = new MCPClient({
-  baseUrl: 'http://localhost:3000/api'
-});
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
-// The LLM can now access the tools
-const response = await mcpClient.sendMessage({
-  message: "What's the weather forecast for Northern Switzerland?",
-  tools: await mcpClient.getAvailableTools()
+// Create SSE transport
+const transport = new SSEClientTransport(
+  new URL('http://localhost:3000/mcp')
+);
+
+// Create and connect client
+const client = new Client({ name: 'weather-client', version: '1.0.0' });
+await client.connect(transport);
+
+// Call the weather tool
+const result = await client.callTool('getWeatherReport', {
+  region: 'north',
+  language: 'en'
 });
 ```
 
@@ -89,13 +121,26 @@ Here are some example prompts you can use with an MCP-compatible LLM:
 - "Is it going to rain in Southern Switzerland this week?"
 - "What are the temperatures going to be like in the Alps over the next few days?"
 
-## Limitations of the MVP
+## Environment Variables
 
-The current MVP implementation has the following limitations:
+The server supports several environment variables for configuration:
 
-1. Only weather reports are available, not current conditions or detailed forecasts
-2. Data is static and read from local files, not from a live MeteoSwiss API
-3. Only three regions (North, South, West) are supported, not specific locations
-4. Limited error handling and validation
+- `PORT` - Server port (default: 3000)
+- `USE_TEST_FIXTURES` - Use local test data instead of live API (default: false)
+- `DEBUG_MCHMCP` - Enable debug logging (default: false)
+- `BIND_ADDRESS` - Interface to bind to (default: 0.0.0.0)
+- `MAX_SESSIONS` - Maximum concurrent SSE sessions (default: 100)
+- `SESSION_TIMEOUT_MS` - Session timeout in milliseconds (default: 300000)
 
-These limitations will be addressed in future versions of the MCP server.
+For production deployments, additional rate limiting and CORS configuration is available.
+
+## Current Features
+
+The server provides:
+
+1. Weather reports for three regions of Switzerland (North, South, West)
+2. Multi-language support (German, French, Italian, English)
+3. Structured forecast data with daily breakdowns
+4. Real-time data from MeteoSwiss API (when not using test fixtures)
+5. HTTP/SSE transport for remote access
+6. Session management and rate limiting for production use
