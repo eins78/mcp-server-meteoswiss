@@ -10,7 +10,7 @@ The Model Context Protocol (MCP) is a standard for enabling AI systems to access
 
 The current MVP implementation provides the following tool:
 
-### getWeatherReport
+### meteoswissWeatherReport
 
 Retrieves the latest weather report for a specified region of Switzerland.
 
@@ -106,7 +106,7 @@ const client = new Client({ name: 'weather-client', version: '1.0.0' });
 await client.connect(transport);
 
 // Call the weather tool
-const result = await client.callTool('getWeatherReport', {
+const result = await client.callTool('meteoswissWeatherReport', {
   region: 'north',
   language: 'en'
 });

@@ -140,7 +140,7 @@ This server strictly follows the Model Context Protocol using the official TypeS
 
 The server provides the following MCP tools:
 
-- `getWeatherReport`: Get weather report for a specific region (north, south, west)
+- `meteoswissWeatherReport`: Weather report for a specific region (north, south, west)
 
 ## Debugging
 

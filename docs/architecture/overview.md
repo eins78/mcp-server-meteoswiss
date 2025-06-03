@@ -91,7 +91,7 @@ const server = new McpServer({
 });
 
 // Register tools
-server.tool('getWeatherReport', weatherReportSchema, getWeatherReportHandler);
+server.tool('meteoswissWeatherReport', weatherReportSchema, meteoswissWeatherReportHandler);
 
 // Set up HTTP server with SSE
 const app = express();
@@ -179,7 +179,7 @@ function transformCurrentWeather(rawData: unknown): CurrentWeather {
   - `getCurrentWeather`: Get current weather for a location
   - `getWeatherForecast`: Get forecast for a location
   - `findWeatherCondition`: Find locations with specific weather conditions
-  - `getWeatherReport`: Get textual weather report for a region
+  - `meteoswissWeatherReport`: Textual weather report for a region
 
 ```typescript
 import { z } from "zod";

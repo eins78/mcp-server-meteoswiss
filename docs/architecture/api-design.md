@@ -17,7 +17,7 @@ The server uses HTTP with SSE (Server-Sent Events) for bidirectional communicati
 
 ## Available Tools
 
-### getWeatherReport
+### meteoswissWeatherReport
 
 Retrieves the latest weather report for a specified region of Switzerland.
 
@@ -51,7 +51,7 @@ Retrieves the latest weather report for a specified region of Switzerland.
 
 ```json
 {
-  "name": "getWeatherReport",
+  "name": "meteoswissWeatherReport",
   "parameters": {
     "region": "north",
     "language": "en"

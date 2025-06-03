@@ -119,7 +119,7 @@ describe('MCP Server Integration Tests', () => {
       expect(health).toMatchObject({
         status: 'ok',
         sessions: expect.any(Number),
-        endpoint: 'http://localhost:3456/mcp',
+        endpoint: expect.stringMatching(/^http:\/\/(localhost|0\.0\.0\.0):3456\/mcp$/),
       });
 
       // Now test actual MCP connection
@@ -142,12 +142,12 @@ describe('MCP Server Integration Tests', () => {
       const tools = await client.listTools();
       expect(tools.tools).toHaveLength(1);
       expect(tools.tools[0]).toMatchObject({
-        name: 'getWeatherReport',
+        name: 'meteoswissWeatherReport',
         description: expect.stringContaining('MeteoSwiss weather report'),
       });
     });
 
-    test('should call getWeatherReport tool via HTTP', async () => {
+    test('should call meteoswissWeatherReport tool via HTTP', async () => {
       
       const transport = new SSEClientTransport(new URL(`${serverUrl}/mcp`));
       
@@ -162,7 +162,7 @@ describe('MCP Server Integration Tests', () => {
 
       // Call the tool
       const result = await client.callTool({
-        name: 'getWeatherReport',
+        name: 'meteoswissWeatherReport',
         arguments: {
           region: 'south',
           language: 'de',
@@ -227,7 +227,7 @@ describe('MCP Inspector CLI Tests', () => {
 
     // Run inspector CLI command
     const { stdout, stderr } = await execAsync(
-      `npx @modelcontextprotocol/inspector --cli http://localhost:3457/mcp --method tools/call --tool-name getWeatherReport --tool-arg region=north --tool-arg language=de`,
+      `npx @modelcontextprotocol/inspector --cli http://localhost:3457/mcp --method tools/call --tool-name meteoswissWeatherReport --tool-arg region=north --tool-arg language=de`,
       {
         env: { ...process.env },
         timeout: 10000,

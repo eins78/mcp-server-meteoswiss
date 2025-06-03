@@ -47,7 +47,7 @@ This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, imple
    - `/messages` - Message handling endpoint
    - `/health` - Health check endpoint
 4. **Tools** (`src/tools/`): MCP tools for weather data queries
-   - `getWeatherReport`: Retrieves weather reports for Swiss regions (north/south/west) in multiple languages
+   - `meteoswissWeatherReport`: Weather reports for Swiss regions (north/south/west) in multiple languages
 5. **Data Layer** (`src/data/`): Handles fetching from MeteoSwiss HTTP endpoints
 6. **Schemas** (`src/schemas/`): Zod schemas for input validation
 7. **Support** (`src/support/`): Supporting infrastructure - logging, validation, HTTP communication, session management

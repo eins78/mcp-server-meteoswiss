@@ -3,11 +3,11 @@ import fs from 'fs/promises';
 import path from 'path';
 
 /**
- * Integration tests for the getWeatherReport tool with HTTP data fetch
+ * Integration tests for the meteoswissWeatherReport tool with HTTP data fetch
  *
  * These tests ensure that the tool correctly processes weather report data.
  */
-describe('getWeatherReport Tool Tests', () => {
+describe('meteoswissWeatherReport Tool Tests', () => {
   let client: MCPClient;
 
   // Set up test fixtures
@@ -66,11 +66,11 @@ describe('getWeatherReport Tool Tests', () => {
   });
 
   /**
-   * Test that the getWeatherReport tool works correctly
+   * Test that the meteoswissWeatherReport tool works correctly
    */
   test('should return weather report data', async () => {
     // Call the tool
-    const result = await client.callTool('getWeatherReport', {
+    const result = await client.callTool('meteoswissWeatherReport', {
       region: 'north',
       language: 'de',
     });

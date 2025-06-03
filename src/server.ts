@@ -6,7 +6,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GetWeatherReportParamsSchema } from './schemas/weather-report.js';
 import type { GetWeatherReportParams } from './schemas/weather-report.js';
-import { getWeatherReport } from './tools/get-weather-report.js';
+import { meteoswissWeatherReport } from './tools/meteoswiss-weather-report.js';
 import { debugServer, debugTools } from './support/logging.js';
 
 /**
@@ -29,18 +29,18 @@ export function createServer(): McpServer {
   };
 
   // Register tools
-  debugServer('Registering tool: getWeatherReport');
+  debugServer('Registering tool: meteoswissWeatherReport');
   server.tool(
-    'getWeatherReport',
+    'meteoswissWeatherReport',
     'Retrieves the latest MeteoSwiss weather report for a specified region (Northern, Southern, Western parts of Switzerland), in German, French, Italian or English',
     GetWeatherReportParamsSchema.shape,
     async (params: GetWeatherReportParams) => {
       try {
         console.error(
-          `Processing getWeatherReport request for region: ${params.region}, language: ${params.language}`
+          `Processing meteoswissWeatherReport request for region: ${params.region}, language: ${params.language}`
         );
-        debugTools('getWeatherReport called with params: %O', params);
-        const weatherReport = await getWeatherReport(params);
+        debugTools('meteoswissWeatherReport called with params: %O', params);
+        const weatherReport = await meteoswissWeatherReport(params);
         console.error('Successfully retrieved weather report');
         debugTools('Weather report retrieved successfully');
         return {
@@ -52,8 +52,8 @@ export function createServer(): McpServer {
           ],
         };
       } catch (error: unknown) {
-        console.error('Error in getWeatherReport tool:', error);
-        debugTools('Error in getWeatherReport: %O', error);
+        console.error('Error in meteoswissWeatherReport tool:', error);
+        debugTools('Error in meteoswissWeatherReport: %O', error);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return {
           content: [
