@@ -1,102 +1,32 @@
 # MeteoSwiss MCP Server API Design
 
-This document outlines the API design for the MeteoSwiss MCP (Multimodal Chat Protocol) server, which provides structured access to weather data from MeteoSwiss.
+This document outlines the API design for the MeteoSwiss MCP (Model Context Protocol) server, which provides structured access to weather data from MeteoSwiss.
 
-## MCP Resources vs Tools
+## Overview
 
-The MCP server implements both Resources and Tools to provide optimal access to weather data:
+The MCP server provides weather report data from MeteoSwiss through an HTTP server with Server-Sent Events (SSE) for real-time communication. The server is designed to be accessed via `mcp-remote` for integration with Claude Desktop and other MCP-compatible clients.
 
-- **Resources**: Client-controlled, read-only data that provides context (weather station metadata, parameter definitions)
-- **Tools**: Model-controlled functions that the AI can autonomously invoke to retrieve specific weather information or perform searches
+## Transport Protocol
 
-This dual approach allows both client applications to explicitly select relevant weather data as context and enables AI models to autonomously query for specific weather information as needed.
+The server uses HTTP with SSE (Server-Sent Events) for bidirectional communication:
 
-## MCP Tool Interface
-
-The server implements the MCP protocol, exposing a set of tools that can be called by client applications to retrieve weather data.
-
-### Base URL
-
-```
-https://api.meteoswiss.ch/mcp/v1
-```
+- **GET `/`** - Server information endpoint
+- **GET `/mcp`** - SSE endpoint for MCP protocol communication
+- **POST `/messages?sessionId=...`** - Message handling endpoint
+- **GET `/health`** - Health check endpoint
 
 ## Available Tools
 
-### getCurrentWeather
+### getWeatherReport
 
-Retrieves current weather conditions for a specified location.
-
-**Parameters:**
-
-```typescript
-{
-  location: string; // Location name or postal code
-  language?: "de" | "fr" | "it" | "en"; // Default: "en"
-}
-```
-
-**Response:**
-
-Returns a `CurrentWeather` object as defined in the data schema.
-
-**Example Request:**
-
-```json
-{
-  "name": "getCurrentWeather",
-  "parameters": {
-    "location": "Zurich",
-    "language": "en"
-  }
-}
-```
-
-### getWeatherForecast
-
-Retrieves weather forecast for a specified location.
+Retrieves the latest weather report for a specified region of Switzerland.
 
 **Parameters:**
 
 ```typescript
 {
-  location: string; // Location name or postal code
-  days?: number; // Number of days to forecast (1-10, default: 7)
-  includeHourly?: boolean; // Whether to include hourly forecast (default: false)
-  language?: "de" | "fr" | "it" | "en"; // Default: "en"
-}
-```
-
-**Response:**
-
-Returns a `WeatherForecast` object as defined in the data schema.
-
-**Example Request:**
-
-```json
-{
-  "name": "getWeatherForecast",
-  "parameters": {
-    "location": "Geneva",
-    "days": 5,
-    "includeHourly": true,
-    "language": "fr"
-  }
-}
-```
-
-### findWeatherCondition
-
-Searches for locations matching specific weather conditions.
-
-**Parameters:**
-
-```typescript
-{
-  condition: string; // Weather condition (e.g., "rain", "snow", "sunny")
-  date?: string; // Date for the condition (ISO format or "today", "tomorrow")
-  region?: string; // Limit search to region (e.g., "north", "south", "alps")
-  language?: "de" | "fr" | "it" | "en"; // Default: "en"
+  region: "north" | "south" | "west"; // Required: Swiss region
+  language?: "de" | "fr" | "it" | "en"; // Optional: Report language (default: "en")
 }
 ```
 
@@ -104,49 +34,20 @@ Searches for locations matching specific weather conditions.
 
 ```typescript
 {
-  locations: Array<{
-    name: string;
-    condition: {
-      code: string;
-      description: string;
-    };
-    timestamp: string; // ISO 8601 format
+  region: string;
+  language: string;
+  title: string;
+  updatedAt: string;
+  content: string;
+  forecast: Array<{
+    day: string;
+    description: string;
+    temperature: string;
   }>;
 }
 ```
 
-**Example Request:**
-
-```json
-{
-  "name": "findWeatherCondition",
-  "parameters": {
-    "condition": "snow",
-    "date": "tomorrow",
-    "region": "alps",
-    "language": "de"
-  }
-}
-```
-
-### getWeatherReport
-
-Retrieves the latest weather report for a specified region.
-
-**Parameters:**
-
-```typescript
-{
-  region: "north" | "south" | "west"; // Region for the report
-  language?: "de" | "fr" | "it" | "en"; // Default: "en"
-}
-```
-
-**Response:**
-
-Returns a `WeatherReport` object as defined in the data schema.
-
-**Example Request:**
+**Example Tool Call:**
 
 ```json
 {
@@ -158,160 +59,106 @@ Returns a `WeatherReport` object as defined in the data schema.
 }
 ```
 
-### listWeatherStations
-
-Lists weather stations with optional filtering.
-
-**Parameters:**
-
-```typescript
-{
-  canton?: string; // Filter by canton (e.g., "ZH", "GE")
-  type?: string; // Filter by station type
-  parameter?: string; // Filter by available parameter
-  language?: "de" | "fr" | "it" | "en"; // Default: "en"
-}
-```
-
-**Response:**
-
-```typescript
-{
-  stations: Array<WeatherStation>; // As defined in data schema
-}
-```
-
-**Example Request:**
-
-```json
-{
-  "name": "listWeatherStations",
-  "parameters": {
-    "canton": "TI",
-    "type": "automatic",
-    "language": "it"
-  }
-}
-```
-
-### getStationData
-
-Retrieves historical measurement data for a specific station and parameter.
-
-**Parameters:**
-
-```typescript
-{
-  stationId: string; // Station identifier
-  parameter: string; // Parameter to retrieve (e.g., "temperature", "precipitation")
-  interval: "10min" | "hour" | "day" | "month" | "year"; // Time interval
-  startDate: string; // Start date (ISO format)
-  endDate: string; // End date (ISO format)
-  language?: "de" | "fr" | "it" | "en"; // Default: "en"
-}
-```
-
-**Response:**
-
-Returns a `StationData` object as defined in the data schema.
-
-**Example Request:**
-
-```json
-{
-  "name": "getStationData",
-  "parameters": {
-    "stationId": "LUG",
-    "parameter": "temperature",
-    "interval": "hour",
-    "startDate": "2025-04-01",
-    "endDate": "2025-04-07",
-    "language": "it"
-  }
-}
-```
-
 ## Error Handling
 
-The API follows standard HTTP status codes for error responses:
-
-- `200 OK`: Successful request
-- `400 Bad Request`: Invalid parameters
-- `404 Not Found`: Requested resource not found
-- `429 Too Many Requests`: Rate limit exceeded
-- `500 Internal Server Error`: Server error
-
-Error response format:
+The server implements comprehensive error handling:
 
 ```typescript
 {
+  success: false;
   error: {
-    code: string; // Error code
+    code: string; // Error code (e.g., "INVALID_REGION", "API_ERROR")
     message: string; // Human-readable error message
     details?: any; // Additional error details
   };
 }
 ```
 
-## Authentication
+## Environment Configuration
 
-The API requires authentication using an API key provided in the HTTP header:
+The server supports extensive configuration through environment variables:
 
-```
-X-API-Key: your_api_key_here
-```
+### Core Settings
+- `PORT` - Server port (default: 3000)
+- `USE_TEST_FIXTURES` - Use local test data instead of live API (default: false)
+- `DEBUG_MCHMCP` - Enable debug logging (default: false)
+
+### Network Configuration
+- `BIND_ADDRESS` - Interface to bind to (default: 0.0.0.0)
+- `CORS_ORIGIN` - CORS origin configuration (default: *)
+
+### Session Management
+- `MAX_SESSIONS` - Maximum concurrent SSE sessions (default: 100)
+- `SESSION_TIMEOUT_MS` - Session timeout in milliseconds (default: 300000)
+
+### Rate Limiting
+- `RATE_LIMIT_WINDOW_MS` - Rate limit window (default: 60000)
+- `RATE_LIMIT_MAX_REQUESTS` - Max requests per window (default: 100)
+
+### Request Handling
+- `REQUEST_SIZE_LIMIT` - Maximum request body size (default: 10mb)
 
 ## Rate Limiting
 
-The API implements rate limiting to ensure fair usage:
+The server implements built-in rate limiting:
 
-- 100 requests per minute per API key
-- 5,000 requests per day per API key
+- Configurable requests per time window
+- Per-IP rate limiting
+- Graceful handling of rate limit exceeded
 
-Rate limit information is provided in the response headers:
-
+Rate limit information is provided in response headers:
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
 X-RateLimit-Reset: 1619766913
 ```
 
-## Versioning
-
-The API is versioned through the URL path. The current version is `v1`. Breaking changes will be introduced in new API versions.
-
 ## Language Support
 
-All text responses can be localized by specifying the `language` parameter. Supported languages are:
+All text responses can be localized by specifying the `language` parameter:
 
-- `de`: German
-- `fr`: French
-- `it`: Italian
+- `de`: German (Deutsch)
+- `fr`: French (Français) 
+- `it`: Italian (Italiano)
 - `en`: English (default)
 
-## Response Format
+## Data Sources
 
-All responses are in JSON format with the `Content-Type: application/json` header.
+The server fetches data from MeteoSwiss HTTP endpoints:
+- Weather reports are fetched from regional endpoints
+- Data is available in multiple languages
+- Supports both live API calls and test fixtures for development
+
+## Implementation Details
+
+### Session Management
+- Automatic cleanup of inactive sessions
+- Configurable maximum session limit
+- Memory-efficient session storage
+
+### Error Recovery
+- Graceful handling of upstream API failures
+- Automatic retry logic for transient errors
+- Fallback to cached data when available
+
+### Security
+- No authentication required (public weather data)
+- Rate limiting to prevent abuse
+- Input validation using Zod schemas
+- CORS configuration for production deployments
 
 ## MCP Protocol Compliance
 
-This API follows the Multimodal Chat Protocol specification, allowing it to be integrated with MCP-compatible clients.
+The server fully implements the Model Context Protocol specification:
+- Proper tool registration and discovery
+- Schema validation for tool parameters
+- Standard error response format
+- SSE transport for real-time communication
 
-The server response format follows the MCP tool response structure:
+## Future Enhancements
 
-```json
-{
-  "tool_response": {
-    "name": "getCurrentWeather",
-    "content": {
-      // Response data specific to the tool
-    }
-  }
-}
-```
-
-## Implementation Considerations
-
-1. The server will cache responses to minimize requests to the MeteoSwiss data sources
-2. Data transformations will convert raw MeteoSwiss data to the documented schema
-3. Server-side validation will ensure response data conforms to the defined schemas
+While the current implementation focuses on weather reports, the architecture supports future additions:
+- Current weather conditions
+- Detailed forecasts with hourly data
+- Weather alerts and warnings
+- Historical weather data

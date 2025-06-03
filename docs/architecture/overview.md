@@ -52,11 +52,10 @@ The MCP server will consist of the following main components:
 
 The server will be built using the following technology stack:
 
-- **Node.js v22**: Taking advantage of the latest features such as:
-  - Improved performance with the V8 engine
+- **Node.js v18+**: Modern JavaScript runtime with:
   - Built-in fetch API for HTTP requests
-  - Enhanced ESM support for cleaner module imports
-  - Better error handling and debugging capabilities
+  - Full ESM support for cleaner module imports
+  - Stable performance and long-term support
 
 - **TypeScript**: For type safety and better developer experience
   - Using a strict configuration for maximum type safety
@@ -65,7 +64,7 @@ The server will be built using the following technology stack:
 - **MCP TypeScript SDK**: For implementing the Model Context Protocol
   - Using the high-level McpServer class for simplified server setup
   - Implementing tools and resources via the SDK interfaces
-  - Utilizing the StreamableHTTP transport for modern clients
+  - Utilizing HTTP with Server-Sent Events (SSE) for real-time communication
 
 - **Zod**: For runtime type validation and schema definition
   - Defining schemas for input validation on tools
@@ -83,19 +82,23 @@ The server will be built using the following technology stack:
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import express from 'express';
 
 const server = new McpServer({
   name: "meteoswiss-weather-server",
   version: "1.0.0"
 });
 
-// Register tools and resources
-// ...
+// Register tools
+server.tool('getWeatherReport', weatherReportSchema, getWeatherReportHandler);
 
-// Connect to transport
-const transport = new StreamableHTTPServerTransport();
-await server.connect(transport);
+// Set up HTTP server with SSE
+const app = express();
+app.get('/mcp', (req, res) => {
+  const transport = new SSEServerTransport('/messages', res);
+  await server.connect(transport);
+});
 ```
 
 ### Data Fetcher
@@ -104,6 +107,8 @@ await server.connect(transport);
 - Manages rate limiting and error handling
 - Ensures data freshness by monitoring update times
 - Uses Node.js native fetch API for HTTP requests
+- Implements retry logic and error handling
+- Supports both live API calls and test fixtures for development
 
 ### Data Transformer
 

@@ -8,8 +8,8 @@ import cors from 'cors';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import rateLimit from 'express-rate-limit';
-import { SessionManager } from '../utils/session-manager.js';
-import type { EnvConfig } from '../utils/env-validator.js';
+import { SessionManager } from '../support/session-management.js';
+import type { EnvConfig } from '../support/environment-validation.js';
 
 interface StreamableHttpOptions {
   port?: number;
