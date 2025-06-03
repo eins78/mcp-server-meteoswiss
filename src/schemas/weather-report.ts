@@ -17,6 +17,7 @@ export const WeatherReportSchema = z.object({
       temperature: z.string().optional(),
     })
   ),
+  source: z.literal('meteoswiss'),
 });
 
 /**

@@ -207,5 +207,6 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
     updatedAt,
     content,
     forecast,
+    source: 'meteoswiss',
   };
 }

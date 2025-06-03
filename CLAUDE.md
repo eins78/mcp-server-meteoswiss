@@ -14,8 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 - **Run development server with hot reloading**: `pnpm run dev`
-- **Start server in stdio mode**: `pnpm run start` or `pnpm run start:stdio`
-- **Start server in HTTP mode**: `pnpm run start:http`
+- **Start server**: `pnpm run start`
+- **Test with MCP Inspector**: `pnpm run dev:inspect`
 - **Type checking**: `pnpm run lint` (runs both TypeScript and ESLint checks)
 - **Run tests**: `pnpm test`
 - **Run integration tests**: `pnpm test:integration`
@@ -32,17 +32,20 @@ When running in a devcontainer, use the following for git commits:
 
 This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, implemented using:
 - **Node.js 18+**: Using `tsx` for TypeScript execution
-- **MCP TypeScript SDK**: Using `McpServer` class with multiple transport support
+- **MCP TypeScript SDK**: Using `McpServer` class with HTTP/SSE transport
 - **Zod**: For runtime validation and schema definitions
 - **Express + SSE**: For HTTP transport with Server-Sent Events
+- **mcp-remote**: For Claude Desktop integration
 
 ### Key Components
 
-1. **Entry Point** (`src/index.ts`): CLI that supports both stdio and HTTP transports
-2. **Core Server** (`src/server.ts`): Transport-agnostic MCP server implementation
-3. **Transports** (`src/transports/`): Transport implementations
-   - `stdio.ts`: For Claude Desktop and CLI integration
-   - `streamable-http.ts`: HTTP server with SSE for remote access
+1. **Entry Point** (`src/index.ts`): HTTP server with SSE endpoint
+2. **Core Server** (`src/server.ts`): MCP server implementation
+3. **Transport** (`src/transports/streamable-http.ts`): HTTP server with SSE
+   - `/` - Information endpoint
+   - `/mcp` - MCP SSE endpoint
+   - `/messages` - Message handling endpoint
+   - `/health` - Health check endpoint
 4. **Tools** (`src/tools/`): MCP tools for weather data queries
    - `getWeatherReport`: Retrieves weather reports for Swiss regions (north/south/west) in multiple languages
 5. **Data Layer** (`src/data/`): Handles fetching from MeteoSwiss HTTP endpoints
@@ -50,7 +53,7 @@ This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, imple
 7. **Utils** (`src/utils/`): HTTP client and other utilities
 
 ### Data Flow
-1. MCP client connects via chosen transport (stdio or HTTP/SSE)
+1. MCP client connects via `mcp-remote` to HTTP endpoint
 2. Tool requests are validated using Zod schemas
 3. Data is fetched from MeteoSwiss HTTP endpoints (or test fixtures in dev mode)
 4. Results are returned as JSON through MCP protocol
@@ -143,9 +146,9 @@ When implementing MCP tools:
 5. Document tool behavior and parameters
 
 ### Transport Support
-- **stdio**: Default for Claude Desktop, automatic test fixture usage
-- **HTTP/SSE**: For remote clients, supports session management
-- Both transports use the same server implementation
+- **HTTP/SSE**: Server runs on configurable port (default: 3000)
+- **mcp-remote**: Used for Claude Desktop integration
+- Supports multiple concurrent sessions
 
 ## Environment Variables
 - `USE_TEST_FIXTURES`: When `true`, uses local test data instead of HTTP requests
@@ -166,9 +169,10 @@ Fail fast with helpful error messages instead of silent fallbacks:
 ## Development Workflow
 
 ### Mandatory Practices
-1. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
-2. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
-3. **Documentation Updates**: Always update documentation when changing code, especially:
+1. **ALWAYS Run Tests Before Committing**: Before any commit, run `pnpm run test && pnpm run test:integration` to ensure all tests pass. This is CRITICAL.
+2. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
+3. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
+4. **Documentation Updates**: Always update documentation when changing code, especially:
    - **README.md**: Update when adding features, changing architecture, or modifying usage instructions
    - **CLAUDE.md**: Update project context, design decisions, and open tasks when making significant changes
    - **JSDoc/TSDoc**: Add comprehensive comments to new types, classes, and functions
