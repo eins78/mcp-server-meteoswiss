@@ -56,25 +56,20 @@ cat ~/Library/Logs/Claude/mcp.log | tail -n 20
 
 ### 3. Testing the Server
 
-Before connecting to Claude Desktop, test the server locally:
+Test the server using the MCP Inspector:
 
 ```bash
-# Start the server
-pnpm run start
-
-# In another terminal, test with MCP Inspector
 pnpm run dev:inspect
 ```
 
-Verify there are no errors in the console output.
+This will start the server and open the inspector in your browser.
 
-### 4. Environment Variables
-
-The server supports several environment variables for debugging:
+### 4. Debug Environment Variables
 
 - `DEBUG_MCHMCP=true` - Enables debug logging to file
 - `USE_TEST_FIXTURES=true` - Uses local test data instead of live API calls
-- `PORT=3000` - Server port (default: 3000)
+
+For all environment variables, see the [API documentation](architecture/api-design.md#environment-configuration).
 
 ### 5. Common HTTP Server Issues
 

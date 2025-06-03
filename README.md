@@ -128,19 +128,11 @@ pnpm run lint
   - `architecture/` - Architecture diagrams and descriptions
   - `analysis/` - Data analysis and insights
 
-## MCP SDK Implementation
+## Available Tools
 
-This server strictly follows the Model Context Protocol using the official TypeScript SDK. All tools and resources are implemented via the SDK interfaces:
+- `meteoswissWeatherReport`: Weather report for Swiss regions (north, south, west) in multiple languages
 
-- `McpServer` class for server setup
-- `StreamableHTTPServerTransport` for client communication
-- Zod schemas for type validation
-
-## Tools
-
-The server provides the following MCP tools:
-
-- `meteoswissWeatherReport`: Weather report for a specific region (north, south, west)
+See the [API documentation](docs/architecture/api-design.md) for detailed tool specifications.
 
 ## Debugging
 
