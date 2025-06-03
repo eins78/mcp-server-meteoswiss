@@ -29,11 +29,24 @@ export async function createHttpServer(
 
   const app = express();
   
-  // Configure CORS for production
+  // Configure CORS for Claude integration compatibility
   app.use(cors({
     origin: config.CORS_ORIGIN === '*' ? true : config.CORS_ORIGIN,
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Mcp-Session-Id'],
+    exposedHeaders: ['X-Session-Id', 'X-Server-Version'],
+    maxAge: 86400 // 24 hours
   }));
+  
+  // Add security headers
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('X-Server-Version', '1.0.0');
+    next();
+  });
   
   // Configure request size limit
   app.use(express.json({ limit: config.REQUEST_SIZE_LIMIT }));
@@ -59,7 +72,7 @@ export async function createHttpServer(
   // Session manager for transport cleanup
   const sessionManager = new SessionManager(config.MAX_SESSIONS, config.SESSION_TIMEOUT_MS);
 
-  // Root endpoint - serves HTML documentation
+  // Root endpoint - serves HTML documentation and discovery metadata
   app.get('/', asyncHandler(async (req: Request, res: Response) => {
     // Check if client wants JSON (API clients)
     if (req.accepts('json') && !req.accepts('html')) {
@@ -67,9 +80,15 @@ export async function createHttpServer(
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
         description: 'Model Context Protocol server for MeteoSwiss weather data',
-        mcp_endpoint: `http://${host}:${port}/mcp`,
+        mcp: {
+          endpoint: `http://${host}:${port}/mcp`,
+          transport: 'sse',
+          messageEndpoint: `http://${host}:${port}/messages`,
+          protocol_version: '2024-11-05'
+        },
         usage: `npx mcp-remote http://${host}:${port}/mcp`,
-        health: `/health`
+        health: `/health`,
+        authentication: 'none'
       });
       return;
     }
@@ -94,14 +113,28 @@ export async function createHttpServer(
 
   // MCP SSE endpoint - establishes the event stream
   app.get('/mcp', asyncHandler(async (req: Request, res: Response) => {
-    // Set SSE headers
+    // Set SSE headers for Claude compatibility
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
 
     // Create transport with the POST endpoint URL
     const transport = new SSEServerTransport('/messages', res);
+    res.setHeader('X-Session-Id', transport.sessionId || '');
+    
+    // Send initial comment to establish connection
+    res.write(':ok\n\n');
+    
+    // Set up keep-alive ping every 30 seconds
+    const keepAliveInterval = setInterval(() => {
+      try {
+        res.write(':ping\n\n');
+      } catch (error) {
+        // Connection closed, cleanup will happen in close handler
+        clearInterval(keepAliveInterval);
+      }
+    }, 30000);
     
     // Store transport in session manager
     try {
@@ -116,6 +149,7 @@ export async function createHttpServer(
     // Set up cleanup on close
     transport.onclose = () => {
       console.error(`SSE connection closed: ${transport.sessionId}`);
+      clearInterval(keepAliveInterval);
       sessionManager.remove(transport.sessionId);
     };
     
@@ -134,6 +168,7 @@ export async function createHttpServer(
     
     // Handle errors
     req.on('close', () => {
+      clearInterval(keepAliveInterval);
       transport.close();
     });
     
@@ -141,6 +176,15 @@ export async function createHttpServer(
       // Log error safely - strip all newlines and just log the error type
       const errorType = error?.code || error?.name || 'Unknown';
       console.error(`SSE connection error: ${errorType}`);
+      
+      // Send error event to client before closing
+      try {
+        res.write(`event: error\ndata: {"error": "${errorType}"}\n\n`);
+      } catch (e) {
+        // Ignore write errors on closed connection
+      }
+      
+      clearInterval(keepAliveInterval);
       transport.close();
     });
     
@@ -152,16 +196,18 @@ export async function createHttpServer(
       console.error(`Failed to connect transport: ${error}`);
       sessionManager.remove(transport.sessionId);
       clearTimeout(timeout);
+      clearInterval(keepAliveInterval);
       throw error;
     }
   }));
 
   // Message endpoint - receives client messages
   app.post('/messages', asyncHandler(async (req: Request, res: Response) => {
-    const sessionId = req.query.sessionId as string;
+    // Check for session ID in query params or headers
+    const sessionId = (req.query.sessionId as string) || req.headers['mcp-session-id'] as string;
     
     if (!sessionId || typeof sessionId !== 'string') {
-      res.status(400).json({ error: 'Valid sessionId required' });
+      res.status(400).json({ error: 'Valid sessionId required in query parameter or Mcp-Session-Id header' });
       return;
     }
     
