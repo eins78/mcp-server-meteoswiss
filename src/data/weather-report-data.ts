@@ -128,7 +128,14 @@ async function fetchWeatherReportFromTestFixtures(
       );
     }
 
-    const versions = JSON.parse(versionsData);
+    let versions;
+    try {
+      versions = JSON.parse(versionsData);
+    } catch (error) {
+      throw new Error(
+        `Invalid JSON in versions.json: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
     const currentVersionDir = versions.currentVersionDirectory;
 
     // Determine which file to read based on language
@@ -170,24 +177,32 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
   const dom = new JSDOM(html);
   const document = dom.window.document;
 
-  // Extract the title
+  // Extract the title - fallback to empty if not found
   const h3Element = document.querySelector('h3');
-  const title = h3Element ? h3Element.textContent || '' : '';
+  const title = h3Element?.textContent?.trim() || 'Weather Report';
 
-  // Extract the update time
+  // Extract the update time - fallback to current time if not found
   const pElement = document.querySelector('p');
-  const updatedAt = pElement && pElement.textContent ? pElement.textContent.trim() : '';
+  const updatedAt = pElement?.textContent?.trim() || new Date().toISOString();
 
-  // Extract the forecast by day
+  // Extract the forecast by day with validation
   const forecast: { day: string; description: string; temperature?: string }[] = [];
 
   const dayElements = document.querySelectorAll('h4');
+  if (dayElements.length === 0) {
+    // If no forecast elements found, create a minimal entry
+    console.error('Warning: No forecast elements (h4) found in weather report HTML');
+  }
+  
   dayElements.forEach((dayElement) => {
-    const day = dayElement.textContent || '';
+    const day = dayElement.textContent?.trim();
+    if (!day) return; // Skip if no day text
+    
     const nextElement = dayElement.nextElementSibling;
-    const description = nextElement && nextElement.textContent ? nextElement.textContent : '';
-    const tempElement = nextElement && nextElement.nextElementSibling;
-    const temperature = tempElement && tempElement.textContent ? tempElement.textContent : '';
+    const description = nextElement?.textContent?.trim() || 'No description available';
+    
+    const tempElement = nextElement?.nextElementSibling;
+    const temperature = tempElement?.textContent?.trim();
 
     forecast.push({
       day,
@@ -198,11 +213,24 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
 
   // Create the full content (useful for showing the entire report)
   const contentElement = document.querySelector('.textFCK');
-  const content = contentElement && contentElement.textContent ? contentElement.textContent.trim() : '';
+  const content = contentElement?.textContent?.trim() || 
+    `${title}\n${updatedAt}\n${forecast.map(f => `${f.day}: ${f.description}`).join('\n')}`;
+
+  // Validate region and language enums
+  const validRegions = ['north', 'south', 'west'] as const;
+  const validLanguages = ['de', 'fr', 'it', 'en'] as const;
+  
+  if (!validRegions.includes(region as any)) {
+    throw new Error(`Invalid region: ${region}. Must be one of: ${validRegions.join(', ')}`);
+  }
+  
+  if (!validLanguages.includes(language as any)) {
+    throw new Error(`Invalid language: ${language}. Must be one of: ${validLanguages.join(', ')}`);
+  }
 
   return {
-    region: region as any,
-    language: language as any,
+    region: region as 'north' | 'south' | 'west',
+    language: language as 'de' | 'fr' | 'it' | 'en',
     title,
     updatedAt,
     content,

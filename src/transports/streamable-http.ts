@@ -119,21 +119,29 @@ export async function createHttpServer(
       sessionManager.remove(transport.sessionId);
     };
     
-    // Set connection timeout
-    const timeout = setTimeout(() => {
-      console.error(`SSE connection timeout: ${transport.sessionId}`);
-      transport.close();
-    }, config.SESSION_TIMEOUT_MS);
+    // Set connection timeout with activity-based reset
+    let timeout: NodeJS.Timeout;
+    const resetTimeout = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        console.error(`SSE connection timeout: ${transport.sessionId}`);
+        transport.close();
+      }, config.SESSION_TIMEOUT_MS);
+    };
     
-    // Clear timeout on activity
+    // Initialize timeout
+    resetTimeout();
+    
+    // Reset timeout on any activity
     const originalSend = transport.send.bind(transport);
     transport.send = (message: any) => {
-      clearTimeout(timeout);
+      resetTimeout();
       return originalSend(message);
     };
     
-    // Handle errors
+    // Handle connection close
     req.on('close', () => {
+      clearTimeout(timeout);
       transport.close();
     });
     
@@ -171,8 +179,8 @@ export async function createHttpServer(
       return;
     }
     
-    const transport = sessionManager.get(sessionId) as SSEServerTransport;
-    if (!transport) {
+    const transport = sessionManager.get(sessionId);
+    if (!transport || !(transport instanceof SSEServerTransport)) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }

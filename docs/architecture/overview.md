@@ -259,10 +259,45 @@ The project will use a strict TypeScript configuration based on best practices:
 - Implement rate limiting to prevent abuse
 - Monitor for unusual access patterns
 
+## Production Considerations
+
+### Session Management
+
+- Sessions are managed with automatic cleanup based on activity
+- Timeout mechanism resets on each message to keep active connections alive
+- Memory cleanup ensures no resource leaks on connection close
+- Maximum session limit prevents resource exhaustion
+
+### Error Handling Improvements
+
+- **Port Validation**: Command-line port arguments are validated to prevent NaN errors
+- **Type Safety**: Runtime type checking for session retrieval prevents type assertion errors
+- **Graceful Shutdown**: Signal handlers properly await cleanup with timeout protection
+- **JSON Parsing**: All JSON parsing wrapped in try-catch blocks with descriptive errors
+- **HTML Parsing**: Robust DOM parsing with fallbacks for missing elements
+
+### Data Handling Robustness
+
+- **Defensive HTML Parsing**: No assumptions about DOM structure, with sensible defaults
+- **Enum Validation**: Runtime validation of region and language parameters
+- **Missing Data Handling**: Graceful degradation when expected elements are not found
+- **Error Context**: Detailed error messages include context about what failed
+
+### Known Issues Fixed
+
+1. **SSE Timeout Bug**: Fixed timeout mechanism that only cleared but never reset
+2. **Memory Leak**: Fixed missing timeout cleanup on connection close
+3. **Type Assertions**: Replaced unsafe type assertions with runtime validation
+4. **Brittle Parsing**: Made HTML parsing resilient to structure changes
+5. **Invalid Ports**: Added validation for command-line port arguments
+
 ## Next Steps
 
-1. Implement the MCP server core using the SDK
-2. Implement the data fetcher for each data source
-3. Implement the data transformer according to the schema
-4. Implement the resource and tool providers
-5. Set up testing and deployment infrastructure
+1. ~~Implement the MCP server core using the SDK~~ ✓
+2. ~~Implement the data fetcher for each data source~~ ✓
+3. ~~Implement the data transformer according to the schema~~ ✓
+4. ~~Implement the resource and tool providers~~ ✓
+5. ~~Set up testing and deployment infrastructure~~ ✓
+6. Monitor production for any edge cases in data parsing
+7. Consider implementing request/response logging for debugging
+8. Add metrics collection for monitoring system health

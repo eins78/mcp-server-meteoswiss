@@ -59,7 +59,15 @@ async function main() {
   }
   
   // Override port from command line if provided
-  const port = process.argv[2] ? parseInt(process.argv[2], 10) : config.PORT;
+  const portArg = process.argv[2];
+  const port = portArg ? (() => {
+    const parsed = parseInt(portArg, 10);
+    if (isNaN(parsed) || parsed <= 0 || parsed > 65535) {
+      console.error(`Invalid port number: ${portArg}. Must be between 1 and 65535.`);
+      process.exit(1);
+    }
+    return parsed;
+  })() : config.PORT;
   
   // Initialize logging
   initFileLogging('meteoswiss');
@@ -93,19 +101,39 @@ async function main() {
 let globalServer: { stop: () => void } | null = null;
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.error('\nShutting down server...');
   if (globalServer) {
-    globalServer.stop();
+    try {
+      await Promise.race([
+        new Promise((resolve) => {
+          globalServer!.stop();
+          resolve(undefined);
+        }),
+        new Promise((resolve) => setTimeout(resolve, 5000)) // 5 second timeout
+      ]);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+    }
   }
   closeFileLogging();
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.error('\nShutting down server...');
   if (globalServer) {
-    globalServer.stop();
+    try {
+      await Promise.race([
+        new Promise((resolve) => {
+          globalServer!.stop();
+          resolve(undefined);
+        }),
+        new Promise((resolve) => setTimeout(resolve, 5000)) // 5 second timeout
+      ]);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+    }
   }
   closeFileLogging();
   process.exit(0);
