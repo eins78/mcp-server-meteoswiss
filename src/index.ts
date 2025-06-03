@@ -7,6 +7,7 @@
 import { createServer } from './server.js';
 import { createHttpServer } from './transports/streamable-http.js';
 import { debugMain, initFileLogging, closeFileLogging } from './utils/logger.js';
+import { validateEnv } from './utils/env-validator.js';
 
 // Check Node.js version requirement
 const MIN_NODE_VERSION = 16;
@@ -48,42 +49,65 @@ process.on('unhandledRejection', (reason, promise) => {
  * Main function to start the server
  */
 async function main() {
-  // Get port from command line or environment
-  const port = process.argv[2] ? parseInt(process.argv[2], 10) : 
-               process.env.PORT ? parseInt(process.env.PORT, 10) : 
-               3000;
+  // Validate environment variables first
+  let config;
+  try {
+    config = validateEnv();
+  } catch (error) {
+    console.error('Configuration error:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+  
+  // Override port from command line if provided
+  const port = process.argv[2] ? parseInt(process.argv[2], 10) : config.PORT;
   
   // Initialize logging
   initFileLogging('meteoswiss');
   debugMain('Starting MCP HTTP server on port: %d', port);
   debugMain('Environment: USE_TEST_FIXTURES=%s, DEBUG_MCHMCP=%s', 
-    process.env.USE_TEST_FIXTURES, process.env.DEBUG_MCHMCP);
+    config.USE_TEST_FIXTURES, config.DEBUG_MCHMCP);
   
   // Create the MCP server instance
   const mcpServer = createServer();
   
+  let server: { start: () => Promise<void>; stop: () => void } | null = null;
+  
   try {
     debugMain('Creating HTTP server on port %d', port);
-    const { start } = await createHttpServer(mcpServer, { port });
-    await start();
+    server = await createHttpServer(mcpServer, { port, host: config.BIND_ADDRESS, config });
+    await server.start();
     debugMain('HTTP server started');
-    console.log(`MCP server running at http://localhost:${port}/mcp`);
+    console.log(`MCP server running at http://${config.BIND_ADDRESS === '0.0.0.0' ? 'localhost' : config.BIND_ADDRESS}:${port}/mcp`);
     console.log(`Use with: npx mcp-remote http://localhost:${port}/mcp`);
   } catch (error) {
     console.error('Failed to start server:', error);
     debugMain('Server startup failed: %O', error);
     process.exit(1);
   }
+  
+  // Store server reference for cleanup
+  return server;
 }
+
+// Global server reference for cleanup
+let globalServer: { stop: () => void } | null = null;
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.error('\nShutting down server...');
+  if (globalServer) {
+    globalServer.stop();
+  }
+  closeFileLogging();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.error('\nShutting down server...');
+  if (globalServer) {
+    globalServer.stop();
+  }
+  closeFileLogging();
   process.exit(0);
 });
 
@@ -101,7 +125,9 @@ console.error('=====================================');
 
 // Start the server
 debugMain('MeteoSwiss MCP server starting...');
-main().catch((error) => {
+main().then((server) => {
+  globalServer = server;
+}).catch((error) => {
   console.error('Unhandled error:', error);
   debugMain('Unhandled error in main: %O', error);
   process.exit(1);

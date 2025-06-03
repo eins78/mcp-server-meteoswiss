@@ -29,6 +29,9 @@ importers:
       express:
         specifier: ^5.1.0
         version: 5.1.0
+      express-rate-limit:
+        specifier: ^7.5.0
+        version: 7.5.0(express@5.1.0)
       jsdom:
         specifier: ^24.0.0
         version: 24.1.3
