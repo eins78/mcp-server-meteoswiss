@@ -6,8 +6,8 @@
 
 import { createServer } from './server.js';
 import { createHttpServer } from './transports/streamable-http.js';
-import { debugMain, initFileLogging, closeFileLogging } from './utils/logger.js';
-import { validateEnv } from './utils/env-validator.js';
+import { debugMain, initFileLogging, closeFileLogging } from './support/logging.js';
+import { validateEnv } from './support/environment-validation.js';
 
 // Check Node.js version requirement
 const MIN_NODE_VERSION = 16;

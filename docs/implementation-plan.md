@@ -124,11 +124,11 @@ src/
 │   └── weather-report-data.ts  # MeteoSwiss data fetcher
 ├── schemas/                    # Zod schemas
 │   └── weather-report.ts       # Weather data schemas
-├── utils/                      # Utility functions
-│   ├── env-validator.ts        # Environment validation
-│   ├── session-manager.ts      # SSE session management
-│   ├── http-client.ts          # HTTP client wrapper
-│   └── logger.ts               # Debug logging
+├── support/                    # Supporting infrastructure (non-domain-specific)
+│   ├── environment-validation.ts # Environment variable validation
+│   ├── session-management.ts   # SSE session management
+│   ├── http-communication.ts   # HTTP client for external APIs
+│   └── logging.ts              # Debug and file logging
 └── test/                       # Tests
     ├── integration/            # Integration tests
     └── __fixtures__/           # Test data

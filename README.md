@@ -120,7 +120,7 @@ pnpm run lint
   - `data/` - Data access and transformation
   - `schemas/` - Zod schemas for data validation
   - `tools/` - Utility tools and scripts
-  - `utils/` - Common utilities
+  - `support/` - Supporting infrastructure (logging, validation, etc.)
 
 ## Documentation
 

@@ -50,7 +50,7 @@ This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, imple
    - `getWeatherReport`: Retrieves weather reports for Swiss regions (north/south/west) in multiple languages
 5. **Data Layer** (`src/data/`): Handles fetching from MeteoSwiss HTTP endpoints
 6. **Schemas** (`src/schemas/`): Zod schemas for input validation
-7. **Utils** (`src/utils/`): HTTP client and other utilities
+7. **Support** (`src/support/`): Supporting infrastructure - logging, validation, HTTP communication, session management
 
 ### Data Flow
 1. MCP client connects via `mcp-remote` to HTTP endpoint

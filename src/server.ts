@@ -7,7 +7,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GetWeatherReportParamsSchema } from './schemas/weather-report.js';
 import type { GetWeatherReportParams } from './schemas/weather-report.js';
 import { getWeatherReport } from './tools/get-weather-report.js';
-import { debugServer, debugTools } from './utils/logger.js';
+import { debugServer, debugTools } from './support/logging.js';
 
 /**
  * Create and configure the MeteoSwiss MCP server
