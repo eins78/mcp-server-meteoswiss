@@ -67,8 +67,10 @@ export async function createHttpServer(
       transport.close();
     });
     
-    req.on('error', (error) => {
-      console.error('SSE connection error:', error);
+    req.on('error', (error: any) => {
+      // Log error safely - strip all newlines and just log the error type
+      const errorType = error?.code || error?.name || 'Unknown';
+      console.error(`SSE connection error: ${errorType}`);
       transport.close();
     });
     
@@ -111,13 +113,26 @@ export async function createHttpServer(
   });
 
   const start = async (): Promise<void> => {
-    return new Promise((resolve) => {
-      app.listen(port, host, () => {
-        console.error(`MCP server listening on http://${host}:${port}`);
-        console.error(`MCP endpoint: http://${host}:${port}/mcp`);
-        console.error(`Message endpoint: http://${host}:${port}/messages`);
+    return new Promise((resolve, reject) => {
+      // Listen on localhost only for better compatibility
+      const server = app.listen(port, () => {
+        const address = server.address();
+        const actualPort = typeof address === 'object' && address ? address.port : port;
+        const actualHost = typeof address === 'object' && address ? address.address : 'unknown';
+        console.error(`MCP server listening on http://localhost:${actualPort}`);
+        console.error(`MCP endpoint: http://localhost:${actualPort}/mcp`);
+        console.error(`Message endpoint: http://localhost:${actualPort}/messages`);
+        console.error(`Server bound to: ${actualHost}:${actualPort}`);
         resolve();
       });
+      
+      server.on('error', (err) => {
+        console.error('Server error:', err);
+        reject(err);
+      });
+      
+      // Keep reference to prevent GC
+      (app as any).__server = server;
     });
   };
 

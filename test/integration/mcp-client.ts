@@ -6,7 +6,7 @@ import net from 'node:net';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SERVER_PATH = path.resolve(__dirname, '../../src/index.ts');
+const SERVER_PATH = path.resolve(__dirname, '../../dist/index.js');
 
 /**
  * Options for configuring the MCP client
@@ -50,7 +50,7 @@ export class MCPClient {
   /**
    * Wait for the HTTP server to be ready
    */
-  private async waitForServer(maxAttempts = 30): Promise<void> {
+  private async waitForServer(maxAttempts = 50): Promise<void> {
     for (let i = 0; i < maxAttempts; i++) {
       try {
         await new Promise((resolve, reject) => {
@@ -62,7 +62,7 @@ export class MCPClient {
         });
         return;
       } catch (error) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
     throw new Error('Server failed to start in time');
@@ -74,7 +74,7 @@ export class MCPClient {
   async start(): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
-        // Start the HTTP server process
+        // Start the HTTP server process using built JS
         this.serverProcess = spawn('node', [SERVER_PATH, String(this.port)], {
           env: { ...process.env, NODE_ENV: 'test', ...this.options.env },
         });
@@ -86,10 +86,13 @@ export class MCPClient {
         });
 
         // Handle server process output (for debugging)
+        let serverBuffer = '';
         this.serverProcess.stderr?.on('data', (data) => {
+          const output = data.toString();
+          serverBuffer += output;
           // Don't output during tests unless debugging
           if (process.env.DEBUG) {
-            console.error(`MCP Server (stderr): ${data}`);
+            console.error(`MCP Server (stderr): ${output}`);
           }
         });
 

@@ -169,9 +169,10 @@ Fail fast with helpful error messages instead of silent fallbacks:
 ## Development Workflow
 
 ### Mandatory Practices
-1. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
-2. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
-3. **Documentation Updates**: Always update documentation when changing code, especially:
+1. **ALWAYS Run Tests Before Committing**: Before any commit, run `pnpm run test && pnpm run test:integration` to ensure all tests pass. This is CRITICAL.
+2. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
+3. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
+4. **Documentation Updates**: Always update documentation when changing code, especially:
    - **README.md**: Update when adding features, changing architecture, or modifying usage instructions
    - **CLAUDE.md**: Update project context, design decisions, and open tasks when making significant changes
    - **JSDoc/TSDoc**: Add comprehensive comments to new types, classes, and functions

@@ -17,6 +17,7 @@
     "test": "test"
   },
   "scripts": {
+    "dist": "pnpm run clean && pnpm run build && pnpm run test",
     "lint": "tsc --noEmit && eslint 'src/**/*.{ts,tsx}'",
     "lint:ts": "tsc --noEmit",
     "lint:eslint": "eslint 'src/**/*.{ts,tsx}'",
@@ -24,8 +25,8 @@
     "start": "tsx src/index.ts",
     "dev": "nodemon --watch src --ext ts --exec 'tsx src/index.ts'",
     "dev:inspect": "npx @modelcontextprotocol/inspector http://localhost:3000/mcp",
-    "test": "jest",
-    "test:integration": "jest --testMatch='**/test/integration/**/*.test.ts'",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test:watch": "pnpm run test --watch",
     "build": "tsc",
     "build:windows": "tsc"
   },
