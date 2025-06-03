@@ -10,6 +10,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import rateLimit from 'express-rate-limit';
 import { SessionManager } from '../support/session-management.js';
 import type { EnvConfig } from '../support/environment-validation.js';
+import { renderHomepage } from '../support/markdown-rendering.js';
 
 interface StreamableHttpOptions {
   port?: number;
@@ -58,17 +59,38 @@ export async function createHttpServer(
   // Session manager for transport cleanup
   const sessionManager = new SessionManager(config.MAX_SESSIONS, config.SESSION_TIMEOUT_MS);
 
-  // Root endpoint - serves information page
-  app.get('/', (_req: Request, res: Response) => {
-    res.json({
-      name: 'MeteoSwiss MCP Server',
-      version: '1.0.0',
-      description: 'Model Context Protocol server for MeteoSwiss weather data',
-      mcp_endpoint: `http://${host}:${port}/mcp`,
-      usage: `npx mcp-remote http://${host}:${port}/mcp`,
-      health: `/health`
-    });
-  });
+  // Root endpoint - serves HTML documentation
+  app.get('/', asyncHandler(async (req: Request, res: Response) => {
+    // Check if client wants JSON (API clients)
+    if (req.accepts('json') && !req.accepts('html')) {
+      res.json({
+        name: 'MeteoSwiss MCP Server',
+        version: '1.0.0',
+        description: 'Model Context Protocol server for MeteoSwiss weather data',
+        mcp_endpoint: `http://${host}:${port}/mcp`,
+        usage: `npx mcp-remote http://${host}:${port}/mcp`,
+        health: `/health`
+      });
+      return;
+    }
+    
+    // Serve HTML homepage
+    try {
+      const html = await renderHomepage();
+      res.type('html').send(html);
+    } catch (error) {
+      console.error('Failed to render homepage:', error);
+      // Fallback to JSON
+      res.json({
+        name: 'MeteoSwiss MCP Server',
+        version: '1.0.0',
+        description: 'Model Context Protocol server for MeteoSwiss weather data',
+        mcp_endpoint: `http://${host}:${port}/mcp`,
+        usage: `npx mcp-remote http://${host}:${port}/mcp`,
+        health: `/health`
+      });
+    }
+  }));
 
   // MCP SSE endpoint - establishes the event stream
   app.get('/mcp', asyncHandler(async (req: Request, res: Response) => {
