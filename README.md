@@ -73,30 +73,22 @@ This project uses `tsx` for TypeScript execution, providing a smooth development
 
 ### Running the application
 
-#### Stdio Transport (Claude Desktop)
+#### Running the Server
 
-Start the server in stdio mode (default):
+The server runs as an HTTP service with Server-Sent Events (SSE):
 
 ```bash
+# Start the server (default port 3000)
 pnpm start
-# or
-pnpm start:stdio
-```
 
-#### HTTP Transport (Remote Access)
-
-Start the server with HTTP/SSE transport:
-
-```bash
-pnpm start:http
-# or specify a custom port
-npx tsx src/index.ts http 8080
+# Or specify a custom port
+PORT=8080 pnpm start
 ```
 
 The HTTP server provides:
-- POST `/sse` - Initialize session
-- GET `/sse?sessionId=...` - Server-Sent Events stream
-- DELETE `/sse?sessionId=...` - Close session
+- GET `/` - Server information
+- GET `/mcp` - MCP SSE endpoint for client connections
+- POST `/messages?sessionId=...` - Message handling endpoint
 - GET `/health` - Health check endpoint
 
 #### Development Mode
