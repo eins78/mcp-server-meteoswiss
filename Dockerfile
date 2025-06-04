@@ -61,6 +61,9 @@ RUN chown -R nodejs:nodejs /app
 # Switch to non-root user
 USER nodejs
 
+# Ensure pnpm version required by the application is installed in the image
+RUN pnpm -v 
+
 # Expose the port (default 3000)
 EXPOSE 3000
 
