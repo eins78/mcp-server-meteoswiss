@@ -78,8 +78,10 @@ async function main() {
     await server.start();
     debugMain('HTTP server started');
     const displayHost = config.BIND_ADDRESS === '0.0.0.0' ? 'localhost' : config.BIND_ADDRESS;
-    console.log(`MCP server running at http://${displayHost}:${port}/mcp`);
-    console.log(`Connect with: npx mcp-remote http://${displayHost}:${port}/mcp`);
+    const mcpUrl = `http://${displayHost}:${port}/mcp`;
+    console.log(`MCP server running at ${mcpUrl}`);
+    console.log(`Connect with: npx mcp-remote ${mcpUrl}`);
+    console.log(`Inspect with: npx @modelcontextprotocol/inspector ${mcpUrl}`);
   } catch (error) {
     console.error('Failed to start server:', error);
     debugMain('Server startup failed: %O', error);
