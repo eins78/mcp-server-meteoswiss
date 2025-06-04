@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+
 # Default values
 PORT="${PORT:-3000}"
 USE_TEST_FIXTURES="${USE_TEST_FIXTURES:-false}"
@@ -8,6 +9,11 @@ DEBUG_MCHMCP="${DEBUG_MCHMCP:-false}"
 
 # Container name
 CONTAINER_NAME="meteoswiss-mcp-server-dev"
+
+cd "$(dirname "$0")/.."
+
+# Build the container
+./scripts/build-dev.sh
 
 # Stop and remove existing container if it exists
 if docker ps -a | grep -q "$CONTAINER_NAME"; then
