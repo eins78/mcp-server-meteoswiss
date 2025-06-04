@@ -61,28 +61,31 @@ describe('MCP Server Integration Tests', () => {
           const output = data.toString();
           buffer += output;
           console.log('Server output:', output);
-          if (buffer.includes('MCP server listening')) {
+          if (buffer.includes('MCP server running at')) {
             clearTimeout(timeout);
             // Clean up listeners
-            serverProcess!.stderr!.removeListener('data', dataHandler);
+            serverProcess!.stdout!.removeListener('data', dataHandler);
+            serverProcess!.stderr!.removeListener('data', stderrHandler);
             serverProcess!.removeListener('error', errorHandler);
             // Give the server a moment to fully initialize
             setTimeout(resolve, 2000);
           }
         };
         
-        // Also monitor stdout
-        serverProcess!.stdout?.on('data', (data: Buffer) => {
-          console.log('Server stdout:', data.toString());
-        });
+        // Monitor stderr for errors
+        const stderrHandler = (data: Buffer) => {
+          console.log('Server stderr:', data.toString());
+        };
 
         const errorHandler = (err: Error) => {
           clearTimeout(timeout);
-          serverProcess!.stderr!.removeListener('data', dataHandler);
+          serverProcess!.stdout!.removeListener('data', dataHandler);
+          serverProcess!.stderr!.removeListener('data', stderrHandler);
           reject(err);
         };
 
-        serverProcess!.stderr!.on('data', dataHandler);
+        serverProcess!.stdout!.on('data', dataHandler);
+        serverProcess!.stderr!.on('data', stderrHandler);
         serverProcess!.on('error', errorHandler);
       });
 

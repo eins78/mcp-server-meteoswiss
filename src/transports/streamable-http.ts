@@ -236,10 +236,9 @@ export async function createHttpServer(
         const address = server.address();
         const actualPort = typeof address === 'object' && address ? address.port : port;
         const actualHost = typeof address === 'object' && address ? address.address : 'unknown';
-        console.error(`MCP server listening on http://localhost:${actualPort}`);
-        console.error(`MCP endpoint: http://localhost:${actualPort}/mcp`);
-        console.error(`Message endpoint: http://localhost:${actualPort}/messages`);
-        console.error(`Server bound to: ${actualHost}:${actualPort}`);
+        // Log server startup info to debug namespace only
+        debugTransport('MCP server listening on %s:%d', actualHost, actualPort);
+        debugTransport('Endpoints: /mcp (SSE), /messages (POST), /health (GET)');
         debugTransport('Server started successfully on %s:%d', actualHost, actualPort);
         resolve();
       });

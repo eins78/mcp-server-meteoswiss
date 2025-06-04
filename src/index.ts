@@ -77,8 +77,9 @@ async function main() {
     server = await createHttpServer(mcpServer, { port, host: config.BIND_ADDRESS, config });
     await server.start();
     debugMain('HTTP server started');
-    console.log(`MCP server running at http://${config.BIND_ADDRESS === '0.0.0.0' ? 'localhost' : config.BIND_ADDRESS}:${port}/mcp`);
-    console.log(`Use with: npx mcp-remote http://localhost:${port}/mcp`);
+    const displayHost = config.BIND_ADDRESS === '0.0.0.0' ? 'localhost' : config.BIND_ADDRESS;
+    console.log(`MCP server running at http://${displayHost}:${port}/mcp`);
+    console.log(`Connect with: npx mcp-remote http://${displayHost}:${port}/mcp`);
   } catch (error) {
     console.error('Failed to start server:', error);
     debugMain('Server startup failed: %O', error);
@@ -119,17 +120,17 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// Log startup environment information
-console.error('=== MCP Server Startup Debug Info ===');
-console.error(`Node Version: ${process.version}`);
-console.error(`Platform: ${process.platform} ${process.arch}`);
-console.error(`CWD: ${process.cwd()}`);
-console.error(`Script: ${process.argv[1]}`);
-console.error(`Port: ${process.argv[2] || process.env.PORT || '3000'}`);
-console.error(`ENV USE_TEST_FIXTURES: ${process.env.USE_TEST_FIXTURES}`);
-console.error(`ENV DEBUG_MCHMCP: ${process.env.DEBUG_MCHMCP}`);
-console.error(`ENV DEBUG: ${process.env.DEBUG}`);
-console.error('=====================================');
+// Log startup environment information to debug namespace
+debugMain('=== MCP Server Startup Debug Info ===');
+debugMain('Node Version: %s', process.version);
+debugMain('Platform: %s %s', process.platform, process.arch);
+debugMain('CWD: %s', process.cwd());
+debugMain('Script: %s', process.argv[1]);
+debugMain('Port: %s', process.argv[2] || process.env.PORT || '3000');
+debugMain('ENV USE_TEST_FIXTURES: %s', process.env.USE_TEST_FIXTURES);
+debugMain('ENV DEBUG_MCHMCP: %s', process.env.DEBUG_MCHMCP);
+debugMain('ENV DEBUG: %s', process.env.DEBUG);
+debugMain('=====================================');
 
 // Start the server
 debugMain('MeteoSwiss MCP server starting...');
