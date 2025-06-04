@@ -7,8 +7,7 @@ PORT="${PORT:-3000}"
 USE_TEST_FIXTURES="${USE_TEST_FIXTURES:-false}"
 DEBUG_MCHMCP="${DEBUG_MCHMCP:-false}"
 
-# Container name
-CONTAINER_NAME="meteoswiss-mcp-server-dev"
+CONTAINER_NAME="${CONTAINER_NAME:-meteoswiss-mcp-server-dev}"
 
 cd "$(dirname "$0")/.."
 
