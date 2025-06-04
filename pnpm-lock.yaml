@@ -23,9 +23,6 @@ importers:
       debug:
         specifier: ^4.4.1
         version: 4.4.1(supports-color@5.5.0)
-      eventsource-parser:
-        specifier: ^3.0.2
-        version: 3.0.2
       express:
         specifier: ^5.1.0
         version: 5.1.0

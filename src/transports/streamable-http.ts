@@ -113,28 +113,12 @@ export async function createHttpServer(
 
   // MCP SSE endpoint - establishes the event stream
   app.get('/mcp', asyncHandler(async (req: Request, res: Response) => {
-    // Set SSE headers for Claude compatibility
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
-
     // Create transport with the POST endpoint URL
+    // The SSEServerTransport will set its own headers when start() is called
     const transport = new SSEServerTransport('/messages', res);
-    res.setHeader('X-Session-Id', transport.sessionId || '');
     
-    // Send initial comment to establish connection
-    res.write(':ok\n\n');
-    
-    // Set up keep-alive ping every 30 seconds
-    const keepAliveInterval = setInterval(() => {
-      try {
-        res.write(':ping\n\n');
-      } catch (error) {
-        // Connection closed, cleanup will happen in close handler
-        clearInterval(keepAliveInterval);
-      }
-    }, 30000);
+    // Keep-alive will be set up after connection
+    let keepAliveInterval: NodeJS.Timeout | null = null;
     
     // Store transport in session manager
     try {
@@ -149,7 +133,9 @@ export async function createHttpServer(
     // Set up cleanup on close
     transport.onclose = () => {
       console.error(`SSE connection closed: ${transport.sessionId}`);
-      clearInterval(keepAliveInterval);
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+      }
       sessionManager.remove(transport.sessionId);
     };
     
@@ -168,7 +154,9 @@ export async function createHttpServer(
     
     // Handle errors
     req.on('close', () => {
-      clearInterval(keepAliveInterval);
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+      }
       transport.close();
     });
     
@@ -184,7 +172,9 @@ export async function createHttpServer(
         // Ignore write errors on closed connection
       }
       
-      clearInterval(keepAliveInterval);
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+      }
       transport.close();
     });
     
@@ -196,7 +186,9 @@ export async function createHttpServer(
       console.error(`Failed to connect transport: ${error}`);
       sessionManager.remove(transport.sessionId);
       clearTimeout(timeout);
-      clearInterval(keepAliveInterval);
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+      }
       throw error;
     }
   }));
