@@ -3,29 +3,27 @@
 # Stage 1: Build stage
 FROM node:24-alpine AS builder
 
-# Install pnpm using npm and corepack
-RUN npm i -g corepack && pnpm -v
-
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Install pnpm using npm and corepack
+RUN npm i -g corepack && pnpm -v
 
-# Install all dependencies (including devDependencies for build)
-RUN pnpm install --frozen-lockfile
+# Install dependencies with pnpm store cache
+COPY package.json .npmrc pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+     pnpm install --frozen-lockfile
+
+# Copy package files first for better caching
+COPY package.json ./
 
 # Copy source code and configuration
 COPY tsconfig.json ./
 COPY src ./src
 COPY test/__fixtures__ ./test/__fixtures__
 COPY docs ./docs
-
-# Build the application
+RUN ls -la node_modules
 RUN pnpm run build
-
-# Remove devDependencies after build
-RUN pnpm prune --prod
 
 # Stage 2: Runtime stage
 FROM node:24-alpine AS runtime
@@ -40,14 +38,13 @@ RUN addgroup -g 1001 -S nodejs && \
 # Set working directory
 WORKDIR /app
 
-# Copy package files from builder
+# Copy package files and built application from builder
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
-
-# Copy node_modules from builder (production only)
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy built application from builder
 COPY --from=builder /app/dist ./dist
+
+# Install production dependencies
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+     pnpm install --offline --production --no-optional --frozen-lockfile --ignore-scripts
 
 # Copy test fixtures for runtime (if USE_TEST_FIXTURES is enabled)
 COPY --from=builder /app/test/__fixtures__ ./test/__fixtures__
@@ -61,7 +58,7 @@ RUN chown -R nodejs:nodejs /app
 # Switch to non-root user
 USER nodejs
 
-# Ensure pnpm version required by the application is installed in the image
+# Ensure pnpm version required by the application is installed in the image, for the runtime user
 RUN pnpm -v 
 
 # Expose the port (default 3000)
