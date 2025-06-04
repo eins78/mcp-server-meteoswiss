@@ -126,7 +126,10 @@ export async function createHttpServer(
       console.error(`New SSE connection established: ${transport.sessionId}`);
     } catch (error) {
       console.error(`Failed to add session: ${error}`);
-      res.status(503).end('Server capacity reached');
+      // Check if we can still send a response
+      if (!res.headersSent) {
+        res.status(503).end('Server capacity reached');
+      }
       return;
     }
     
@@ -165,11 +168,15 @@ export async function createHttpServer(
       const errorType = error?.code || error?.name || 'Unknown';
       console.error(`SSE connection error: ${errorType}`);
       
-      // Send error event to client before closing
-      try {
-        res.write(`event: error\ndata: {"error": "${errorType}"}\n\n`);
-      } catch (e) {
-        // Ignore write errors on closed connection
+      // Send error event to client before closing (only if connection is still open)
+      if (!res.headersSent && res.writable) {
+        try {
+          // Properly escape error type for JSON
+          const safeErrorType = JSON.stringify(errorType).slice(1, -1);
+          res.write(`event: error\ndata: {"error": "${safeErrorType}"}\n\n`);
+        } catch (e) {
+          // Ignore write errors on closed connection
+        }
       }
       
       if (keepAliveInterval) {
@@ -220,7 +227,10 @@ export async function createHttpServer(
       await transport.handlePostMessage(req, res, req.body);
     } catch (error) {
       console.error('Error handling message:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      // Only send error response if headers haven't been sent
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   }));
 
@@ -260,7 +270,10 @@ export async function createHttpServer(
   // Global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error('Unhandled error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    // Only send error response if headers haven't been sent
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
   
   const stop = () => {
