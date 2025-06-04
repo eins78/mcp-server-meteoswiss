@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { micromark } from 'micromark';
+import { gfm, gfmHtml } from 'micromark-extension-gfm';
 
 /**
  * Renders markdown files into HTML for the homepage
@@ -28,8 +30,11 @@ export async function renderHomepage(): Promise<string> {
     .filter(content => content.length > 0)
     .join('\n\n---\n\n');
   
-  // Convert to simple HTML (basic conversion without external libraries)
-  const html = convertMarkdownToHtml(markdown);
+  // Convert to HTML using micromark with GFM support
+  const html = micromark(markdown, {
+    extensions: [gfm()],
+    htmlExtensions: [gfmHtml()]
+  });
   
   // Wrap in a basic HTML template
   return `<!DOCTYPE html>
@@ -132,97 +137,3 @@ export async function renderHomepage(): Promise<string> {
 </html>`;
 }
 
-/**
- * Basic markdown to HTML converter
- */
-function convertMarkdownToHtml(markdown: string): string {
-  let html = markdown;
-  
-  // Convert headers
-  html = html.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
-  
-  // Convert bold and italic
-  html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  
-  // Convert inline code
-  html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-  
-  // Convert code blocks
-  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-    return `<pre><code class="${lang || ''}">${escapeHtml(code.trim())}</code></pre>`;
-  });
-  
-  // Convert links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-  
-  // Convert line breaks and paragraphs
-  html = html.split('\n\n').map(paragraph => {
-    // Check if it's already an HTML element
-    if (paragraph.trim().startsWith('<')) {
-      return paragraph;
-    }
-    // Check if it's a list
-    if (paragraph.trim().match(/^[-*] /)) {
-      const items = paragraph.split('\n')
-        .map(line => line.replace(/^[-*] (.*)$/, '<li>$1</li>'))
-        .join('\n');
-      return `<ul>\n${items}\n</ul>`;
-    }
-    // Check if it's a table
-    if (paragraph.includes('|') && paragraph.includes('---')) {
-      return convertTable(paragraph);
-    }
-    // Regular paragraph
-    return paragraph.trim() ? `<p>${paragraph.trim()}</p>` : '';
-  }).join('\n\n');
-  
-  return html;
-}
-
-/**
- * Convert markdown table to HTML
- */
-function convertTable(tableMarkdown: string): string {
-  const lines = tableMarkdown.trim().split('\n');
-  if (lines.length < 3) return tableMarkdown; // Not a valid table
-  
-  const headers = lines[0]?.split('|').map(h => h.trim()).filter(h => h) || [];
-  const rows = lines.slice(2).map(line => 
-    line.split('|').map(cell => cell.trim()).filter(cell => cell)
-  );
-  
-  let html = '<table>\n<thead>\n<tr>\n';
-  headers.forEach(header => {
-    html += `<th>${header}</th>\n`;
-  });
-  html += '</tr>\n</thead>\n<tbody>\n';
-  
-  rows.forEach(row => {
-    html += '<tr>\n';
-    row.forEach(cell => {
-      html += `<td>${cell}</td>\n`;
-    });
-    html += '</tr>\n';
-  });
-  
-  html += '</tbody>\n</table>';
-  return html;
-}
-
-/**
- * Escape HTML special characters
- */
-function escapeHtml(text: string): string {
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  };
-  return text.replace(/[&<>"']/g, m => map[m] || m);
-}
