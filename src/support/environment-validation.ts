@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { debugEnv } from './logging.js';
 
 /**
  * Environment variable schema and validation
@@ -96,8 +97,27 @@ export type EnvConfig = z.infer<typeof envSchema>;
  * @throws {Error} If validation fails
  */
 export function validateEnv(): EnvConfig {
+  debugEnv('Starting environment validation');
+  debugEnv('Raw environment variables: %O', {
+    PORT: process.env.PORT,
+    USE_TEST_FIXTURES: process.env.USE_TEST_FIXTURES,
+    DEBUG_MCHMCP: process.env.DEBUG_MCHMCP,
+    DEBUG: process.env.DEBUG,
+    NODE_ENV: process.env.NODE_ENV,
+    BIND_ADDRESS: process.env.BIND_ADDRESS,
+    MAX_SESSIONS: process.env.MAX_SESSIONS,
+    SESSION_TIMEOUT_MS: process.env.SESSION_TIMEOUT_MS,
+    RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS,
+    RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS,
+    CORS_ORIGIN: process.env.CORS_ORIGIN,
+    REQUEST_SIZE_LIMIT: process.env.REQUEST_SIZE_LIMIT,
+    PUBLIC_URL: process.env.PUBLIC_URL,
+  });
+  
   try {
-    return envSchema.parse(process.env);
+    const config = envSchema.parse(process.env);
+    debugEnv('Environment validation successful: %O', config);
+    return config;
   } catch (error) {
     if (error instanceof z.ZodError) {
       const issues = error.errors

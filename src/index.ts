@@ -95,19 +95,27 @@ let globalServer: { stop: () => void } | null = null;
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.error('\nShutting down server...');
+  debugMain('SIGINT received, initiating graceful shutdown');
   if (globalServer) {
+    debugMain('Stopping server...');
     globalServer.stop();
   }
+  debugMain('Closing log files...');
   closeFileLogging();
+  debugMain('Shutdown complete');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.error('\nShutting down server...');
+  debugMain('SIGTERM received, initiating graceful shutdown');
   if (globalServer) {
+    debugMain('Stopping server...');
     globalServer.stop();
   }
+  debugMain('Closing log files...');
   closeFileLogging();
+  debugMain('Shutdown complete');
   process.exit(0);
 });
 
@@ -125,8 +133,13 @@ console.error('=====================================');
 
 // Start the server
 debugMain('MeteoSwiss MCP server starting...');
+debugMain('Process info: PID=%d, UID=%d, GID=%d', process.pid, process.getuid?.() || -1, process.getgid?.() || -1);
+debugMain('Memory usage at startup: %O', process.memoryUsage());
+
 main().then((server) => {
   globalServer = server;
+  debugMain('Server started successfully');
+  debugMain('Memory usage after startup: %O', process.memoryUsage());
 }).catch((error) => {
   console.error('Unhandled error:', error);
   debugMain('Unhandled error in main: %O', error);

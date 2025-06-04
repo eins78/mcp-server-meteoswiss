@@ -26,7 +26,13 @@ export function createServer(): McpServer {
   server.server.onerror = (error: Error) => {
     console.error('[MCP Server Error]', error);
     debugServer('Server error: %O', error);
+    debugServer('Error stack: %s', error.stack);
   };
+  
+  // Log protocol events if debug is enabled
+  if (process.env.DEBUG?.includes('mcp:server') || process.env.DEBUG_MCHMCP === 'true') {
+    debugServer('Protocol event logging enabled');
+  }
 
   // Register tools
   debugServer('Registering tool: meteoswissWeatherReport');

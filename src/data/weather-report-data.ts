@@ -129,7 +129,9 @@ async function fetchWeatherReportFromTestFixtures(
     }
 
     const versions = JSON.parse(versionsData);
+    debugData('Parsed versions data: %O', versions);
     const currentVersionDir = versions.currentVersionDirectory;
+    debugData('Current version directory from fixture: %s', currentVersionDir);
 
     // Determine which file to read based on language
     const fileSuffix = language === 'en' ? '_en' : `_${language}`;

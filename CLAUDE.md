@@ -163,6 +163,50 @@ Fail fast with helpful error messages instead of silent fallbacks:
 - **Mock Support**: Provide appropriate test fixtures and mocking for testing without real API calls
 
 ## Debugging
+
+### Debug Logging Strategy
+The application uses the `debug` npm module for comprehensive production debugging. Debug output can be controlled via environment variables without rebuilding the Docker image.
+
+#### Environment Variables
+- **`DEBUG`**: Standard debug module pattern (e.g., `mcp:*` for all, `mcp:transport,mcp:tools` for specific)
+- **`DEBUG_MCHMCP`**: Legacy compatibility flag - if set to `true`, enables all `mcp:*` namespaces
+
+#### Debug Namespaces
+- `mcp:main` - Application lifecycle, startup/shutdown, configuration
+- `mcp:server` - MCP server events, tool registration, protocol operations
+- `mcp:transport` - HTTP/SSE transport layer, connections, sessions, rate limiting
+- `mcp:tools` - Tool execution, parameters, results, errors
+- `mcp:data` - Data fetching, caching, transformation, API calls
+- `mcp:http` - HTTP client operations, retries, errors
+- `mcp:session` - Session management, cleanup, timeouts
+- `mcp:env` - Environment validation, configuration loading
+
+#### What Should Be Logged
+- **Lifecycle Events**: Server start/stop, configuration loaded, shutdown initiated
+- **Connection Events**: New connections, disconnections, session creation/cleanup
+- **Request Flow**: Incoming requests, routing, parameter validation
+- **Tool Operations**: Tool invocation, parameters, execution time, results/errors
+- **Data Operations**: API calls, cache hits/misses, data transformations
+- **Error Conditions**: All errors with context, stack traces for exceptions
+- **Performance Metrics**: Request duration, queue sizes, memory usage
+- **Security Events**: Rate limit hits, invalid requests, authentication (if added)
+
+#### Production Usage Examples
+```bash
+# Enable all MCP debugging
+docker run -e DEBUG='mcp:*' meteoswiss-mcp
+
+# Debug only transport and tools
+docker run -e DEBUG='mcp:transport,mcp:tools' meteoswiss-mcp
+
+# Debug everything except data operations
+docker run -e DEBUG='mcp:*,-mcp:data' meteoswiss-mcp
+
+# Use legacy flag
+docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
+```
+
+### General Debugging
 - Logs are written to stderr (using `console.error`) to avoid interfering with MCP communication
 - See `docs/debugging-guide.md` for Claude Desktop debugging tips
 

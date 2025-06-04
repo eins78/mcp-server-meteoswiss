@@ -3,6 +3,8 @@
  * Provides methods for making HTTP requests with error handling and retries
  */
 
+import { debugHttp } from './logging.js';
+
 /**
  * Options for HTTP requests
  */
@@ -60,42 +62,58 @@ export async function fetchWithRetry(
   options: HttpRequestOptions = {}
 ): Promise<string> {
   const { retries = DEFAULT_OPTIONS.retries, retryDelay = DEFAULT_OPTIONS.retryDelay } = options;
+  debugHttp('Fetching URL: %s with options: %O', url, options);
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= retries!; attempt++) {
+    debugHttp('Attempt %d/%d for URL: %s', attempt + 1, retries! + 1, url);
     try {
+      const startTime = Date.now();
       const response = await fetch(url, {
         headers: { ...DEFAULT_OPTIONS.headers, ...options.headers },
         signal: options.timeout ? AbortSignal.timeout(options.timeout) : undefined,
       });
+      const duration = Date.now() - startTime;
+      
+      debugHttp('Response received in %dms: %d %s', duration, response.status, response.statusText);
 
       if (!response.ok) {
-        throw new HttpRequestError(
+        const error = new HttpRequestError(
           `HTTP error ${response.status}: ${response.statusText}`,
           url,
           response.status
         );
+        debugHttp('HTTP error: %O', error);
+        throw error;
       }
 
-      return await response.text();
+      const text = await response.text();
+      debugHttp('Successfully fetched %d bytes from %s', text.length, url);
+      return text;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      debugHttp('Request failed on attempt %d: %O', attempt + 1, error);
 
       // Don't retry on the last attempt
       if (attempt === retries) {
+        debugHttp('All retry attempts exhausted for URL: %s', url);
         break;
       }
 
       // Add some jitter to retry delay
       const jitteredDelay = retryDelay! + Math.random() * 200;
+      debugHttp('Retrying in %dms...', Math.round(jitteredDelay));
       await new Promise((resolve) => setTimeout(resolve, jitteredDelay));
     }
   }
 
-  throw lastError instanceof HttpRequestError
+  const finalError = lastError instanceof HttpRequestError
     ? lastError
     : new HttpRequestError(`Failed to fetch data from ${url}: ${lastError?.message}`, url);
+  
+  debugHttp('Final failure for URL %s: %O', url, finalError);
+  throw finalError;
 }
 
 /**
@@ -110,6 +128,8 @@ export async function fetchJson<T = unknown>(
   url: string,
   options: HttpRequestOptions = {}
 ): Promise<T> {
+  debugHttp('Fetching JSON from URL: %s', url);
+  
   const text = await fetchWithRetry(url, {
     ...options,
     headers: {
@@ -119,8 +139,11 @@ export async function fetchJson<T = unknown>(
   });
 
   try {
-    return JSON.parse(text) as T;
+    const data = JSON.parse(text) as T;
+    debugHttp('Successfully parsed JSON from %s: %O', url, data);
+    return data;
   } catch (error) {
+    debugHttp('Failed to parse JSON from %s: %O', url, error);
     throw new HttpRequestError(
       `Failed to parse JSON from ${url}: ${error instanceof Error ? error.message : String(error)}`,
       url
@@ -137,11 +160,16 @@ export async function fetchJson<T = unknown>(
  * @throws {HttpRequestError} If the request fails
  */
 export async function fetchHtml(url: string, options: HttpRequestOptions = {}): Promise<string> {
-  return fetchWithRetry(url, {
+  debugHttp('Fetching HTML from URL: %s', url);
+  
+  const html = await fetchWithRetry(url, {
     ...options,
     headers: {
       ...options.headers,
       Accept: 'text/html',
     },
   });
+  
+  debugHttp('Successfully fetched HTML from %s (%d bytes)', url, html.length);
+  return html;
 }
