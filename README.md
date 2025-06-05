@@ -9,7 +9,7 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 ## Features
 
 - Weather reports for regions in Switzerland (North, South, West)
-- Multi-language support (German, French, Italian, English)
+- Multi-language support (German, French, Italian)
 - Weather forecasts with daily breakdowns
 - Test fixtures for development
 
@@ -139,11 +139,12 @@ Get official MeteoSwiss weather reports with detailed daily forecasts for Swiss 
   - `north`: Northern Switzerland (Zurich, Basel, Bern, Swiss Plateau)
   - `south`: Southern Switzerland (Ticino and southern valleys)
   - `west`: Western Switzerland (Romandy - Geneva, Lausanne, western Alps)
-- `language` (optional, default: 'en'): Report language
+- `language` (optional, default: 'de'): Report language
   - `de`: German (primary for northern regions)
   - `fr`: French (primary for western regions)
   - `it`: Italian (primary for southern regions/Ticino)
-  - `en`: English (available for all regions)
+  
+  **Note**: English is not available. MeteoSwiss only provides weather reports in Switzerland's official languages.
 
 **Returns:**
 - Title and update timestamp
@@ -159,9 +160,6 @@ The server provides pre-configured prompts for common weather queries:
 - `wetterNordschweiz`: Current weather report for Northern Switzerland in German
 - `wetterbericht`: Flexible weather report with region and language parameters
 
-### English Prompts
-- `weatherNorthernSwitzerland`: Current weather report for Northern Switzerland in English
-- `swissWeather`: Flexible weather report with region and language parameters
 
 ### French Prompt
 - `meteoSuisseRomande`: Current weather report for Western Switzerland (Romandy) in French

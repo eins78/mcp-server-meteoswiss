@@ -6,7 +6,7 @@ import { z } from 'zod';
  */
 export const WeatherReportSchema = z.object({
   region: z.enum(['north', 'south', 'west']),
-  language: z.enum(['de', 'fr', 'it', 'en']).default('en'),
+  language: z.enum(['de', 'fr', 'it']).default('de'),
   title: z.string(),
   updatedAt: z.string(),
   content: z.string(),
@@ -27,8 +27,8 @@ export const GetWeatherReportParamsSchema = z.object({
   region: z.enum(['north', 'south', 'west']).describe(
     'The Swiss region to get weather for. north: Northern Switzerland (Zurich, Basel, Bern, Swiss Plateau), south: Southern Switzerland (Ticino and southern valleys), west: Western Switzerland (Romandy - Geneva, Lausanne, western Alps)'
   ),
-  language: z.enum(['de', 'fr', 'it', 'en']).default('en').describe(
-    'Language for the weather report. de: German (primary for north), fr: French (primary for west), it: Italian (primary for south/Ticino), en: English (available for all regions)'
+  language: z.enum(['de', 'fr', 'it']).default('de').describe(
+    'Language for the weather report. de: German (primary for north), fr: French (primary for west), it: Italian (primary for south/Ticino). Note: English is not available - MeteoSwiss only provides reports in Switzerland\'s official languages.'
   ),
 });
 

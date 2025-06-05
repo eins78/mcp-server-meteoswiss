@@ -56,7 +56,8 @@ Language support reflects Switzerland's multilingual nature:
 - German (de): Primary language for northern regions
 - French (fr): Primary language for western regions
 - Italian (it): Primary language for southern regions (Ticino)
-- English (en): Available for all regions
+
+Note: Weather reports are only available in Switzerland's official languages (German, French, Italian). English translations are not provided by MeteoSwiss.
 
 The reports use standardized probability terms for precipitation forecasts.`,
     GetWeatherReportParamsSchema.shape,
@@ -140,7 +141,7 @@ The reports use standardized probability terms for precipitation forecasts.`,
             role: 'assistant' as const,
             content: {
               type: 'text' as const,
-              text: 'Ich rufe den Wetterbericht für die gewünschte Region ab. Verwenden Sie das Tool meteoswissWeatherReport mit den Parametern region (north/south/west) und language (de/fr/it/en).'
+              text: 'Ich rufe den Wetterbericht für die gewünschte Region ab. Verwenden Sie das Tool meteoswissWeatherReport mit den Parametern region (north/south/west) und language (de/fr/it).'
             }
           }
         ]
@@ -148,56 +149,6 @@ The reports use standardized probability terms for precipitation forecasts.`,
     }
   );
 
-  // English prompts for Northern Switzerland
-  server.prompt(
-    'weatherNorthernSwitzerland',
-    'Current weather report for Northern Switzerland',
-    () => {
-      return {
-        messages: [
-          {
-            role: 'user' as const,
-            content: {
-              type: 'text' as const,
-              text: 'Show me the current weather report for Northern Switzerland in English.'
-            }
-          },
-          {
-            role: 'assistant' as const,
-            content: {
-              type: 'text' as const,
-              text: 'I\'ll get the current weather report for Northern Switzerland in English for you.'
-            }
-          }
-        ]
-      };
-    }
-  );
-
-  server.prompt(
-    'swissWeather',
-    'Get weather report for a Swiss region',
-    () => {
-      return {
-        messages: [
-          {
-            role: 'user' as const,
-            content: {
-              type: 'text' as const,
-              text: 'I want to see the weather report for Northern Switzerland in English.'
-            }
-          },
-          {
-            role: 'assistant' as const,
-            content: {
-              type: 'text' as const,
-              text: 'I\'ll retrieve the weather report for your chosen region. Use the meteoswissWeatherReport tool with parameters region (north/south/west) and language (en/de/fr/it).'
-            }
-          }
-        ]
-      };
-    }
-  );
 
   // French prompt for Western Switzerland
   server.prompt(

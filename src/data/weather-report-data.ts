@@ -37,7 +37,6 @@ export async function getLatestWeatherReport(
 ): Promise<WeatherReport> {
   // Map language code to directory
   const languageMap: Record<string, string> = {
-    en: 'de', // English reports are in the German directory with _en suffix
     de: 'de',
     fr: 'fr',
     it: 'it',
@@ -76,7 +75,7 @@ async function fetchWeatherReportFromHttp(
     const currentVersionDir = versions.currentVersionDirectory;
 
     // Determine which file to read based on language
-    const fileSuffix = language === 'en' ? '_en' : `_${language}`;
+    const fileSuffix = `_${language}`;
     const reportUrl = `${BASE_URL}/${languageDir}/${region}/${currentVersionDir}/textproduct${fileSuffix}.xhtml`;
 
     // Fetch the report HTML
@@ -138,7 +137,7 @@ async function fetchWeatherReportFromTestFixtures(
     debugData('Current version directory from fixture: %s', currentVersionDir);
 
     // Determine which file to read based on language
-    const fileSuffix = language === 'en' ? '_en' : `_${language}`;
+    const fileSuffix = `_${language}`;
     const reportFilePath = path.join(
       reportPath,
       currentVersionDir,
