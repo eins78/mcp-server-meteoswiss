@@ -3,7 +3,7 @@ import path from 'node:path';
 import { micromark } from 'micromark';
 import { gfm, gfmHtml } from 'micromark-extension-gfm';
 import { validateEnv } from './environment-validation.js';
-import { getMcpEndpointUrl } from './url-generation.js';
+import { getMcpEndpointUrl, getServiceBaseUrl } from './url-generation.js';
 
 /**
  * Renders markdown files into HTML for the homepage
@@ -29,9 +29,17 @@ export async function renderHomepage(): Promise<string> {
   );
   
   // Combine with section dividers
-  const markdown = contents
+  let markdown = contents
     .filter(content => content.length > 0)
     .join('\n\n---\n\n');
+  
+  // Replace template variables
+  const baseUrl = getServiceBaseUrl(config);
+  const mcpUrl = getMcpEndpointUrl(config);
+  
+  markdown = markdown
+    .replace(/\$\$\$___TEMPLATE_BASE_URL___\$\$\$/g, baseUrl)
+    .replace(/\$\$\$___TEMPLATE_MCP_URL___\$\$\$/g, mcpUrl);
   
   // Convert to HTML using micromark with GFM support
   const html = micromark(markdown, {
