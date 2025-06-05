@@ -9,7 +9,7 @@ import { getMcpEndpointUrl } from './url-generation.js';
  * Renders markdown files into HTML for the homepage
  */
 export async function renderHomepage(): Promise<string> {
-  const docsPath = path.join(process.cwd(), 'docs', 'homepage');
+  const docsPath = path.join(process.cwd(), 'src', 'views', 'homepage');
   const config = validateEnv();
   
   // Files to include in order
