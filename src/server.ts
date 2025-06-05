@@ -18,7 +18,7 @@ export function createServer(): McpServer {
   const server = new McpServer({
     name: 'mcp-server-meteoswiss',
     version: '1.0.0',
-    description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, Italian, and English languages.',
+    description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, and Italian.',
   });
   debugServer('MCP server created with name: mcp-server-meteoswiss');
 
@@ -98,10 +98,10 @@ The reports use standardized probability terms for precipitation forecasts.`,
   // Register prompts
   debugServer('Registering prompts');
   
-  // German prompts for Northern Switzerland
+  // German prompt for Northern Switzerland
   server.prompt(
     'wetterNordschweiz',
-    'Aktueller Wetterbericht für die Nordschweiz',
+    'Aktueller Wetterbericht für die Nordschweiz auf Deutsch',
     () => {
       return {
         messages: [
@@ -109,14 +109,14 @@ The reports use standardized probability terms for precipitation forecasts.`,
             role: 'user' as const,
             content: {
               type: 'text' as const,
-              text: 'Zeige mir den aktuellen Wetterbericht für die Nordschweiz auf Deutsch.'
+              text: 'Was ist das aktuelle Wetter in der Nordschweiz?'
             }
           },
           {
             role: 'assistant' as const,
             content: {
               type: 'text' as const,
-              text: 'Ich hole für Sie den aktuellen Wetterbericht für die Nordschweiz auf Deutsch.'
+              text: 'Ich hole den aktuellen Wetterbericht für die Nordschweiz von MeteoSwiss. Dieser enthält die Wetterprognose für die nächsten Tage mit Temperaturen und Wetterbedingungen.\n\n[Verwende das Tool meteoswissWeatherReport mit region="north" und language="de"]'
             }
           }
         ]
@@ -124,36 +124,10 @@ The reports use standardized probability terms for precipitation forecasts.`,
     }
   );
 
-  server.prompt(
-    'wetterbericht',
-    'Wetterbericht für eine Schweizer Region abrufen',
-    () => {
-      return {
-        messages: [
-          {
-            role: 'user' as const,
-            content: {
-              type: 'text' as const,
-              text: 'Zeige mir den Wetterbericht für die Nordschweiz auf Deutsch.'
-            }
-          },
-          {
-            role: 'assistant' as const,
-            content: {
-              type: 'text' as const,
-              text: 'Ich rufe den Wetterbericht für die gewünschte Region ab. Verwenden Sie das Tool meteoswissWeatherReport mit den Parametern region (north/south/west) und language (de/fr/it).'
-            }
-          }
-        ]
-      };
-    }
-  );
-
-
-  // French prompt for Western Switzerland
+  // French prompt for Western Switzerland (Romandy)
   server.prompt(
     'meteoSuisseRomande',
-    'Bulletin météo actuel pour la Suisse romande',
+    'Bulletin météo actuel pour la Suisse romande en français',
     () => {
       return {
         messages: [
@@ -161,14 +135,14 @@ The reports use standardized probability terms for precipitation forecasts.`,
             role: 'user' as const,
             content: {
               type: 'text' as const,
-              text: 'Montre-moi le bulletin météo actuel pour la Suisse romande en français.'
+              text: 'Quel temps fait-il en Suisse romande?'
             }
           },
           {
             role: 'assistant' as const,
             content: {
               type: 'text' as const,
-              text: 'Je vais chercher le bulletin météo actuel pour la Suisse romande en français.'
+              text: 'Je vais consulter le bulletin météo actuel de MétéoSuisse pour la Suisse romande. Il contient les prévisions détaillées pour les prochains jours.\n\n[Utiliser l\'outil meteoswissWeatherReport avec region="west" et language="fr"]'
             }
           }
         ]
@@ -179,7 +153,7 @@ The reports use standardized probability terms for precipitation forecasts.`,
   // Italian prompt for Southern Switzerland (Ticino)
   server.prompt(
     'meteoTicino',
-    'Bollettino meteo attuale per il Ticino',
+    'Bollettino meteo attuale per il Ticino in italiano',
     () => {
       return {
         messages: [
@@ -187,14 +161,40 @@ The reports use standardized probability terms for precipitation forecasts.`,
             role: 'user' as const,
             content: {
               type: 'text' as const,
-              text: 'Mostrami il bollettino meteo attuale per il Ticino in italiano.'
+              text: 'Che tempo fa in Ticino?'
             }
           },
           {
             role: 'assistant' as const,
             content: {
               type: 'text' as const,
-              text: 'Recupero il bollettino meteo attuale per il Ticino in italiano.'
+              text: 'Consulto il bollettino meteorologico attuale di MeteoSvizzera per il Ticino. Contiene le previsioni dettagliate per i prossimi giorni.\n\n[Utilizzare lo strumento meteoswissWeatherReport con region="south" e language="it"]'
+            }
+          }
+        ]
+      };
+    }
+  );
+
+  // Generic German prompt for any region
+  server.prompt(
+    'wetterSchweiz',
+    'Wetterbericht für eine beliebige Schweizer Region',
+    () => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Wie ist das Wetter in der Schweiz?'
+            }
+          },
+          {
+            role: 'assistant' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Für welche Region der Schweiz möchten Sie den Wetterbericht?\n\n- Nordschweiz (Zürich, Basel, Bern, Mittelland)\n- Südschweiz (Tessin und südliche Täler)\n- Westschweiz (Romandie - Genf, Lausanne, Westliche Alpen)\n\nIch kann Ihnen den Bericht auf Deutsch, Französisch oder Italienisch liefern.'
             }
           }
         ]
