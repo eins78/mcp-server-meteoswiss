@@ -1,0 +1,54 @@
+# Node modules and npm files
+node_modules/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Build output
+dist/
+coverage/
+.debug/
+
+# Development files
+.git/
+.gitignore
+.github/
+*.md
+!docs/**/*.md
+.editorconfig
+.eslintrc*
+.prettierrc*
+
+# Test files (except fixtures which are needed)
+test/**
+!test/__fixtures__/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+.circleci/
+
+# Scripts
+scripts/

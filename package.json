@@ -4,11 +4,6 @@
   "description": "A Model Context Protocol (MCP) server for MeteoSwiss weather data.",
   "main": "src/index.ts",
   "type": "module",
-  "bin": {
-    "mcp-meteoswiss": "./bin/mcp-meteoswiss-stdio",
-    "mcp-meteoswiss-stdio": "./bin/mcp-meteoswiss-stdio",
-    "mcp-meteoswiss-http": "./bin/mcp-meteoswiss-http"
-  },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -22,11 +17,12 @@
     "lint:ts": "tsc --noEmit",
     "lint:eslint": "eslint 'src/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
-    "start": "tsx src/index.ts",
+    "start": "node dist/index.js",
     "dev": "nodemon --watch src --ext ts --exec 'tsx src/index.ts'",
     "dev:inspect": "npx @modelcontextprotocol/inspector http://localhost:3000/mcp",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "test:watch": "pnpm run test --watch",
+    "test:integration": "NODE_OPTIONS='--experimental-vm-modules' jest test/integration",
     "build": "tsc",
     "build:windows": "tsc"
   },
@@ -51,9 +47,11 @@
     "@types/express": "^5.0.2",
     "cors": "^2.8.5",
     "debug": "^4.4.1",
-    "eventsource-parser": "^3.0.2",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
     "jsdom": "^24.0.0",
+    "micromark": "^4.0.2",
+    "micromark-extension-gfm": "^3.0.0",
     "tsx": "^4.19.4",
     "zod": "^3.22.4"
   },

@@ -47,10 +47,10 @@ This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, imple
    - `/messages` - Message handling endpoint
    - `/health` - Health check endpoint
 4. **Tools** (`src/tools/`): MCP tools for weather data queries
-   - `getWeatherReport`: Retrieves weather reports for Swiss regions (north/south/west) in multiple languages
+   - `meteoswissWeatherReport`: Weather reports for Swiss regions (north/south/west) in multiple languages
 5. **Data Layer** (`src/data/`): Handles fetching from MeteoSwiss HTTP endpoints
 6. **Schemas** (`src/schemas/`): Zod schemas for input validation
-7. **Utils** (`src/utils/`): HTTP client and other utilities
+7. **Support** (`src/support/`): Supporting infrastructure - logging, validation, HTTP communication, session management
 
 ### Data Flow
 1. MCP client connects via `mcp-remote` to HTTP endpoint
@@ -163,16 +163,62 @@ Fail fast with helpful error messages instead of silent fallbacks:
 - **Mock Support**: Provide appropriate test fixtures and mocking for testing without real API calls
 
 ## Debugging
+
+### Debug Logging Strategy
+The application uses the `debug` npm module for comprehensive production debugging. Debug output can be controlled via environment variables without rebuilding the Docker image.
+
+#### Environment Variables
+- **`DEBUG`**: Standard debug module pattern (e.g., `mcp:*` for all, `mcp:transport,mcp:tools` for specific)
+- **`DEBUG_MCHMCP`**: Legacy compatibility flag - if set to `true`, enables all `mcp:*` namespaces
+
+#### Debug Namespaces
+- `mcp:main` - Application lifecycle, startup/shutdown, configuration
+- `mcp:server` - MCP server events, tool registration, protocol operations
+- `mcp:transport` - HTTP/SSE transport layer, connections, sessions, rate limiting
+- `mcp:tools` - Tool execution, parameters, results, errors
+- `mcp:data` - Data fetching, caching, transformation, API calls
+- `mcp:http` - HTTP client operations, retries, errors
+- `mcp:session` - Session management, cleanup, timeouts
+- `mcp:env` - Environment validation, configuration loading
+
+#### What Should Be Logged
+- **Lifecycle Events**: Server start/stop, configuration loaded, shutdown initiated
+- **Connection Events**: New connections, disconnections, session creation/cleanup
+- **Request Flow**: Incoming requests, routing, parameter validation
+- **Tool Operations**: Tool invocation, parameters, execution time, results/errors
+- **Data Operations**: API calls, cache hits/misses, data transformations
+- **Error Conditions**: All errors with context, stack traces for exceptions
+- **Performance Metrics**: Request duration, queue sizes, memory usage
+- **Security Events**: Rate limit hits, invalid requests, authentication (if added)
+
+#### Production Usage Examples
+```bash
+# Enable all MCP debugging
+docker run -e DEBUG='mcp:*' meteoswiss-mcp
+
+# Debug only transport and tools
+docker run -e DEBUG='mcp:transport,mcp:tools' meteoswiss-mcp
+
+# Debug everything except data operations
+docker run -e DEBUG='mcp:*,-mcp:data' meteoswiss-mcp
+
+# Use legacy flag
+docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
+```
+
+### General Debugging
 - Logs are written to stderr (using `console.error`) to avoid interfering with MCP communication
 - See `docs/debugging-guide.md` for Claude Desktop debugging tips
 
 ## Development Workflow
 
 ### Mandatory Practices
-1. **ALWAYS Run Tests Before Committing**: Before any commit, run `pnpm run test && pnpm run test:integration` to ensure all tests pass. This is CRITICAL.
-2. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
-3. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
-4. **Documentation Updates**: Always update documentation when changing code, especially:
+1. **ALWAYS Run Build Before Tests**: Before running tests, always run `pnpm run build` to ensure TypeScript compilation succeeds. This catches type errors early.
+2. **ALWAYS Run Tests Before Committing**: Before any commit, run `pnpm run build && pnpm run test && pnpm run test:integration` to ensure all tests pass. This is CRITICAL.
+3. **Commit After Logical Tasks**: Always commit after completing a logical task or set of related changes, ensuring tests are green before committing. This creates a clean, understandable commit history.
+4. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
+5. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
+6. **Documentation Updates**: Always update documentation when changing code, especially:
    - **README.md**: Update when adding features, changing architecture, or modifying usage instructions
    - **CLAUDE.md**: Update project context, design decisions, and open tasks when making significant changes
    - **JSDoc/TSDoc**: Add comprehensive comments to new types, classes, and functions

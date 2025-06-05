@@ -21,7 +21,7 @@ export const WeatherReportSchema = z.object({
 });
 
 /**
- * Parameters schema for the getWeatherReport tool
+ * Parameters schema for the meteoswissWeatherReport tool
  */
 export const GetWeatherReportParamsSchema = z.object({
   region: z.enum(['north', 'south', 'west']),

@@ -61,28 +61,31 @@ describe('MCP Server Integration Tests', () => {
           const output = data.toString();
           buffer += output;
           console.log('Server output:', output);
-          if (buffer.includes('MCP server listening')) {
+          if (buffer.includes('MCP server running at')) {
             clearTimeout(timeout);
             // Clean up listeners
-            serverProcess!.stderr!.removeListener('data', dataHandler);
+            serverProcess!.stdout!.removeListener('data', dataHandler);
+            serverProcess!.stderr!.removeListener('data', stderrHandler);
             serverProcess!.removeListener('error', errorHandler);
             // Give the server a moment to fully initialize
             setTimeout(resolve, 2000);
           }
         };
         
-        // Also monitor stdout
-        serverProcess!.stdout?.on('data', (data: Buffer) => {
-          console.log('Server stdout:', data.toString());
-        });
+        // Monitor stderr for errors
+        const stderrHandler = (data: Buffer) => {
+          console.log('Server stderr:', data.toString());
+        };
 
         const errorHandler = (err: Error) => {
           clearTimeout(timeout);
-          serverProcess!.stderr!.removeListener('data', dataHandler);
+          serverProcess!.stdout!.removeListener('data', dataHandler);
+          serverProcess!.stderr!.removeListener('data', stderrHandler);
           reject(err);
         };
 
-        serverProcess!.stderr!.on('data', dataHandler);
+        serverProcess!.stdout!.on('data', dataHandler);
+        serverProcess!.stderr!.on('data', stderrHandler);
         serverProcess!.on('error', errorHandler);
       });
 
@@ -119,7 +122,7 @@ describe('MCP Server Integration Tests', () => {
       expect(health).toMatchObject({
         status: 'ok',
         sessions: expect.any(Number),
-        endpoint: 'http://localhost:3456/mcp',
+        endpoint: expect.stringMatching(/^http:\/\/(localhost|0\.0\.0\.0):3456\/mcp$/),
       });
 
       // Now test actual MCP connection
@@ -142,12 +145,12 @@ describe('MCP Server Integration Tests', () => {
       const tools = await client.listTools();
       expect(tools.tools).toHaveLength(1);
       expect(tools.tools[0]).toMatchObject({
-        name: 'getWeatherReport',
+        name: 'meteoswissWeatherReport',
         description: expect.stringContaining('MeteoSwiss weather report'),
       });
     });
 
-    test('should call getWeatherReport tool via HTTP', async () => {
+    test('should call meteoswissWeatherReport tool via HTTP', async () => {
       
       const transport = new SSEClientTransport(new URL(`${serverUrl}/mcp`));
       
@@ -162,7 +165,7 @@ describe('MCP Server Integration Tests', () => {
 
       // Call the tool
       const result = await client.callTool({
-        name: 'getWeatherReport',
+        name: 'meteoswissWeatherReport',
         arguments: {
           region: 'south',
           language: 'de',
@@ -227,7 +230,7 @@ describe('MCP Inspector CLI Tests', () => {
 
     // Run inspector CLI command
     const { stdout, stderr } = await execAsync(
-      `npx @modelcontextprotocol/inspector --cli http://localhost:3457/mcp --method tools/call --tool-name getWeatherReport --tool-arg region=north --tool-arg language=de`,
+      `npx @modelcontextprotocol/inspector --cli http://localhost:3457/mcp --method tools/call --tool-name meteoswissWeatherReport --tool-arg region=north --tool-arg language=de`,
       {
         env: { ...process.env },
         timeout: 10000,

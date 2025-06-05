@@ -4,7 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import type { WeatherReport } from '../schemas/weather-report.js';
-import { fetchHtml, fetchJson, HttpRequestError } from '../utils/http-client.js';
+import { fetchHtml, fetchJson, HttpRequestError } from '../support/http-communication.js';
+import { debugData } from '../support/logging.js';
 
 // Base URL for the MeteoSwiss product output
 const BASE_URL = 'https://www.meteoswiss.admin.ch/product/output/weather-report';
@@ -129,7 +130,9 @@ async function fetchWeatherReportFromTestFixtures(
     }
 
     const versions = JSON.parse(versionsData);
+    debugData('Parsed versions data: %O', versions);
     const currentVersionDir = versions.currentVersionDirectory;
+    debugData('Current version directory from fixture: %s', currentVersionDir);
 
     // Determine which file to read based on language
     const fileSuffix = language === 'en' ? '_en' : `_${language}`;

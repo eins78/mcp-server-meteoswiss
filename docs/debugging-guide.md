@@ -46,24 +46,46 @@ cat ~/Library/Logs/Claude/mcp.log | tail -n 20
    - ES2022 or higher is required for optional chaining (`?.`) and nullish coalescing (`??`)
 
 3. **Transport Issues**
-   - Claude Desktop requires the `StdioServerTransport` for communication
-   - Make sure the server is properly connecting with:
+   - This server uses HTTP with Server-Sent Events (SSE) for communication
+   - The server runs on a configurable port (default: 3000)
+   - Connect using mcp-remote:
 
-   ```typescript
-   const transport = new StdioServerTransport();
-   await server.connect(transport);
+   ```bash
+   npx mcp-remote http://localhost:3000/mcp
    ```
 
 ### 3. Testing the Server
 
-Before connecting to Claude Desktop, test the server locally:
+Test the server using the MCP Inspector:
 
 ```bash
-npm run build
-npm run start
+pnpm run dev:inspect
 ```
 
-Verify there are no errors in the console output.
+This will start the server and open the inspector in your browser.
+
+### 4. Debug Environment Variables
+
+- `DEBUG_MCHMCP=true` - Enables debug logging to file
+- `USE_TEST_FIXTURES=true` - Uses local test data instead of live API calls
+
+For all environment variables, see the [API documentation](architecture/api-design.md#environment-configuration).
+
+### 5. Common HTTP Server Issues
+
+1. **Port Already in Use**
+   - Check if another process is using the port:
+   ```bash
+   lsof -i :3000
+   ```
+
+2. **Connection Timeouts**
+   - SSE connections have a configurable timeout (default: 5 minutes)
+   - Check `SESSION_TIMEOUT_MS` environment variable
+
+3. **Rate Limiting**
+   - The server implements rate limiting (default: 100 requests/minute)
+   - Check `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_MS`
 
 ## MCP Protocol Debugging Resources
 

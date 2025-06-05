@@ -18,9 +18,16 @@ export const debugTransport = debugModule('mcp:transport');
 export const debugTools = debugModule('mcp:tools');
 export const debugData = debugModule('mcp:data');
 export const debugHttp = debugModule('mcp:http');
+export const debugSession = debugModule('mcp:session');
+export const debugEnv = debugModule('mcp:env');
 
-// Enable debug output to stderr when DEBUG_MCHMCP env var is set
-if (process.env.DEBUG_MCHMCP === 'true') {
+// Enable debug output based on environment variables
+// Priority: DEBUG env var takes precedence, then DEBUG_MCHMCP for backward compatibility
+if (process.env.DEBUG) {
+  // Use the standard debug module pattern
+  debugModule.enable(process.env.DEBUG);
+} else if (process.env.DEBUG_MCHMCP === 'true') {
+  // Legacy compatibility - enable all mcp namespaces
   debugModule.enable('mcp:*');
 }
 

@@ -73,30 +73,22 @@ This project uses `tsx` for TypeScript execution, providing a smooth development
 
 ### Running the application
 
-#### Stdio Transport (Claude Desktop)
+#### Running the Server
 
-Start the server in stdio mode (default):
+The server runs as an HTTP service with Server-Sent Events (SSE):
 
 ```bash
+# Start the server (default port 3000)
 pnpm start
-# or
-pnpm start:stdio
-```
 
-#### HTTP Transport (Remote Access)
-
-Start the server with HTTP/SSE transport:
-
-```bash
-pnpm start:http
-# or specify a custom port
-npx tsx src/index.ts http 8080
+# Or specify a custom port
+PORT=8080 pnpm start
 ```
 
 The HTTP server provides:
-- POST `/sse` - Initialize session
-- GET `/sse?sessionId=...` - Server-Sent Events stream
-- DELETE `/sse?sessionId=...` - Close session
+- GET `/` - Server information
+- GET `/mcp` - MCP SSE endpoint for client connections
+- POST `/messages?sessionId=...` - Message handling endpoint
 - GET `/health` - Health check endpoint
 
 #### Development Mode
@@ -128,7 +120,7 @@ pnpm run lint
   - `data/` - Data access and transformation
   - `schemas/` - Zod schemas for data validation
   - `tools/` - Utility tools and scripts
-  - `utils/` - Common utilities
+  - `support/` - Supporting infrastructure (logging, validation, etc.)
 
 ## Documentation
 
@@ -136,23 +128,68 @@ pnpm run lint
   - `architecture/` - Architecture diagrams and descriptions
   - `analysis/` - Data analysis and insights
 
-## MCP SDK Implementation
+## Available Tools
 
-This server strictly follows the Model Context Protocol using the official TypeScript SDK. All tools and resources are implemented via the SDK interfaces:
+- `meteoswissWeatherReport`: Weather report for Swiss regions (north, south, west) in multiple languages
 
-- `McpServer` class for server setup
-- `StreamableHTTPServerTransport` for client communication
-- Zod schemas for type validation
-
-## Tools
-
-The server provides the following MCP tools:
-
-- `getWeatherReport`: Get weather report for a specific region (north, south, west)
+See the [API documentation](docs/architecture/api-design.md) for detailed tool specifications.
 
 ## Debugging
 
 For issues with Claude Desktop connections or other debugging needs, see our [Debugging Guide](docs/debugging-guide.md).
+
+## Running Your Own Instance
+
+### Using Node.js
+
+```bash
+# Clone the repository
+git clone https://github.com/eins78/mcp-server-meteoswiss.git
+cd mcp-server-meteoswiss
+
+# Install dependencies
+pnpm install
+
+# Start the server
+pnpm start
+
+# The server will be available at http://localhost:3000
+```
+
+### Using Docker
+
+```bash
+# Run the latest version
+docker run -p 3000:3000 -e USE_TEST_FIXTURES=false meteoswiss-mcp-server
+
+# Or build your own
+docker build -t my-meteoswiss-server .
+docker run -p 3000:3000 my-meteoswiss-server
+```
+
+### Environment Variables
+
+- `PORT` - Server port (default: 3000)
+- `USE_TEST_FIXTURES` - Use test data instead of live API (default: false)
+- `DEBUG_MCHMCP` - Enable debug logging (default: false)
+- `BIND_ADDRESS` - Interface to bind to (default: 0.0.0.0)
+- `MAX_SESSIONS` - Maximum concurrent sessions (default: 100)
+- `SESSION_TIMEOUT_MS` - Session timeout in milliseconds (default: 300000)
+
+### Local MCP Configuration
+
+To use your local instance with Claude Desktop, add this to your configuration:
+
+```json
+{
+  "mcpServers": {
+    "meteoswiss-local": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://localhost:3000/mcp"]
+    }
+  }
+}
+```
 
 ## Contributing
 

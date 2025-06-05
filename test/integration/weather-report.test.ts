@@ -3,13 +3,13 @@ import fs from 'fs/promises';
 import path from 'path';
 
 /**
- * Integration tests for the getWeatherReport tool
+ * Integration tests for the meteoswissWeatherReport tool
  *
  * These tests start an actual MCP server process and communicate with it
  * via stdio, mimicking how a real client like Claude Desktop would interact
  * with the server.
  */
-describe('getWeatherReport Tool Integration Tests', () => {
+describe('meteoswissWeatherReport Tool Integration Tests', () => {
   let client: MCPClient;
 
   // Set up test fixtures
@@ -88,12 +88,12 @@ describe('getWeatherReport Tool Integration Tests', () => {
   });
 
   /**
-   * Test that the getWeatherReport tool returns the correct data structure
+   * Test that the meteoswissWeatherReport tool returns the correct data structure
    * for each region in the default language (English)
    */
   test('should return weather reports for all regions', async () => {
     // Test north region
-    const northResult = await client.callTool('getWeatherReport', {
+    const northResult = await client.callTool('meteoswissWeatherReport', {
       region: 'north',
       language: 'en',
     });
@@ -118,7 +118,7 @@ describe('getWeatherReport Tool Integration Tests', () => {
     expect(northReportData.forecast[1].day).toBe('Tuesday');
 
     // Test south region
-    const southResult = await client.callTool('getWeatherReport', {
+    const southResult = await client.callTool('meteoswissWeatherReport', {
       region: 'south',
       language: 'en',
     });
@@ -139,7 +139,7 @@ describe('getWeatherReport Tool Integration Tests', () => {
     expect(Array.isArray(southReportData.forecast)).toBe(true);
 
     // Test west region
-    const westResult = await client.callTool('getWeatherReport', {
+    const westResult = await client.callTool('meteoswissWeatherReport', {
       region: 'west',
       language: 'en',
     });
@@ -161,11 +161,11 @@ describe('getWeatherReport Tool Integration Tests', () => {
   });
 
   /**
-   * Test that the getWeatherReport tool works with different languages
+   * Test that the meteoswissWeatherReport tool works with different languages
    */
   test('should return weather reports in different languages', async () => {
     // Test with German
-    const germanResult = await client.callTool('getWeatherReport', {
+    const germanResult = await client.callTool('meteoswissWeatherReport', {
       region: 'north',
       language: 'de',
     });
@@ -181,7 +181,7 @@ describe('getWeatherReport Tool Integration Tests', () => {
     expect(germanReportData.forecast.length).toBe(2);
 
     // Test with French
-    const frenchResult = await client.callTool('getWeatherReport', {
+    const frenchResult = await client.callTool('meteoswissWeatherReport', {
       region: 'north',
       language: 'fr',
     });
@@ -197,7 +197,7 @@ describe('getWeatherReport Tool Integration Tests', () => {
     expect(frenchReportData.forecast.length).toBe(2);
 
     // Test with Italian
-    const italianResult = await client.callTool('getWeatherReport', {
+    const italianResult = await client.callTool('meteoswissWeatherReport', {
       region: 'north',
       language: 'it',
     });
@@ -219,7 +219,7 @@ describe('getWeatherReport Tool Integration Tests', () => {
   test('should handle invalid parameters', async () => {
     // Test with invalid region
     try {
-      await client.callTool('getWeatherReport', {
+      await client.callTool('meteoswissWeatherReport', {
         region: 'invalid',
         language: 'en',
       });
@@ -232,7 +232,7 @@ describe('getWeatherReport Tool Integration Tests', () => {
 
     // Test with invalid language
     try {
-      await client.callTool('getWeatherReport', {
+      await client.callTool('meteoswissWeatherReport', {
         region: 'north',
         language: 'invalid',
       });

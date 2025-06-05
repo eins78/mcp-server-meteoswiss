@@ -7,7 +7,7 @@ This document outlines the implementation plan for the MeteoSwiss MCP server.
 **Duration: 1-2 weeks**
 
 1. Set up development environment
-   - Initialize Node.js v22 project with TypeScript
+   - Initialize Node.js v18+ project with TypeScript
    - Install MCP TypeScript SDK (`@modelcontextprotocol/sdk`)
    - Install Zod for schema validation (`zod`)
    - Configure TypeScript with strict settings (based on Total TypeScript recommendations)
@@ -18,10 +18,10 @@ This document outlines the implementation plan for the MeteoSwiss MCP server.
    - Implement MCP server core using the McpServer class from SDK
    - Set up project structure for components (using ES modules)
    - Implement basic logging and error handling
-   - Configure the StreamableHTTP transport
+   - Configure HTTP server with Server-Sent Events (SSE) transport
 
 3. Create Docker setup for development and deployment
-   - Dockerfile using Node.js v22 base image
+   - Dockerfile using Node.js v24 Alpine image
    - Dockerfile for production with multi-stage build
    - Docker Compose for local development
 
@@ -30,7 +30,7 @@ This document outlines the implementation plan for the MeteoSwiss MCP server.
 **Duration: 2-3 weeks**
 
 1. Implement Data Fetcher
-   - Create HTTP client using Node.js v22 native fetch API
+   - Create HTTP client using Node.js native fetch API
    - Implement fetching for each data source
    - Implement error handling with proper typing and retry logic
    - Set up data freshness monitoring
@@ -82,7 +82,7 @@ This document outlines the implementation plan for the MeteoSwiss MCP server.
    - Identify and fix bottlenecks
    - Improve caching strategies
    - Reduce response times
-   - Leverage Node.js v22 performance features
+   - Leverage Node.js performance features
 
 3. Implement monitoring and observability
    - Add metrics collection
@@ -106,7 +106,7 @@ This document outlines the implementation plan for the MeteoSwiss MCP server.
    - Docker image building and publishing
 
 3. Deploy server
-   - Setup production environment with Node.js v22
+   - Setup production environment with Node.js v18+
    - Configure monitoring
    - Establish update process
 
@@ -114,21 +114,24 @@ This document outlines the implementation plan for the MeteoSwiss MCP server.
 
 ```
 src/
-├── index.ts                    # Main entry point
-├── config/                     # Configuration
-├── server/                     # MCP Server implementation
-│   ├── index.ts                # Server setup
-│   ├── resources/              # Resource implementations
-│   └── tools/                  # Tool implementations
-├── services/                   # Core services
-│   ├── fetcher/                # Data fetcher implementation
-│   ├── transformer/            # Data transformer with Zod schemas
-│   └── cache/                  # Caching implementation
-├── types/                      # TypeScript type definitions
-│   ├── schemas.ts              # Zod schemas
-│   └── index.ts                # Type exports
-├── utils/                      # Utility functions
-└── __tests__/                  # Tests
+├── index.ts                    # Main HTTP server entry point
+├── server.ts                   # MCP server implementation
+├── transports/                 # Transport implementations
+│   └── streamable-http.ts      # HTTP/SSE transport
+├── tools/                      # MCP tool implementations
+│   └── get-weather-report.ts   # Weather report tool
+├── data/                       # Data fetching logic
+│   └── weather-report-data.ts  # MeteoSwiss data fetcher
+├── schemas/                    # Zod schemas
+│   └── weather-report.ts       # Weather data schemas
+├── support/                    # Supporting infrastructure (non-domain-specific)
+│   ├── environment-validation.ts # Environment variable validation
+│   ├── session-management.ts   # SSE session management
+│   ├── http-communication.ts   # HTTP client for external APIs
+│   └── logging.ts              # Debug and file logging
+└── test/                       # Tests
+    ├── integration/            # Integration tests
+    └── __fixtures__/           # Test data
 ```
 
 ## TypeScript Configuration
@@ -179,7 +182,7 @@ src/
 
 2. **Risk**: High request volume
    - **Mitigation**: Implement robust caching, rate limiting, and scaling
-   - Leverage Node.js v22 performance characteristics
+   - Leverage Node.js performance characteristics
 
 3. **Risk**: Data quality issues
    - **Mitigation**: Add Zod validation, fallbacks, and alerts for data quality problems
@@ -198,5 +201,5 @@ src/
 ## Next Steps
 
 1. Finalize the architecture and design documents
-2. Set up development environment with Node.js v22 and TypeScript
+2. Set up development environment with Node.js v18+ and TypeScript
 3. Begin implementation of Phase 1
