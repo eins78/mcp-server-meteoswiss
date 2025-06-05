@@ -26,12 +26,12 @@ const envSchema = z.object({
   BIND_ADDRESS: z
     .string()
     .optional()
-    .default('0.0.0.0')
+    .default('127.0.0.1') // Default to localhost for security
     .refine(
       (val) => {
         // Basic IP address validation
         const parts = val.split('.');
-        if (val === 'localhost' || val === '::1' || val === '::' || val === '0.0.0.0') {
+        if (val === 'localhost' || val === '::1' || val === '::' || val === '0.0.0.0' || val === '127.0.0.1') {
           return true;
         }
         if (parts.length !== 4) return false;
@@ -83,6 +83,10 @@ const envSchema = z.object({
     .string()
     .optional()
     .describe('Full public URL including protocol and port for URL generation'),
+  MCP_AUTH_TOKEN: z
+    .string()
+    .optional()
+    .describe('Authentication token for MCP connections (recommended for production)'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -121,7 +125,7 @@ export function validateEnv(): EnvConfig {
           `  PORT=3000\n` +
           `  USE_TEST_FIXTURES=false\n` +
           `  DEBUG_MCHMCP=false\n` +
-          `  BIND_ADDRESS=0.0.0.0\n` +
+          `  BIND_ADDRESS=127.0.0.1\n` +
           `  NODE_ENV=production\n` +
           `  MAX_SESSIONS=100\n` +
           `  SESSION_TIMEOUT_MS=300000\n` +
