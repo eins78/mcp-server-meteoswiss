@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@eins78/styles':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@modelcontextprotocol/sdk':
         specifier: ^1.10.2
         version: 1.10.2
@@ -304,6 +307,9 @@ packages:
   '@csstools/css-tokenizer@3.0.3':
     resolution: {integrity: sha512-UJnjoFsmxfKUdNYdWgOB0mWUypuLvAfQPH1+pyvRJs6euowbFkFC6P13w1l8mJyi3vxYMxc9kld5jZEGRQs6bw==}
     engines: {node: '>=18'}
+
+  '@eins78/styles@1.0.0':
+    resolution: {integrity: sha512-ODY1lGBalWOujXJpXV1Iys/FusTqV7h09UDHRVFIxTkqWme79l6iCVOD8AdgCPm/7CV2bSM+rxrWmsypOj9Nww==}
 
   '@es-joy/jsdoccomment@0.46.0':
     resolution: {integrity: sha512-C3Axuq1xd/9VqFZpW4YAzOx5O9q/LP46uIQy/iNDpHG3fmPa6TBtvfglMCs3RBiBxAIi0Go97r8+jvTt55XMyQ==}
@@ -3521,6 +3527,8 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.3
 
   '@csstools/css-tokenizer@3.0.3': {}
+
+  '@eins78/styles@1.0.0': {}
 
   '@es-joy/jsdoccomment@0.46.0':
     dependencies:
