@@ -88,22 +88,9 @@ describe('Hostname Configuration', () => {
     });
   };
 
-  describe('SERVICE_HOSTNAME configuration', () => {
-    it('should use SERVICE_HOSTNAME in URLs when set', async () => {
-      process.env.SERVICE_HOSTNAME = 'myservice.example.com';
-      process.env.PORT = '8080';
-      
-      const { port } = await setupServer();
-      const response = await makeRequest(port, '/');
-
-      expect(response.status).toBe(200);
-      expect(response.body.mcp_endpoint).toBe('http://myservice.example.com:8080/mcp');
-      expect(response.body.usage).toContain('http://myservice.example.com:8080/mcp');
-    });
-
-    it('should default to localhost when SERVICE_HOSTNAME is not set', async () => {
+  describe('Default URL configuration', () => {
+    it('should default to localhost when PUBLIC_URL is not set', async () => {
       process.env.PORT = '3000';
-      delete process.env.SERVICE_HOSTNAME;
       
       const { port } = await setupServer();
       const response = await makeRequest(port, '/');
@@ -111,12 +98,22 @@ describe('Hostname Configuration', () => {
       expect(response.status).toBe(200);
       expect(response.body.mcp_endpoint).toBe('http://localhost:3000/mcp');
     });
+    
+    it('should use correct protocol and port in default URLs', async () => {
+      process.env.PORT = '8080';
+      
+      const { port } = await setupServer();
+      const response = await makeRequest(port, '/');
+
+      expect(response.status).toBe(200);
+      expect(response.body.mcp_endpoint).toBe('http://localhost:8080/mcp');
+      expect(response.body.usage).toContain('http://localhost:8080/mcp');
+    });
   });
 
   describe('PUBLIC_URL configuration', () => {
     it('should use PUBLIC_URL when set', async () => {
       process.env.PUBLIC_URL = 'https://api.example.com:8443';
-      process.env.SERVICE_HOSTNAME = 'ignored.com';
       process.env.PORT = '3000';
       
       const { port } = await setupServer();
@@ -141,19 +138,17 @@ describe('Hostname Configuration', () => {
 
   describe('Health endpoint', () => {
     it('should return correct endpoint URL in health check', async () => {
-      process.env.SERVICE_HOSTNAME = 'health.example.com';
       process.env.PORT = '9000';
       
       const { port } = await setupServer();
       const response = await makeRequest(port, '/health');
 
       expect(response.status).toBe(200);
-      expect(response.body.endpoint).toBe('http://health.example.com:9000/mcp');
+      expect(response.body.endpoint).toBe('http://localhost:9000/mcp');
     });
 
     it('should use PUBLIC_URL in health check when set', async () => {
       process.env.PUBLIC_URL = 'https://public.example.com';
-      process.env.SERVICE_HOSTNAME = 'ignored.com';
       process.env.PORT = '3000';
       
       const { port } = await setupServer();
@@ -166,14 +161,24 @@ describe('Hostname Configuration', () => {
 
   describe('HTML homepage', () => {
     it('should display correct MCP endpoint in HTML', async () => {
-      process.env.SERVICE_HOSTNAME = 'demo.example.com';
       process.env.PORT = '8080';
       
       const { port } = await setupServer();
       const response = await makeRequest(port, '/', { 'Accept': 'text/html' });
 
       expect(response.status).toBe(200);
-      expect(response.text).toContain('http://demo.example.com:8080/mcp');
+      expect(response.text).toContain('http://localhost:8080/mcp');
+    });
+    
+    it('should display PUBLIC_URL in HTML when set', async () => {
+      process.env.PUBLIC_URL = 'https://demo.example.com';
+      process.env.PORT = '3000';
+      
+      const { port } = await setupServer();
+      const response = await makeRequest(port, '/', { 'Accept': 'text/html' });
+
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('https://demo.example.com/mcp');
     });
   });
 });

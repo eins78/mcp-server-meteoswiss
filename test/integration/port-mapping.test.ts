@@ -97,18 +97,14 @@ describe('Port Mapping Configuration', () => {
       expect(healthResponse.body.endpoint).toBe('http://example.com:8000/mcp');
     });
 
-    it('should work with SERVICE_HOSTNAME for external hostname', async () => {
-      // SERVICE_HOSTNAME is just the hostname, not including port
-      // For port mapping, use PUBLIC_URL instead
+    it('should default to localhost when only PORT is set', async () => {
       process.env.PORT = '3000';
-      process.env.SERVICE_HOSTNAME = 'myservice.local';
       
       const { port } = await setupServer(0); // Use random port to avoid conflicts
       
       const response = await makeRequest(port, '/');
       expect(response.status).toBe(200);
-      // SERVICE_HOSTNAME uses the PORT env var
-      expect(response.body.mcp_endpoint).toBe('http://myservice.local:3000/mcp');
+      expect(response.body.mcp_endpoint).toBe('http://localhost:3000/mcp');
     });
 
     it('should handle HTTPS URLs with port mapping', async () => {
@@ -124,7 +120,6 @@ describe('Port Mapping Configuration', () => {
 
     it('should work correctly without port mapping', async () => {
       process.env.PORT = '3000';
-      process.env.SERVICE_HOSTNAME = 'localhost';
       
       const { port } = await setupServer(3000);
       

@@ -177,8 +177,7 @@ docker run -p 80:3000 -e PUBLIC_URL=http://meteoswiss.example.com my-meteoswiss-
 ### Environment Variables
 
 - `PORT` - Server port (default: 3000)
-- `SERVICE_HOSTNAME` - Hostname to use in generated URLs (e.g., localhost, example.com)
-- `PUBLIC_URL` - Full public URL including protocol and port (overrides SERVICE_HOSTNAME)
+- `PUBLIC_URL` - Full public URL including protocol and port for URL generation
 - `USE_TEST_FIXTURES` - Use test data instead of live API (default: false)
 - `DEBUG_MCHMCP` - Enable debug logging (default: false)
 - `BIND_ADDRESS` - Interface to bind to (default: 0.0.0.0)

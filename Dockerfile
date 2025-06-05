@@ -66,7 +66,6 @@ EXPOSE 3000
 
 # Environment variable hints
 ENV PORT=3000
-ENV SERVICE_HOSTNAME=""
 ENV PUBLIC_URL=""
 
 # Health check

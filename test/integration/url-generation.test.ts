@@ -19,7 +19,6 @@ describe('URL Generation', () => {
       CORS_ORIGIN: '*',
       REQUEST_SIZE_LIMIT: '10mb',
       PUBLIC_URL: undefined,
-      SERVICE_HOSTNAME: undefined,
     };
   });
   
@@ -34,41 +33,31 @@ describe('URL Generation', () => {
       expect(getServiceBaseUrl(config)).toBe('https://example.com');
     });
     
-    it('should use SERVICE_HOSTNAME when PUBLIC_URL is not set', () => {
-      const config = { ...baseConfig, SERVICE_HOSTNAME: 'myservice.com', PORT: 8080 };
-      expect(getServiceBaseUrl(config)).toBe('http://myservice.com:8080');
-    });
-    
-    it('should default to localhost when neither PUBLIC_URL nor SERVICE_HOSTNAME is set', () => {
+    it('should default to localhost when PUBLIC_URL is not set', () => {
       const config = { ...baseConfig, PORT: 3000 };
       expect(getServiceBaseUrl(config)).toBe('http://localhost:3000');
     });
     
     it('should omit port 80 from http URLs', () => {
-      const config = { ...baseConfig, SERVICE_HOSTNAME: 'example.com', PORT: 80 };
-      expect(getServiceBaseUrl(config)).toBe('http://example.com');
+      const config = { ...baseConfig, PORT: 80 };
+      expect(getServiceBaseUrl(config)).toBe('http://localhost');
     });
     
     it('should use https and omit port 443', () => {
-      const config = { ...baseConfig, SERVICE_HOSTNAME: 'example.com', PORT: 443 };
-      expect(getServiceBaseUrl(config)).toBe('https://example.com');
+      const config = { ...baseConfig, PORT: 443 };
+      expect(getServiceBaseUrl(config)).toBe('https://localhost');
     });
     
-    it('should prioritize PUBLIC_URL over SERVICE_HOSTNAME', () => {
-      const config = { 
-        ...baseConfig, 
-        PUBLIC_URL: 'https://public.com:8443',
-        SERVICE_HOSTNAME: 'service.com',
-        PORT: 3000 
-      };
-      expect(getServiceBaseUrl(config)).toBe('https://public.com:8443');
+    it('should use non-standard ports in URL', () => {
+      const config = { ...baseConfig, PORT: 8080 };
+      expect(getServiceBaseUrl(config)).toBe('http://localhost:8080');
     });
   });
   
   describe('getMcpEndpointUrl', () => {
     it('should append /mcp to base URL', () => {
-      const config = { ...baseConfig, SERVICE_HOSTNAME: 'example.com', PORT: 3000 };
-      expect(getMcpEndpointUrl(config)).toBe('http://example.com:3000/mcp');
+      const config = { ...baseConfig, PORT: 3000 };
+      expect(getMcpEndpointUrl(config)).toBe('http://localhost:3000/mcp');
     });
     
     it('should work with PUBLIC_URL', () => {
@@ -79,8 +68,8 @@ describe('URL Generation', () => {
   
   describe('getHealthEndpointUrl', () => {
     it('should append /health to base URL', () => {
-      const config = { ...baseConfig, SERVICE_HOSTNAME: 'example.com', PORT: 3000 };
-      expect(getHealthEndpointUrl(config)).toBe('http://example.com:3000/health');
+      const config = { ...baseConfig, PORT: 3000 };
+      expect(getHealthEndpointUrl(config)).toBe('http://localhost:3000/health');
     });
     
     it('should work with PUBLIC_URL', () => {
