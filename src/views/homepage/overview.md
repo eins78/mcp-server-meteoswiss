@@ -4,8 +4,8 @@ Welcome to the MeteoSwiss MCP Server - your gateway to Swiss weather data throug
 
 This hosted service provides real-time weather reports from MeteoSwiss (the Federal Office of Meteorology and Climatology) for different regions of Switzerland. It's designed to work seamlessly with AI assistants like Claude Desktop and Claude.ai, allowing natural language queries about Swiss weather conditions.
 
-**Service URL**: `https://meteoswiss-mcp-demo.cloud.kiste.li/`  
-**MCP Endpoint**: `https://mchmcp.kiste.li/mcp`
+**Service URL**: `$$$___TEMPLATE_BASE_URL___$$$`  
+**MCP Endpoint**: `$$$___TEMPLATE_MCP_URL___$$$`
 
 ## Key Features
 

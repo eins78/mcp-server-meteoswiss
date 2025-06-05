@@ -21,7 +21,6 @@ COPY package.json ./
 COPY tsconfig.json ./
 COPY src ./src
 COPY test/__fixtures__ ./test/__fixtures__
-COPY docs ./docs
 RUN ls -la node_modules
 RUN pnpm run build
 
@@ -49,8 +48,8 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 # Copy test fixtures for runtime (if USE_TEST_FIXTURES is enabled)
 COPY --from=builder /app/test/__fixtures__ ./test/__fixtures__
 
-# Copy documentation for homepage
-COPY --from=builder /app/docs ./docs
+# Copy views for homepage
+COPY --from=builder /app/src/views ./src/views
 
 # Change ownership to nodejs user
 RUN chown -R nodejs:nodejs /app
@@ -63,6 +62,10 @@ RUN pnpm -v
 
 # Expose the port (default 3000)
 EXPOSE 3000
+
+# Environment variable hints
+ENV PORT=3000
+ENV PUBLIC_URL=""
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

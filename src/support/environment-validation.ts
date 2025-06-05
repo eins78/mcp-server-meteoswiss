@@ -87,7 +87,8 @@ const envSchema = z.object({
     .default('10mb'),
   PUBLIC_URL: z
     .string()
-    .optional(),
+    .optional()
+    .describe('Full public URL including protocol and port for URL generation'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

@@ -12,6 +12,7 @@ import { SessionManager } from '../support/session-management.js';
 import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
+import { getServiceBaseUrl, getMcpEndpointUrl, getHealthEndpointUrl } from '../support/url-generation.js';
 
 interface StreamableHttpOptions {
   port?: number;
@@ -77,8 +78,8 @@ export async function createHttpServer(
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
         description: 'Model Context Protocol server for MeteoSwiss weather data',
-        mcp_endpoint: `http://${host}:${port}/mcp`,
-        usage: `npx mcp-remote http://${host}:${port}/mcp`,
+        mcp_endpoint: getMcpEndpointUrl(config),
+        usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
         health: `/health`
       });
       return;
@@ -95,8 +96,8 @@ export async function createHttpServer(
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
         description: 'Model Context Protocol server for MeteoSwiss weather data',
-        mcp_endpoint: `http://${host}:${port}/mcp`,
-        usage: `npx mcp-remote http://${host}:${port}/mcp`,
+        mcp_endpoint: getMcpEndpointUrl(config),
+        usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
         health: `/health`
       });
     }
@@ -222,7 +223,7 @@ export async function createHttpServer(
     const health = { 
       status: 'ok', 
       sessions: sessionManager.size,
-      endpoint: `http://${host}:${port}/mcp`
+      endpoint: getMcpEndpointUrl(config)
     };
     debugTransport('Health check requested, response: %O', health);
     res.json(health);
