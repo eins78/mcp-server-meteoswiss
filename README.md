@@ -165,6 +165,13 @@ docker run -p 3000:3000 -e USE_TEST_FIXTURES=false meteoswiss-mcp-server
 # Or build your own
 docker build -t my-meteoswiss-server .
 docker run -p 3000:3000 my-meteoswiss-server
+
+# Run with custom external port mapping
+# Internal port 3000 mapped to external port 8080
+docker run -p 8080:3000 -e PUBLIC_URL=http://localhost:8080 my-meteoswiss-server
+
+# Run with custom hostname
+docker run -p 80:3000 -e PUBLIC_URL=http://meteoswiss.example.com my-meteoswiss-server
 ```
 
 ### Environment Variables
@@ -177,6 +184,18 @@ docker run -p 3000:3000 my-meteoswiss-server
 - `BIND_ADDRESS` - Interface to bind to (default: 0.0.0.0)
 - `MAX_SESSIONS` - Maximum concurrent sessions (default: 100)
 - `SESSION_TIMEOUT_MS` - Session timeout in milliseconds (default: 300000)
+
+#### Docker Port Mapping
+
+When running in Docker with port mapping (e.g., `-p 8080:3000`), use the `PUBLIC_URL` environment variable to ensure URLs reflect the external port:
+
+```bash
+# Server listens on port 3000 internally, but is accessible on port 8080 externally
+docker run -p 8080:3000 -e PORT=3000 -e PUBLIC_URL=http://localhost:8080 my-server
+
+# For production with a domain name
+docker run -p 443:3000 -e PORT=3000 -e PUBLIC_URL=https://api.example.com my-server
+```
 
 ### Local MCP Configuration
 
