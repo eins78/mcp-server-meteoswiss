@@ -1,4 +1,4 @@
-# MeteoSwiss MCP Server
+# MeteoSwiss MCP Server Demo
 
 Welcome to the MeteoSwiss MCP Server - your gateway to Swiss weather data through the Model Context Protocol.
 
