@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { texts } from '../texts/index.js';
 
 /**
  * Weather report schema
@@ -25,10 +26,10 @@ export const WeatherReportSchema = z.object({
  */
 export const GetWeatherReportParamsSchema = z.object({
   region: z.enum(['north', 'south', 'west']).describe(
-    'The Swiss region to get weather for. north: Northern Switzerland (Zurich, Basel, Bern, Swiss Plateau), south: Southern Switzerland (Ticino and southern valleys), west: Western Switzerland (Romandy - Geneva, Lausanne, western Alps)'
+    texts['region-parameter-description']
   ),
   language: z.enum(['de', 'fr', 'it']).default('de').describe(
-    'Language for the weather report. de: German (primary for north), fr: French (primary for west), it: Italian (primary for south/Ticino). Note: English is not available - MeteoSwiss only provides reports in Switzerland\'s official languages.'
+    texts['language-parameter-description']
   ),
 });
 

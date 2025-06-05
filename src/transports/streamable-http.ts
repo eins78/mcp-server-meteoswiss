@@ -13,6 +13,7 @@ import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
 import { getServiceBaseUrl, getMcpEndpointUrl, getHealthEndpointUrl } from '../support/url-generation.js';
+import { texts } from '../texts/index.js';
 
 interface StreamableHttpOptions {
   port?: number;
@@ -77,7 +78,7 @@ export async function createHttpServer(
       res.json({
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
-        description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland via Model Context Protocol (MCP)',
+        description: texts['api-description'],
         capabilities: {
           tools: ['meteoswissWeatherReport'],
           prompts: [
@@ -107,7 +108,7 @@ export async function createHttpServer(
       res.json({
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
-        description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland via Model Context Protocol (MCP)',
+        description: texts['api-description'],
         capabilities: {
           tools: ['meteoswissWeatherReport'],
           prompts: [
