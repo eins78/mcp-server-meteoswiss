@@ -133,7 +133,7 @@ export async function createHttpServer(
           tools: ['meteoswissWeatherReport'],
           prompts: [
             'wetterNordschweiz',
-            'wetterbericht',
+            'wetterSchweiz',
             'meteoSuisseRomande',
             'meteoTicino'
           ],
@@ -163,7 +163,7 @@ export async function createHttpServer(
           tools: ['meteoswissWeatherReport'],
           prompts: [
             'wetterNordschweiz',
-            'wetterbericht',
+            'wetterSchweiz',
             'meteoSuisseRomande',
             'meteoTicino'
           ],

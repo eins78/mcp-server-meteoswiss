@@ -158,8 +158,7 @@ The server provides pre-configured prompts for common weather queries:
 
 ### German Prompts
 - `wetterNordschweiz`: Current weather report for Northern Switzerland in German
-- `wetterbericht`: Flexible weather report with region and language parameters
-
+- `wetterSchweiz`: Interactive prompt to select any Swiss region for weather reports
 
 ### French Prompt
 - `meteoSuisseRomande`: Current weather report for Western Switzerland (Romandy) in French
