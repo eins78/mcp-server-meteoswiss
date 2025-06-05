@@ -8,7 +8,7 @@ The Model Context Protocol (MCP) is a standard for enabling AI systems to access
 
 ## Using the Hosted Service
 
-The MeteoSwiss MCP server is hosted at `https://mchmcp.kiste.li/`. See the [installation guide](/) for setup instructions.
+The MeteoSwiss MCP server is hosted at `https://meteoswiss-mcp-demo.cloud.kiste.li/`. See the [installation guide](/) for setup instructions.
 
 ## Using a Local Instance
 

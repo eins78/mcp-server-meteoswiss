@@ -17,7 +17,7 @@ Add the MeteoSwiss server to your Claude Desktop configuration:
   "mcpServers": {
     "meteoswiss": {
       "command": "npx",
-      "args": ["mcp-remote", "https://mchmcp.kiste.li/mcp"]
+      "args": ["mcp-remote", "https://meteoswiss-mcp-demo.cloud.kiste.li/mcp"]
     }
   }
 }
@@ -33,7 +33,7 @@ To use with Claude.ai:
 
 1. Go to your Claude.ai settings
 2. Navigate to the "MCP Servers" or "Integrations" section
-3. Add a new MCP server with the URL: `https://mchmcp.kiste.li/mcp`
+3. Add a new MCP server with the URL: `https://meteoswiss-mcp-demo.cloud.kiste.li/mcp`
 4. Save your settings
 
 The MeteoSwiss weather data will now be available in your Claude.ai conversations.
