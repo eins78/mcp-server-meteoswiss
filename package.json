@@ -42,6 +42,7 @@
   },
   "homepage": "https://github.com/eins78/mcp-server-meteoswiss-data#readme",
   "dependencies": {
+    "@eins78/styles": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",

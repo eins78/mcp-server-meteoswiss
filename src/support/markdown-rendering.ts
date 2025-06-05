@@ -3,7 +3,8 @@ import path from 'node:path';
 import { micromark } from 'micromark';
 import { gfm, gfmHtml } from 'micromark-extension-gfm';
 import { validateEnv } from './environment-validation.js';
-import { getMcpEndpointUrl, getServiceBaseUrl } from './url-generation.js';
+import { getMcpEndpointUrl, getServiceBaseUrl } from './url-generation.js'
+import { mainCss } from './styles.js';
 
 /**
  * Renders markdown files into HTML for the homepage
@@ -54,86 +55,7 @@ export async function renderHomepage(): Promise<string> {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MeteoSwiss MCP Server</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-      background: #f5f5f5;
-    }
-    .container {
-      background: white;
-      padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    h1, h2, h3 {
-      color: #2c3e50;
-    }
-    h1 {
-      border-bottom: 2px solid #3498db;
-      padding-bottom: 10px;
-    }
-    h2 {
-      margin-top: 30px;
-    }
-    pre {
-      background: #f4f4f4;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 15px;
-      overflow-x: auto;
-    }
-    code {
-      background: #f4f4f4;
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-family: 'Consolas', 'Monaco', monospace;
-    }
-    pre code {
-      background: none;
-      padding: 0;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 20px 0;
-    }
-    table th, table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    table th {
-      background-color: #f4f4f4;
-      font-weight: bold;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #eee;
-      margin: 40px 0;
-    }
-    a {
-      color: #3498db;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    ul, ol {
-      padding-left: 30px;
-    }
-    .endpoint-info {
-      background: #e8f4f8;
-      border: 1px solid #b8dae8;
-      border-radius: 4px;
-      padding: 15px;
-      margin: 20px 0;
-    }
-  </style>
+  <style>${mainCss}</style>
 </head>
 <body>
   <div class="container">
