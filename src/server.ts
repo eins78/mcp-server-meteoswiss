@@ -18,7 +18,7 @@ export function createServer(): McpServer {
   const server = new McpServer({
     name: 'mcp-server-meteoswiss',
     version: '1.0.0',
-    description: 'MCP server for MeteoSwiss weather data',
+    description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, Italian, and English languages.',
   });
   debugServer('MCP server created with name: mcp-server-meteoswiss');
 
@@ -38,7 +38,27 @@ export function createServer(): McpServer {
   debugServer('Registering tool: meteoswissWeatherReport');
   server.tool(
     'meteoswissWeatherReport',
-    'Retrieves the latest MeteoSwiss weather report for a specified region (Northern, Southern, Western parts of Switzerland), in German, French, Italian or English',
+    `Get the official MeteoSwiss weather report for a Swiss region. Returns detailed daily forecasts including weather conditions, temperatures, and regional outlooks.
+
+MeteoSwiss divides Switzerland into three main forecast regions:
+- north: Northern Switzerland (including Zurich, Basel, Bern, and the Swiss Plateau)
+- south: Southern Switzerland (Ticino and southern valleys)
+- west: Western Switzerland (Romandy, including Geneva, Lausanne, and western Alps)
+
+Weather reports are updated twice daily (morning and afternoon) and include:
+- General weather situation and outlook
+- Daily forecasts for the next 3-5 days
+- Temperature ranges and trends
+- Precipitation probability using standardized terms
+- Regional-specific conditions (e.g., Föhn effects, valley fog)
+
+Language support reflects Switzerland's multilingual nature:
+- German (de): Primary language for northern regions
+- French (fr): Primary language for western regions
+- Italian (it): Primary language for southern regions (Ticino)
+- English (en): Available for all regions
+
+The reports use standardized probability terms for precipitation forecasts.`,
     GetWeatherReportParamsSchema.shape,
     async (params: GetWeatherReportParams) => {
       try {
@@ -71,6 +91,163 @@ export function createServer(): McpServer {
           isError: true,
         };
       }
+    }
+  );
+
+  // Register prompts
+  debugServer('Registering prompts');
+  
+  // German prompts for Northern Switzerland
+  server.prompt(
+    'wetterNordschweiz',
+    'Aktueller Wetterbericht für die Nordschweiz',
+    () => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Zeige mir den aktuellen Wetterbericht für die Nordschweiz auf Deutsch.'
+            }
+          },
+          {
+            role: 'assistant' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Ich hole für Sie den aktuellen Wetterbericht für die Nordschweiz auf Deutsch.'
+            }
+          }
+        ]
+      };
+    }
+  );
+
+  server.prompt(
+    'wetterbericht',
+    'Wetterbericht für eine Schweizer Region abrufen',
+    () => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Zeige mir den Wetterbericht für die Nordschweiz auf Deutsch.'
+            }
+          },
+          {
+            role: 'assistant' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Ich rufe den Wetterbericht für die gewünschte Region ab. Verwenden Sie das Tool meteoswissWeatherReport mit den Parametern region (north/south/west) und language (de/fr/it/en).'
+            }
+          }
+        ]
+      };
+    }
+  );
+
+  // English prompts for Northern Switzerland
+  server.prompt(
+    'weatherNorthernSwitzerland',
+    'Current weather report for Northern Switzerland',
+    () => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Show me the current weather report for Northern Switzerland in English.'
+            }
+          },
+          {
+            role: 'assistant' as const,
+            content: {
+              type: 'text' as const,
+              text: 'I\'ll get the current weather report for Northern Switzerland in English for you.'
+            }
+          }
+        ]
+      };
+    }
+  );
+
+  server.prompt(
+    'swissWeather',
+    'Get weather report for a Swiss region',
+    () => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: 'I want to see the weather report for Northern Switzerland in English.'
+            }
+          },
+          {
+            role: 'assistant' as const,
+            content: {
+              type: 'text' as const,
+              text: 'I\'ll retrieve the weather report for your chosen region. Use the meteoswissWeatherReport tool with parameters region (north/south/west) and language (en/de/fr/it).'
+            }
+          }
+        ]
+      };
+    }
+  );
+
+  // French prompt for Western Switzerland
+  server.prompt(
+    'meteoSuisseRomande',
+    'Bulletin météo actuel pour la Suisse romande',
+    () => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Montre-moi le bulletin météo actuel pour la Suisse romande en français.'
+            }
+          },
+          {
+            role: 'assistant' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Je vais chercher le bulletin météo actuel pour la Suisse romande en français.'
+            }
+          }
+        ]
+      };
+    }
+  );
+
+  // Italian prompt for Southern Switzerland (Ticino)
+  server.prompt(
+    'meteoTicino',
+    'Bollettino meteo attuale per il Ticino',
+    () => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Mostrami il bollettino meteo attuale per il Ticino in italiano.'
+            }
+          },
+          {
+            role: 'assistant' as const,
+            content: {
+              type: 'text' as const,
+              text: 'Recupero il bollettino meteo attuale per il Ticino in italiano.'
+            }
+          }
+        ]
+      };
     }
   );
 

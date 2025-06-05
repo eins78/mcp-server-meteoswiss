@@ -77,10 +77,24 @@ export async function createHttpServer(
       res.json({
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
-        description: 'Model Context Protocol server for MeteoSwiss weather data',
+        description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland via Model Context Protocol (MCP)',
+        capabilities: {
+          tools: ['meteoswissWeatherReport'],
+          prompts: [
+            'wetterNordschweiz',
+            'wetterbericht',
+            'weatherNorthernSwitzerland',
+            'swissWeather',
+            'meteoSuisseRomande',
+            'meteoTicino'
+          ],
+          regions: ['north', 'south', 'west'],
+          languages: ['de', 'fr', 'it', 'en']
+        },
         mcp_endpoint: getMcpEndpointUrl(config),
         usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
-        health: `/health`
+        health: `/health`,
+        documentation: 'https://github.com/eins78/mcp-server-meteoswiss-data'
       });
       return;
     }
