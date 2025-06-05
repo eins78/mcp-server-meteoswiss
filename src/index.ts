@@ -8,6 +8,7 @@ import { createServer } from './server.js';
 import { createHttpServer } from './transports/streamable-http.js';
 import { debugMain, initFileLogging, closeFileLogging } from './support/logging.js';
 import { validateEnv } from './support/environment-validation.js';
+import { getMcpEndpointUrl } from './support/url-generation.js';
 
 // Check Node.js version requirement
 const MIN_NODE_VERSION = 16;
@@ -77,8 +78,7 @@ async function main() {
     server = await createHttpServer(mcpServer, { port, host: config.BIND_ADDRESS, config });
     await server.start();
     debugMain('HTTP server started');
-    const displayHost = config.BIND_ADDRESS === '0.0.0.0' ? 'localhost' : config.BIND_ADDRESS;
-    const mcpUrl = `http://${displayHost}:${port}/mcp`;
+    const mcpUrl = getMcpEndpointUrl(config);
     console.log(`MCP server running at ${mcpUrl}`);
     console.log(`Connect with: npx mcp-remote ${mcpUrl}`);
     console.log(`Inspect with: npx @modelcontextprotocol/inspector ${mcpUrl}`);

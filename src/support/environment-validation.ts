@@ -88,6 +88,10 @@ const envSchema = z.object({
   PUBLIC_URL: z
     .string()
     .optional(),
+  SERVICE_HOSTNAME: z
+    .string()
+    .optional()
+    .describe('Hostname to use in generated URLs (e.g., localhost, example.com)'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -112,6 +116,7 @@ export function validateEnv(): EnvConfig {
     CORS_ORIGIN: process.env.CORS_ORIGIN,
     REQUEST_SIZE_LIMIT: process.env.REQUEST_SIZE_LIMIT,
     PUBLIC_URL: process.env.PUBLIC_URL,
+    SERVICE_HOSTNAME: process.env.SERVICE_HOSTNAME,
   });
   
   try {

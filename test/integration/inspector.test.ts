@@ -122,7 +122,7 @@ describe('MCP Server Integration Tests', () => {
       expect(health).toMatchObject({
         status: 'ok',
         sessions: expect.any(Number),
-        endpoint: expect.stringMatching(/^http:\/\/(localhost|0\.0\.0\.0):3456\/mcp$/),
+        endpoint: expect.stringMatching(/^https?:\/\/[^\/]+\/mcp$/),
       });
 
       // Now test actual MCP connection

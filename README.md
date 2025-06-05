@@ -170,6 +170,8 @@ docker run -p 3000:3000 my-meteoswiss-server
 ### Environment Variables
 
 - `PORT` - Server port (default: 3000)
+- `SERVICE_HOSTNAME` - Hostname to use in generated URLs (e.g., localhost, example.com)
+- `PUBLIC_URL` - Full public URL including protocol and port (overrides SERVICE_HOSTNAME)
 - `USE_TEST_FIXTURES` - Use test data instead of live API (default: false)
 - `DEBUG_MCHMCP` - Enable debug logging (default: false)
 - `BIND_ADDRESS` - Interface to bind to (default: 0.0.0.0)

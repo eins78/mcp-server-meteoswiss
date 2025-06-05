@@ -2,12 +2,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { micromark } from 'micromark';
 import { gfm, gfmHtml } from 'micromark-extension-gfm';
+import { validateEnv } from './environment-validation.js';
+import { getMcpEndpointUrl } from './url-generation.js';
 
 /**
  * Renders markdown files into HTML for the homepage
  */
 export async function renderHomepage(): Promise<string> {
   const docsPath = path.join(process.cwd(), 'docs', 'homepage');
+  const config = validateEnv();
   
   // Files to include in order
   const files = ['overview.md', 'installation.md', 'tools.md'];
@@ -127,7 +130,7 @@ export async function renderHomepage(): Promise<string> {
 <body>
   <div class="container">
     <div class="endpoint-info">
-      <strong>MCP Endpoint:</strong> <code>${process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || '3000'}`}/mcp</code><br>
+      <strong>MCP Endpoint:</strong> <code>${getMcpEndpointUrl(config)}</code><br>
       <strong>Health Check:</strong> <a href="/health">/health</a><br>
       <strong>API Version:</strong> 1.0.0
     </div>
