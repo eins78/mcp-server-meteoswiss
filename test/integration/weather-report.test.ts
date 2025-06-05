@@ -37,13 +37,13 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
 
     // Define regions and languages to test
     const regions = ['north', 'south', 'west'];
-    const languages = ['en', 'de', 'fr', 'it'];
+    const languages = ['de', 'fr', 'it'];
 
     // Create fixtures for each combination
     for (const region of regions) {
       for (const language of languages) {
-        // Determine the language directory (en is in the de directory with _en suffix)
-        const languageDir = language === 'en' ? 'de' : language;
+        // Determine the language directory
+        const languageDir = language;
 
         const langRegionDir = path.join(fixturesDir, languageDir, region);
         const versionDir = path.join(langRegionDir, 'version__20250426_1508');
@@ -59,7 +59,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
 
         // Create HTML file with the correct file name pattern
         // English files are in the German directory with _en suffix
-        const fileSuffix = language === 'en' ? '_en' : `_${language}`;
+        const fileSuffix = `_${language}`;
 
         await fs.writeFile(
           path.join(versionDir, `textproduct${fileSuffix}.xhtml`),
@@ -95,7 +95,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
     // Test north region
     const northResult = await client.callTool('meteoswissWeatherReport', {
       region: 'north',
-      language: 'en',
+      language: 'de',
     });
 
     // Verify the structure and content of the north region response
@@ -108,7 +108,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
     // Parse the text content as JSON
     const northReportData = JSON.parse(northResult.content[0].text);
     expect(northReportData).toHaveProperty('region', 'north');
-    expect(northReportData).toHaveProperty('language', 'en');
+    expect(northReportData).toHaveProperty('language', 'de');
     expect(northReportData).toHaveProperty('title');
     expect(northReportData).toHaveProperty('updatedAt');
     expect(northReportData).toHaveProperty('content');
@@ -120,7 +120,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
     // Test south region
     const southResult = await client.callTool('meteoswissWeatherReport', {
       region: 'south',
-      language: 'en',
+      language: 'it',
     });
 
     // Verify the structure and content of the south region response
@@ -132,7 +132,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
     // Parse the text content as JSON
     const southReportData = JSON.parse(southResult.content[0].text);
     expect(southReportData).toHaveProperty('region', 'south');
-    expect(southReportData).toHaveProperty('language', 'en');
+    expect(southReportData).toHaveProperty('language', 'it');
     expect(southReportData).toHaveProperty('title');
     expect(southReportData).toHaveProperty('updatedAt');
     expect(southReportData).toHaveProperty('content');
@@ -141,7 +141,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
     // Test west region
     const westResult = await client.callTool('meteoswissWeatherReport', {
       region: 'west',
-      language: 'en',
+      language: 'fr',
     });
 
     // Verify the structure and content of the west region response
@@ -153,7 +153,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
     // Parse the text content as JSON
     const westReportData = JSON.parse(westResult.content[0].text);
     expect(westReportData).toHaveProperty('region', 'west');
-    expect(westReportData).toHaveProperty('language', 'en');
+    expect(westReportData).toHaveProperty('language', 'fr');
     expect(westReportData).toHaveProperty('title');
     expect(westReportData).toHaveProperty('updatedAt');
     expect(westReportData).toHaveProperty('content');
@@ -221,7 +221,7 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
     try {
       await client.callTool('meteoswissWeatherReport', {
         region: 'invalid',
-        language: 'en',
+        language: 'de',
       });
       // If we get here, the test should fail
       fail('Should have thrown an error for invalid region');
