@@ -10,7 +10,7 @@ WORKDIR /app
 RUN npm i -g corepack && pnpm -v
 
 # Install dependencies with pnpm store cache
-COPY package.json .npmrc pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json .npmrc pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
      pnpm install --frozen-lockfile
 
