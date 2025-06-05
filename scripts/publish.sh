@@ -10,14 +10,7 @@ if [ $# -eq 0 ]; then
 fi
 
 TAG=$1
-DOCKER_REPO="${DOCKER_REPO:-meteoswiss-mcp-server}"
-
-# Check if user is logged in to Docker Hub
-if ! docker info 2>/dev/null | grep -q "Username"; then
-    echo "Error: Not logged in to Docker Hub"
-    echo "Please run: docker login"
-    exit 1
-fi
+DOCKER_REPO="${DOCKER_REPO:-eins78/meteoswiss-mcp-server}"
 
 echo "Publishing $DOCKER_REPO with tag: $TAG"
 echo ""
