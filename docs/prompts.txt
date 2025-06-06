@@ -217,3 +217,276 @@ that means we cant trust our integration test because of the mocking. lets chang
 * server code handles no mocking/reading fixtures, just HTTP requests
 * server takes env var for api URL, e.g. `API_BASE_URL='https://www.meteoswiss.admin.ch/product/output/'`
 * in tests, a real http server (e.g. npm package `serve`) is used to run on localhost:12345, which is then given to the mcp server as API_BASE_URL
+
+
+
+## 2025-06-01
+
+[ switching from cursor to claude code ]
+
+
+❯ claude
+
+/init
+
+Look at this AGENTS.md file from another project of mine. Please adjust CLAUDE.md with this preferences where applicable to this project. Keep the instructions from CLAUDE if they dont conflict. is unsure about some pints, ask me for guidance.
+
+---
+
+[ pasted contents of https://github.com/eins78/rag-ask-demo/blob/a51c83b808ed17786a0c5d4c5723a64d3ed841c3/AGENTS.md ]
+
+///
+
+❯ claude --model claude-opus-4-20250514 --continue
+
+Let’s rewrite this project to be closer to the reference MCP server implementation at
+https://github.com/modelcontextprotocol/servers/tree/main/src/everything
+use typescript but run it with `tsx` for ease of use.
+I mostly care about the streamable http, since the MCP will be used remote only. Include the stdio version if it does not complicate the server much.
+Use the inspector https://github.com/modelcontextprotocol/inspector in CLI mode to implement integration tests using jest.
+
+///
+
+add to memory: never install node modules globally, always use install them as dev deps to the project and  either run with npx when in a shell, or just by command name in package.json scripts.
+
+///
+
+add to memory: 
+Typescript rules: be strict in production code and lenient (use ! etc) in test code. Never use built-in enums, use array and objects literals with `as const` instead and derive types from that. provide type guard functions alongside the types.
+
+///
+
+I get error when I want to connect to this MCP from the inspector. Please fix the bugs, but more importantly find out why this was not catched by the integration tests!
+when  run the server with `pnpm start` and then run the inspector I can see the error in the server logs:
+`npx @modelcontextprotocol/inspector --cli http://localhost:3000/sse --method tools/call --tool-name getWeatherReport --tool-arg region=north --tool-arg language=de`
+
+///
+
+Rewrite the integration tests and also mark this strategy in memory:
+We only want to use the CLI mode for integration test. as much as possible of the actual command under test should be readable in the test, so its also a starting point for debugging and exploring this way.
+example: `npx @modelcontextprotocol/inspector --cli http://localhost:3000/sse --method tools/call --tool-name getWeatherReport --tool-arg region=north --tool-arg language=de`
+///
+
+[ install devcontainer from claude template and open in VS Code. So that Claude Code can run in yolo mode ]
+
+// 
+
+Add to memory: when running in a devcontainer, use `git --commit --no-gpg-sign …` 
+
+//
+
+❯ claude  --dangerously-skip-permissions  --model claude-opus-4-20250514 --continue
+
+//
+
+Let’s add proper npx support. See docs at https://docs.npmjs.com/cli/v9/commands/npx?v=true.
+We need to add 2 new binaries to start the stdio and http interfaces respectively.
+The package support running as `npx .` in the repo, `npx $githubRepoUrl` anywhere and eventually `npx $packageName` once the package is published
+
+///
+
+Lets get rid of that warning:
+
+> npx .
+(node:56910) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+MeteoSwiss MCP server started on stdio transport
+
+
+Claude desktop cant talk to the MCP. See the config and the logs, I have uploaded them into the .debug directory.
+
+
+
+Claude desktop still cant connect. See new log file in .debug directory. 
+First add simple per-component logging functionally to our server using the `debug` npm module.
+The logs should be written into the ./.debug/logs directory, named by client name if possible.
+I have set the env var in claude config: "DEBUG_MCHMCP": "true"
+Also see the claude desktop debugging guide https://modelcontextprotocol.io/docs/tools/debugging
+
+I have run ./scripts/prepare-claude-desktop.sh and restarted claude, see the new error in logfile
+
+Still errors, the code is not compiled correctly. See new logs. Add startup debug logs with the CWD, node versions, etc to help with debugging this.
+
+The issue is that claude runs npx on nodejs v14 for some reason. I am using nvm on macOS. The default version is set to 24, why is it running on node 14 even though I am giving the full path?
+
+i moved the wrapper script to the ./scripts dir. it almost works, also make sure to set the current working dir to the repo 
+  (parent dir of bash source for the wrapper script). also use "mkdir -p" when creating the logs dir. check debug logs.
+
+I did some fixes but it’s still not starting correctly with claude desktop. Check the log output.
+In the server: check the minimal node version on server startup and fail if it's not sufficient. 
+Also add a crash handler for nodejs and log error if we crash.
+
+
+
+Let’s change the transport strategy. The goal of this experiment is to provide a remove MCP server.
+For dev, its easier to keep the server running with watching (with `tsx` and `nodemon` modules), 
+It will be started with `pnpm run dev`.
+And to provide STDIO protocol, we use the the `mcp-remote` npm module (see https://www.npmjs.com/package/mcp-remote)
+We dont even need to add it - we just configure claude to run `npx map-remote http://localhost:3000/mcp`.
+Rename the endpoint to `/mcp` – we want to serve informational content on / later.
+Remove all the stdio support from the server/source code. Keep the integration tests though but update them to use the `mcp-remote` modules (add as dev dep).
+
+Run the tests with `pnpm run test && pnpm run test:e2e`. Mark in memory to always do this even more importantly.
+
+
+
+Are we fetching the data from the real HTTP APIs yet? 
+Jest give a short overview and dont make changes.
+
+
+Let’s fetch the real prod data. Make sure that we cache the request responses. Adhere to the HTTP specs on caching, the resources set the correct headers (etag, timing information). Save the cache to the disk, no in-memory, so it will persistent over several invocations.
+The product data ist saved with version data files, and 
+See the data structure in vendor/meteoswiss-product-output/data-2025-03-26/weather-report
+For best cache performance, assume that version folders with timestamps are immutable (e.g. “version__20250426_1458”). check the “versions.
+all the "products" are served from endpoint: https://www.meteoschweiz.admin.ch/product/output/ 
+e.g. @weather-report  data is served as https://www.meteoschweiz.admin.ch/product/output/weather-report/ 
+First write down a plan and a simple shell script to fetch the data (no caching) using jq and curl.
+
+
+2025-06-03
+
+Let’s deploy this to prod. first, traverse the whole repo and look for any problems when running this in production, even if just in as a small demo.
+Then add a Dockerfile with a multi stage build for compiling and then running the app. Configuration will stay as-is (via env vars). Add simple bash scripts in “./scripts”, one to build the docker image with a “dev” tag, one to run that, and one to publish the image with a given tag to dockerhub. I will run those locally for the time being.
+
+Add to memory: the “vendor” directory is only for reference data and none of the contents will ever be published.
+Then remove vendor dir from the docker image.
+
+Use node 24 for the docker image.	
+commit it
+check test coverage and if everything is green make a PR.
+
+Let’s clean up the repo.
+First check all the files in the src directory. Is everything used for either the stdio or http interfaces, or is there leftover code from  earlier experiments? Ask if unsure.
+run the tests regularly and commit the results when in a known good state.
+Then, read all files in the docs directory, check if they are still up to date. Also remove references to earlier experiments and plans that have changed. Ask if unclear.
+
+
+install pnpm in docker like this: npm i -g corepack && pnpm -v
+
+Add to memory: tool names should be prefixed by “meteoswiss” and not use verbs like “get” (it’s redundant because all tools in the MCP provide data)
+Bad: getWeatherReport. Good: meteoswissWeatherReport
+update the mcp tools accordingly. 
+
+
+let's show to a user guide on the homepage of the server. 
+it will be simple text block showing the contents of 1 or more markdown files. 
+it should start with a short description and installation instructions for claude desktop and claude.ai (as custom integration).
+it should have documentation about the available tools and their usage.
+read the existing docs and slight edit, reformat and restructure them in a way that we can reuse it more easily for the homepage. 
+it should not be a replacement or just be the README - the homepage will link to it anyhow. 
+
+move the installation instructions from the docs back to the readme. this is a hosted mcp, so only developers need to run it locally. 
+public usage is via the root url: https://mchmcp.kiste.li/
+just show config snippets for claude desktop and textual instructions for claude.AI settings
+
+check readme and docs for redundant content, duplications and repetitions. 
+
+do a thorough code review of all the source code. traverse it systematically, referring to the architecture guide and updating it where necessary. search for any runtime bugs. focus especially on brittle data handling making assumptions about the input data. ensure to never drop data. 
+
+commit this to a new branch and create a PR targeting the current branch
+
+add to memory: always commit after a logical task is completed, making sure the tests are green before committing. 
+
+Let's ensure this mcp server is compatible with claude integrations. 
+See https://support.anthropic.com/en/articles/11503834-building-custom-integrations-via-remote-mcp-servers
+Note that we dont need to use any auth since we only serve public data. We do use session-ids for rate limits. 
+create a new PR for it. 
+
+
+There is a bug with the http server. When I connect with the inspector it fails, and log show an error “Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client”. 
+Run the server, check the logs and fix it.
+ 
+Read all the http server code and search for similar bugs.
+
+Enhance the docker prod build. Make the Dockerfile a multi-stage build with a build and run stage.
+Command to build: “pnpm run build” and to run: “pnpm run start”.
+
+Read all the source code and make sure that there is optional logging for every event and runtime data that might be of interest when debugging this as a prod service. i want to only change env vars of the container without rebuilding the image.
+Use the `debug` npm module, add this strategy to memory.
+
+The build is broken. Run `pnpm run build` and fix it. Add to memory to always run the build before tests.
+
+Replace the diy markdown-to-html code with npm modules micromark micromark-extension-gfm
+commit and make a pr from the current branch to the deploy branch
+
+
+Thoroughly check that we still adhere to the MCP spec regarding “Session Management” and its mentioned in the docs
+https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#session-management
+
+
+Start the server and read the startup messages, remove any redundant messages.
+
+
+Let's ensure this mcp server is compatible with claude integrations. 
+See https://support.anthropic.com/en/articles/11503834-building-custom-integrations-via-remote-mcp-servers
+Note that we dont need to use any auth since we only serve public data. We do use session-ids for rate limits. 
+We still want to adhere to the MCP spec of course https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#session-management
+Then update the PR description for this branch with a summary of all changes in it.
+
+i tried to improve the docker build, adding a pnpm cache. but now tsc fails. check the dockerfile, run scripts/build-dev.sh and fix it.
+
+
+I have deployed this service in a docker container. It runs at <https://meteoswiss-mcp-demo.cloud.kiste.li>.
+There are 2 bugs related to this environment:
+1. The service urls shown on the page sometimes show mchmcp.kiste.li or localhost. This should be consistent. Introduce en env var to set the hostname, default it to localhost
+2. The server does not work/respond if the external and internal port differ. It should be possible set PORT=3000 and in docker map that to port 8000 “outside”. But right now it only works if I also set PORT=8000 inside.
+Fix both bugs, with separate commits and test coverage, in a new PR and  ping me (@eins78) when it's ready. 
+
+I find it confusing to have PUBLIC_URL and SERVICE_HOSTNAME. I think having PORT, BIND_ADDRESS for the actual server and PUBLIC_URL for url generation is sufficient. Refactor to remove the SERVICE_HOSTNAME.
+
+Markdown files in `./docs/homepage` still contain hardcoded urls (*.kiste.li). replace them at runtime with the correct values.
+use simple string replacement with a placeholder like $$$___TEMPLATE_PUBLIC_URL___$$$ (or if a similar pattern is more common use that.
+but first, move `./docs/homepage` to `./src/views/homepage` in a separate commit.
+
+
+Let’s improve the MCP metadata so that LLMs using it can better understand the tools. Add more comprehensive documentation to all such aspects of the server.
+Only include factually correct information about weather reports, confirm by checking the meteoswiss website, especially https://www.meteoschweiz.admin.ch/wetter/wetter-und-klima-von-a-bis-z.html
+Some older information about the weather reports can be found in this PDF: https://www.meteoschweiz.admin.ch/dam/jcr:a07840cc-d6bb-4a3e-904c-5563cbf96f09/arbeitsbericht52.pdf
+Information about specific language used in reports can be found here: https://www.meteoschweiz.admin.ch/wetter/wetter-und-klima-von-a-bis-z/wahrscheinlichkeit-von-prognosen/wahrscheinlichkeitsbegriffe-im-wetterbericht.html
+Also add prompts (https://modelcontextprotocol.io/docs/concepts/prompts), 2 in German and English that each get the weather report for northern Switzerland, 1 in French for west Switzerland and one in Italian for the south.
+make a PR for it and ping me (@eins78) in a GitHub comment when its ready.
+
+Fix this mistake: There is no weather report in English, the data just contains the German text.
+Reflect this information in the source code / MCP tool, the MCP descriptions and the general docs.
+
+Do a thorough review of the changes in the PR where the docs relate to the function of this MCP and make sure the information about how it works is correct and optimal, e.g. the example prompts.
+
+Extract and move all blocks of documentation text like the ones added in this PR if it’s more than a short sentence.
+Put them in ./src/texts, and then read the file contents and use it in the source code where the text block was extracted from.
+Create them as markdown files with a “# title” that matches the filename, newline, blockquote with a description of how the text is used, newline, “---“ and then the actual content (so when reading those files just ignore everything up and including to the first line that’s just “---“ and the newline after).
+
+Load the files using source-relative paths (path.resolve(fileURLToPath(import.meta.url, ‘foo.md’).
+Re-export them from ./src/texts/index.js as an object with the filenames as keys. Only use this index file to load/import texts in the rest of the source code.
+
+I have made the loader async so it should work in tests also.
+But the markdown files are missing. Keep extracting them/restore them from the git diff.
+
+Check the diff of the last commit for any accidental content changes while moving the texts. We expect the diff to only have changes related to adding the markdown headers and loading the texts.
+
+Check our server for the “Security Warning: DNS Rebinding Attacks”
+https://modelcontextprotocol.io/docs/concepts/transports#security-warning%3A-dns-rebinding-attacks
+Fix any issues in a new PR.
+use test-driven approach and mark to always to that if feasible, especially for security issues, where its also important to call out the purpose and security impact of these tests in a clear way in the test descriptions.
+
+
+
+//////// ideas
+
+collect some references and awesome mcp server source code. use it to implement more tools in an idiomatic way. 
+
+add more (static) data in ./data dir. 
+copy mchweb location data subset. 
+provide mcp tools for listing locations, filter per region and getting info for a location. 
+increase rate limits 10x. 
+
+create a PR and ping me (@eins78) when it's ready. 
+
+
+remove the english language support from tools and docs. there isn't actually any english content, it currently just returns german, so it should be removed. 
+Location info is available in English though.
+
+Modularize the views out of the server. Extract the html template into functions that take arguments and return strings, in “./src/views”. Extract the css into .css files in the same folder (read them on startup only). 
+
+
+
+
