@@ -2,6 +2,8 @@
   "name": "mcp-meteoswiss",
   "version": "1.0.0",
   "description": "A Model Context Protocol (MCP) server for MeteoSwiss weather data.",
+  "license": "CC0-1.0",
+  "author": "Max F. Albrecht <1@178.is>",
   "main": "src/index.ts",
   "type": "module",
   "engines": {
