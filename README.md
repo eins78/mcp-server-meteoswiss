@@ -1,4 +1,4 @@
-# MCP Server for MeteoSwiss Data
+# (Demo) MCP Server for MeteoSwiss Data
 
 A Model Context Protocol (MCP) server for MeteoSwiss weather data.
 
