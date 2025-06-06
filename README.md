@@ -9,7 +9,7 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 ## Features
 
 - Weather reports for regions in Switzerland (North, South, West)
-- Multi-language support (German, French, Italian, English)
+- Multi-language support (German, French, Italian)
 - Weather forecasts with daily breakdowns
 - Test fixtures for development
 
@@ -130,9 +130,43 @@ pnpm run lint
 
 ## Available Tools
 
-- `meteoswissWeatherReport`: Weather report for Swiss regions (north, south, west) in multiple languages
+### meteoswissWeatherReport
 
-See the [API documentation](docs/architecture/api-design.md) for detailed tool specifications.
+Get official MeteoSwiss weather reports with detailed daily forecasts for Swiss regions.
+
+**Parameters:**
+- `region` (required): The Swiss region
+  - `north`: Northern Switzerland (Zurich, Basel, Bern, Swiss Plateau)
+  - `south`: Southern Switzerland (Ticino and southern valleys)
+  - `west`: Western Switzerland (Romandy - Geneva, Lausanne, western Alps)
+- `language` (optional, default: 'de'): Report language
+  - `de`: German (primary for northern regions)
+  - `fr`: French (primary for western regions)
+  - `it`: Italian (primary for southern regions/Ticino)
+  
+  **Note**: English is not available. MeteoSwiss only provides weather reports in Switzerland's official languages.
+
+**Returns:**
+- Title and update timestamp
+- Full weather report content
+- Structured daily forecasts (3-5 days)
+- Temperature ranges and conditions
+
+## Available Prompts
+
+The server provides pre-configured prompts for common weather queries:
+
+### German Prompts
+- `wetterNordschweiz`: Current weather report for Northern Switzerland in German
+- `wetterSchweiz`: Interactive prompt to select any Swiss region for weather reports
+
+### French Prompt
+- `meteoSuisseRomande`: Current weather report for Western Switzerland (Romandy) in French
+
+### Italian Prompt
+- `meteoTicino`: Current weather report for Southern Switzerland (Ticino) in Italian
+
+See the [API documentation](docs/architecture/api-design.md) for detailed specifications.
 
 ## Debugging
 

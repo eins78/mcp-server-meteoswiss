@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { texts } from '../texts/index.js';
 
 /**
  * Weather report schema
@@ -6,7 +7,7 @@ import { z } from 'zod';
  */
 export const WeatherReportSchema = z.object({
   region: z.enum(['north', 'south', 'west']),
-  language: z.enum(['de', 'fr', 'it', 'en']).default('en'),
+  language: z.enum(['de', 'fr', 'it']).default('de'),
   title: z.string(),
   updatedAt: z.string(),
   content: z.string(),
@@ -24,8 +25,12 @@ export const WeatherReportSchema = z.object({
  * Parameters schema for the meteoswissWeatherReport tool
  */
 export const GetWeatherReportParamsSchema = z.object({
-  region: z.enum(['north', 'south', 'west']),
-  language: z.enum(['de', 'fr', 'it', 'en']).default('en'),
+  region: z.enum(['north', 'south', 'west']).describe(
+    texts['region-parameter-description']
+  ),
+  language: z.enum(['de', 'fr', 'it']).default('de').describe(
+    texts['language-parameter-description']
+  ),
 });
 
 export type WeatherReport = z.infer<typeof WeatherReportSchema>;

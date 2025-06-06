@@ -13,6 +13,7 @@ import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
 import { getServiceBaseUrl, getMcpEndpointUrl, getHealthEndpointUrl } from '../support/url-generation.js';
+import { texts } from '../texts/index.js';
 
 interface StreamableHttpOptions {
   port?: number;
@@ -77,10 +78,22 @@ export async function createHttpServer(
       res.json({
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
-        description: 'Model Context Protocol server for MeteoSwiss weather data',
+        description: texts['api-description'],
+        capabilities: {
+          tools: ['meteoswissWeatherReport'],
+          prompts: [
+            'wetterNordschweiz',
+            'wetterSchweiz',
+            'meteoSuisseRomande',
+            'meteoTicino'
+          ],
+          regions: ['north', 'south', 'west'],
+          languages: ['de', 'fr', 'it']
+        },
         mcp_endpoint: getMcpEndpointUrl(config),
         usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
-        health: `/health`
+        health: `/health`,
+        documentation: 'https://github.com/eins78/mcp-server-meteoswiss-data'
       });
       return;
     }
@@ -95,10 +108,22 @@ export async function createHttpServer(
       res.json({
         name: 'MeteoSwiss MCP Server',
         version: '1.0.0',
-        description: 'Model Context Protocol server for MeteoSwiss weather data',
+        description: texts['api-description'],
+        capabilities: {
+          tools: ['meteoswissWeatherReport'],
+          prompts: [
+            'wetterNordschweiz',
+            'wetterSchweiz',
+            'meteoSuisseRomande',
+            'meteoTicino'
+          ],
+          regions: ['north', 'south', 'west'],
+          languages: ['de', 'fr', 'it']
+        },
         mcp_endpoint: getMcpEndpointUrl(config),
         usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
-        health: `/health`
+        health: `/health`,
+        documentation: 'https://github.com/eins78/mcp-server-meteoswiss-data'
       });
     }
   }));
