@@ -59,10 +59,10 @@ export function initFileLogging(clientName?: string): void {
 
     // Override debug output to write to both stderr and file
     const originalLog = debugModule.log;
-    debugModule.log = function(...args: any[]) {
+    debugModule.log = function (...args: unknown[]) {
       // Write to stderr (default behavior)
       originalLog.apply(debugModule, args);
-      
+
       // Also write to file
       if (logStream && logStream.writable) {
         const message = args.join(' ');
