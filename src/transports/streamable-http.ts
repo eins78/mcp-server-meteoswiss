@@ -288,8 +288,9 @@ export async function createHttpServer(
         reject(err);
       });
 
-      // Store server reference in closure to keep it from being GC'd
-      // The server is kept alive by the Express app's internal reference
+      // Store server reference for tests to access
+      // This is a workaround for test compatibility
+      (app as express.Application & { __server?: unknown }).__server = server;
     });
   };
 
