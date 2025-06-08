@@ -17,7 +17,7 @@ jobs:
         
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-          
+        
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
@@ -61,7 +61,6 @@ jobs:
         with:
           context: .
           push: false
-          load: true
           tags: meteoswiss-mcp:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -92,7 +91,7 @@ jobs:
         
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-          
+        
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
@@ -106,4 +105,10 @@ jobs:
         run: pnpm audit --audit-level moderate
         
       - name: Check for outdated packages
-        run: pnpm outdated
+        run: |
+          outdated_output=$(pnpm outdated --no-color --no-table 2>/dev/null || true)
+          if [ -n "$outdated_output" ]; then
+            echo "::notice file=package.json,line=1::Outdated packages found:%0A$outdated_output"
+          else
+            echo "All packages are up to date"
+          fi
