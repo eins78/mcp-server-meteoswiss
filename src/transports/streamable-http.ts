@@ -62,7 +62,7 @@ export async function createHttpServer(
 
   // Global error handler for async routes
   const asyncHandler =
-    (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
+    (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) =>
     (req: Request, res: Response, next: NextFunction) => {
       Promise.resolve(fn(req, res, next)).catch(next);
     };
@@ -161,7 +161,7 @@ export async function createHttpServer(
 
       // Clear timeout on activity
       const originalSend = transport.send.bind(transport);
-      transport.send = (message: any) => {
+      transport.send = (message: unknown) => {
         clearTimeout(timeout);
         debugTransport('Activity detected on session %s, timeout cleared', transport.sessionId);
         return originalSend(message);
@@ -173,7 +173,7 @@ export async function createHttpServer(
         transport.close();
       });
 
-      req.on('error', (error: any) => {
+      req.on('error', (error: unknown) => {
         // Log error safely - strip all newlines and just log the error type
         const errorType = error?.code || error?.name || 'Unknown';
         console.error(`SSE connection error: ${errorType}`);
@@ -266,25 +266,25 @@ export async function createHttpServer(
         resolve();
       });
 
-      server.on('error', (err) => {
+      server.on('error', (err: unknown) => {
         console.error('Server error:', err);
         debugTransport('Server startup error: %O', err);
         reject(err);
       });
 
       // Keep reference to prevent GC
-      (app as any).__server = server;
+      (app as { __server: typeof server }).__server = server;
     });
   };
 
   // Global error handler
-  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     console.error('Unhandled error:', err);
     debugTransport('Unhandled error on %s %s: %O', req.method, req.path, err);
     res.status(500).json({ error: 'Internal server error' });
   });
 
-  const stop = () => {
+  const stop = (): void => {
     debugTransport('Stopping HTTP server, cleaning up %d sessions', sessionManager.size);
     sessionManager.stop();
     debugTransport('Server stopped');

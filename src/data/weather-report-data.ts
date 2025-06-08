@@ -6,6 +6,7 @@ import { JSDOM } from 'jsdom';
 import type { WeatherReport } from '../schemas/weather-report.js';
 import { fetchHtml, fetchJson, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
+import { validateLanguage, validateRegion } from '../types/meteoswiss.js';
 
 // Base URL for the MeteoSwiss product output
 const BASE_URL = 'https://www.meteoswiss.admin.ch/product/output/weather-report';
@@ -114,7 +115,8 @@ async function fetchWeatherReportFromTestFixtures(
       await fs.access(reportPath);
     } catch (error) {
       throw new Error(
-        `Test fixture directory not found: ${reportPath}. Please ensure test fixtures are properly installed.`
+        `Test fixture directory not found: ${reportPath}. Please ensure test fixtures are properly installed.
+        ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
@@ -125,7 +127,8 @@ async function fetchWeatherReportFromTestFixtures(
       versionsData = await fs.readFile(versionsFilePath, 'utf-8');
     } catch (error) {
       throw new Error(
-        `versions.json not found in ${reportPath}. Full path tried: ${versionsFilePath}`
+        `versions.json not found in ${reportPath}. Full path tried: ${versionsFilePath}.
+        ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
@@ -148,7 +151,8 @@ async function fetchWeatherReportFromTestFixtures(
       reportHtml = await fs.readFile(reportFilePath, 'utf-8');
     } catch (error) {
       throw new Error(
-        `Report file not found: ${reportFilePath}. Please ensure all test fixtures are properly installed.`
+        `Report file not found: ${reportFilePath}. Please ensure all test fixtures are properly installed.
+        ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
@@ -205,8 +209,8 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
     contentElement && contentElement.textContent ? contentElement.textContent.trim() : '';
 
   return {
-    region: region as any,
-    language: language as any,
+    region: validateRegion(region),
+    language: validateLanguage(language),
     title,
     updatedAt,
     content,

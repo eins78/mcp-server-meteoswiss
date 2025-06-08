@@ -49,7 +49,7 @@ process.on('unhandledRejection', (reason, promise) => {
 /**
  * Main function to start the server
  */
-async function main() {
+async function main(): Promise<void> {
   // Validate environment variables first
   let config;
   try {
