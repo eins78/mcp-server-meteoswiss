@@ -14,7 +14,11 @@ import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
 import { getMcpEndpointUrl } from '../support/url-generation.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-import { validateOriginHeader, validateHostHeader, getCorsOptions } from '../support/security-middleware.js';
+import {
+  validateOriginHeader,
+  validateHostHeader,
+  getCorsOptions,
+} from '../support/security-middleware.js';
 
 interface StreamableHttpOptions {
   port?: number;

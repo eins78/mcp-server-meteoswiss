@@ -31,7 +31,13 @@ const envSchema = z.object({
       (val) => {
         // Basic IP address validation
         const parts = val.split('.');
-        if (val === 'localhost' || val === '::1' || val === '::' || val === '0.0.0.0' || val === '127.0.0.1') {
+        if (
+          val === 'localhost' ||
+          val === '::1' ||
+          val === '::' ||
+          val === '0.0.0.0' ||
+          val === '127.0.0.1'
+        ) {
           return true;
         }
         if (parts.length !== 4) return false;
