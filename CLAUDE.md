@@ -75,6 +75,7 @@ import { someFunction, type AnotherType } from './module.ts';
 ### TypeScript Coding Standards
 - **Production Code**: Be strict - avoid `!`, `as`, and `any`. Handle all edge cases explicitly
 - **Test Code**: Be lenient - use `!` and type assertions where it improves readability
+- **Unknown Types**: Always use `unknown` instead of `any` for external/unknown types. This forces proper type checking before use
 - **Enums**: Never use TypeScript enums. Use const objects/arrays with `as const` instead:
   ```typescript
   // ❌ Bad
