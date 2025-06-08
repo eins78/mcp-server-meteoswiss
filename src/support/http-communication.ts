@@ -55,7 +55,7 @@ const DEFAULT_OPTIONS: HttpRequestOptions = {
  * @param url - The URL to fetch data from
  * @param options - Request options
  * @returns The response text
- * @throws {@link HttpRequestError} If the request fails after all retries
+ * @throws {HttpRequestError} If the request fails after all retries
  */
 export async function fetchWithRetry(
   url: string,
@@ -123,7 +123,7 @@ export async function fetchWithRetry(
  * @param url - The URL to fetch JSON from
  * @param options - Request options
  * @returns The parsed JSON data
- * @throws {@link HttpRequestError} If the request fails or JSON parsing fails
+ * @throws {HttpRequestError} If the request fails or JSON parsing fails
  */
 export async function fetchJson<T = unknown>(
   url: string,
@@ -158,7 +158,7 @@ export async function fetchJson<T = unknown>(
  * @param url - The URL to fetch HTML from
  * @param options - Request options
  * @returns The HTML text
- * @throws {@link HttpRequestError} If the request fails
+ * @throws {HttpRequestError} If the request fails
  */
 export async function fetchHtml(url: string, options: HttpRequestOptions = {}): Promise<string> {
   debugHttp('Fetching HTML from URL: %s', url);

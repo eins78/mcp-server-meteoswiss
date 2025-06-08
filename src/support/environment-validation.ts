@@ -89,7 +89,7 @@ export type EnvConfig = z.infer<typeof envSchema>;
 
 /**
  * Validates and parses environment variables
- * @throws {@link Error} If validation fails
+ * @throws {Error} If validation fails
  */
 export function validateEnv(): EnvConfig {
   debugEnv('Starting environment validation');

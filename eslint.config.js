@@ -75,8 +75,9 @@ export default [
         },
       ],
 
-      // TSDoc rules
-      'tsdoc/syntax': 'warn',
+      // TSDoc rules - disabled due to VS Code compatibility issues with @throws tag
+      // VS Code doesn't support {@link} syntax in @throws, but TSDoc requires it
+      'tsdoc/syntax': 'off',
       
       // Prettier integration
       'prettier/prettier': 'error',
