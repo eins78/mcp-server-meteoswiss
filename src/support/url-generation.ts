@@ -13,14 +13,14 @@ export function getServiceBaseUrl(config: EnvConfig): string {
   if (config.PUBLIC_URL) {
     return config.PUBLIC_URL.replace(/\/$/, ''); // Remove trailing slash
   }
-  
+
   // Default to localhost with configured port
   const port = config.PORT;
-  const portSuffix = (port === 80 || port === 443) ? '' : `:${port}`;
-  
+  const portSuffix = port === 80 || port === 443 ? '' : `:${port}`;
+
   // Determine protocol based on port or default to http
   const protocol = port === 443 ? 'https' : 'http';
-  
+
   return `${protocol}://localhost${portSuffix}`;
 }
 

@@ -27,24 +27,24 @@ const envSchema = z.object({
     .string()
     .optional()
     .default('0.0.0.0')
-    .refine((val) => {
-      // Basic IP address validation
-      const parts = val.split('.');
-      if (val === 'localhost' || val === '::1' || val === '::' || val === '0.0.0.0') {
-        return true;
+    .refine(
+      (val) => {
+        // Basic IP address validation
+        const parts = val.split('.');
+        if (val === 'localhost' || val === '::1' || val === '::' || val === '0.0.0.0') {
+          return true;
+        }
+        if (parts.length !== 4) return false;
+        return parts.every((part) => {
+          const num = parseInt(part, 10);
+          return !isNaN(num) && num >= 0 && num <= 255;
+        });
+      },
+      {
+        message: 'BIND_ADDRESS must be a valid IP address or hostname',
       }
-      if (parts.length !== 4) return false;
-      return parts.every((part) => {
-        const num = parseInt(part, 10);
-        return !isNaN(num) && num >= 0 && num <= 255;
-      });
-    }, {
-      message: 'BIND_ADDRESS must be a valid IP address or hostname',
-    }),
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .optional()
-    .default('production'),
+    ),
+  NODE_ENV: z.enum(['development', 'production', 'test']).optional().default('production'),
   MAX_SESSIONS: z
     .string()
     .optional()
@@ -77,14 +77,8 @@ const envSchema = z.object({
     .refine((val) => !isNaN(val) && val > 0, {
       message: 'RATE_LIMIT_MAX_REQUESTS must be a positive number',
     }),
-  CORS_ORIGIN: z
-    .string()
-    .optional()
-    .default('*'),
-  REQUEST_SIZE_LIMIT: z
-    .string()
-    .optional()
-    .default('10mb'),
+  CORS_ORIGIN: z.string().optional().default('*'),
+  REQUEST_SIZE_LIMIT: z.string().optional().default('10mb'),
   PUBLIC_URL: z
     .string()
     .optional()
@@ -114,29 +108,27 @@ export function validateEnv(): EnvConfig {
     REQUEST_SIZE_LIMIT: process.env.REQUEST_SIZE_LIMIT,
     PUBLIC_URL: process.env.PUBLIC_URL,
   });
-  
+
   try {
     const config = envSchema.parse(process.env);
     debugEnv('Environment validation successful: %O', config);
     return config;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const issues = error.errors
-        .map((e) => `  - ${e.path.join('.')}: ${e.message}`)
-        .join('\n');
+      const issues = error.errors.map((e) => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
       throw new Error(
         `Environment variable validation failed:\n${issues}\n\nExample configuration:\n` +
-        `  PORT=3000\n` +
-        `  USE_TEST_FIXTURES=false\n` +
-        `  DEBUG_MCHMCP=false\n` +
-        `  BIND_ADDRESS=0.0.0.0\n` +
-        `  NODE_ENV=production\n` +
-        `  MAX_SESSIONS=100\n` +
-        `  SESSION_TIMEOUT_MS=300000\n` +
-        `  RATE_LIMIT_WINDOW_MS=60000\n` +
-        `  RATE_LIMIT_MAX_REQUESTS=100\n` +
-        `  CORS_ORIGIN=https://example.com\n` +
-        `  REQUEST_SIZE_LIMIT=10mb`
+          `  PORT=3000\n` +
+          `  USE_TEST_FIXTURES=false\n` +
+          `  DEBUG_MCHMCP=false\n` +
+          `  BIND_ADDRESS=0.0.0.0\n` +
+          `  NODE_ENV=production\n` +
+          `  MAX_SESSIONS=100\n` +
+          `  SESSION_TIMEOUT_MS=300000\n` +
+          `  RATE_LIMIT_WINDOW_MS=60000\n` +
+          `  RATE_LIMIT_MAX_REQUESTS=100\n` +
+          `  CORS_ORIGIN=https://example.com\n` +
+          `  REQUEST_SIZE_LIMIT=10mb`
       );
     }
     throw error;

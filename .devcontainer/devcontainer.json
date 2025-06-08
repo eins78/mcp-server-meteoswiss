@@ -15,7 +15,16 @@
       "extensions": [
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "Orta.vscode-twoslash-queries",
+        "nicoespeon.abracadabra",
+        "Tobermory.es6-string-html",
+        "github.vscode-github-actions",
+        "Orta.vscode-jest",
+        "timonwong.shellcheck",
+        "stylelint.vscode-stylelint",
+        "cbrevik.toggle-format-on-save",
+        "redhat.vscode-yaml"
       ],
       "settings": {
         "editor.formatOnSave": true,
