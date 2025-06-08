@@ -28,7 +28,7 @@ export function createServer(): McpServer {
     debugServer('Server error: %O', error);
     debugServer('Error stack: %s', error.stack);
   };
-  
+
   // Log protocol events if debug is enabled
   if (process.env.DEBUG?.includes('mcp:server') || process.env.DEBUG_MCHMCP === 'true') {
     debugServer('Protocol event logging enabled');

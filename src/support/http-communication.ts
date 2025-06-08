@@ -75,7 +75,7 @@ export async function fetchWithRetry(
         signal: options.timeout ? AbortSignal.timeout(options.timeout) : undefined,
       });
       const duration = Date.now() - startTime;
-      
+
       debugHttp('Response received in %dms: %d %s', duration, response.status, response.statusText);
 
       if (!response.ok) {
@@ -108,10 +108,11 @@ export async function fetchWithRetry(
     }
   }
 
-  const finalError = lastError instanceof HttpRequestError
-    ? lastError
-    : new HttpRequestError(`Failed to fetch data from ${url}: ${lastError?.message}`, url);
-  
+  const finalError =
+    lastError instanceof HttpRequestError
+      ? lastError
+      : new HttpRequestError(`Failed to fetch data from ${url}: ${lastError?.message}`, url);
+
   debugHttp('Final failure for URL %s: %O', url, finalError);
   throw finalError;
 }
@@ -129,7 +130,7 @@ export async function fetchJson<T = unknown>(
   options: HttpRequestOptions = {}
 ): Promise<T> {
   debugHttp('Fetching JSON from URL: %s', url);
-  
+
   const text = await fetchWithRetry(url, {
     ...options,
     headers: {
@@ -161,7 +162,7 @@ export async function fetchJson<T = unknown>(
  */
 export async function fetchHtml(url: string, options: HttpRequestOptions = {}): Promise<string> {
   debugHttp('Fetching HTML from URL: %s', url);
-  
+
   const html = await fetchWithRetry(url, {
     ...options,
     headers: {
@@ -169,7 +170,7 @@ export async function fetchHtml(url: string, options: HttpRequestOptions = {}): 
       Accept: 'text/html',
     },
   });
-  
+
   debugHttp('Successfully fetched HTML from %s (%d bytes)', url, html.length);
   return html;
 }
