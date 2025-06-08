@@ -17,8 +17,6 @@ jobs:
         
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.5
           
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
@@ -63,6 +61,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: meteoswiss-mcp:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -93,8 +92,6 @@ jobs:
         
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.5
           
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
