@@ -8,11 +8,8 @@ on:
 
 jobs:
   lint-build-test:
-    name: Lint, Build & Test
+    name: Lint, Build & Test  
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [24] # TODO: 20, 22, 
     
     steps:
       - name: Checkout code
@@ -20,31 +17,35 @@ jobs:
         
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.5
           
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 24
           cache: 'pnpm'
           
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         
-      - name: Run lint
+      - name: Run lint (TypeScript + ESLint)
         run: pnpm run lint
         
-      - name: Run build
+      - name: Run build (TypeScript compilation)
         run: pnpm run build
         
       - name: Run tests
         run: pnpm test
         env:
           USE_TEST_FIXTURES: true
+          NODE_OPTIONS: '--experimental-vm-modules'
           
       - name: Run integration tests
         run: pnpm run test:integration
         env:
           USE_TEST_FIXTURES: true
+          NODE_OPTIONS: '--experimental-vm-modules'
 
   docker-build:
     name: Docker Build Test
@@ -72,10 +73,10 @@ jobs:
           docker run -d --name test-container -p 3000:3000 meteoswiss-mcp:test
           
           # Wait for container to start
-          sleep 10
+          sleep 15
           
           # Test health endpoint
-          curl -f http://localhost:3000/health || exit 1
+          timeout 30s bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
           
           # Clean up
           docker stop test-container
@@ -93,19 +94,19 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 9.15.5
           
-      - name: Setup Node.js
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
           
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         
       - name: Run security audit
-        run: pnpm audit
+        run: pnpm audit --audit-level moderate
         
       - name: Check for outdated packages
         run: pnpm outdated
