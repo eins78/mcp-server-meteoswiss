@@ -9,7 +9,7 @@ import { createHttpServer } from './transports/streamable-http.js';
 import { debugMain, initFileLogging, closeFileLogging } from './support/logging.js';
 import { validateEnv } from './support/environment-validation.js';
 import { getMcpEndpointUrl } from './support/url-generation.js';
-import type { Server } from 'node:http';
+import type { HttpServerInterface } from './transports/streamable-http.js';
 
 // Check Node.js version requirement
 const MIN_NODE_VERSION = 16;
@@ -50,7 +50,7 @@ process.on('unhandledRejection', (reason, promise) => {
 /**
  * Main function to start the server
  */
-async function main(): Promise<Server> {
+async function main(): Promise<HttpServerInterface> {
   // Validate environment variables first
   let config;
   try {
@@ -75,7 +75,7 @@ async function main(): Promise<Server> {
   // Create the MCP server instance
   const mcpServer = createServer();
 
-  let server: Server | null = null;
+  let server: HttpServerInterface | null = null;
 
   try {
     debugMain('Creating HTTP server on port %d', port);
@@ -97,7 +97,7 @@ async function main(): Promise<Server> {
 }
 
 // Global server reference for cleanup
-let globalServer: Server | null = null;
+let globalServer: HttpServerInterface | null = null;
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
