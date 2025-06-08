@@ -1,9 +1,10 @@
 import js from '@eslint/js';
 import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
-import prettier from 'eslint-config-prettier';
+import prettierConfig from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
 import jest from 'eslint-plugin-jest';
-import jsdoc from 'eslint-plugin-jsdoc';
+import tsdoc from 'eslint-plugin-tsdoc';
 import globals from 'globals';
 
 export default [
@@ -29,7 +30,8 @@ export default [
     },
     plugins: {
       '@typescript-eslint': typescript,
-      jsdoc,
+      tsdoc,
+      prettier: prettierPlugin,
     },
     rules: {
       // TypeScript recommended rules
@@ -62,30 +64,16 @@ export default [
         },
       ],
 
-      // JSDoc rules
-      'jsdoc/require-jsdoc': [
-        'warn',
-        {
-          publicOnly: true,
-          require: {
-            FunctionDeclaration: true,
-            MethodDefinition: true,
-            ClassDeclaration: true,
-            ArrowFunctionExpression: false,
-            FunctionExpression: false,
-          },
-        },
-      ],
-    },
-    settings: {
-      jsdoc: {
-        mode: 'typescript',
-      },
+      // TSDoc rules
+      'tsdoc/syntax': 'warn',
+      
+      // Prettier integration
+      'prettier/prettier': 'error',
     },
   },
 
-  // Prettier config to disable conflicting rules
-  prettier,
+  // Prettier config to disable conflicting rules (must come after other configs)
+  prettierConfig,
 
   // Test files
   {
