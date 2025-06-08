@@ -13,6 +13,8 @@ import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
 import { getMcpEndpointUrl } from '../support/url-generation.js';
+import type { Server } from 'node:http';
+import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 interface StreamableHttpOptions {
   port?: number;
@@ -20,13 +22,16 @@ interface StreamableHttpOptions {
   config: EnvConfig;
 }
 
+// keep a reference to the server to prevent it from being garbage collected
+let __server: Server;
+
 /**
  * Create HTTP server with SSE transport
  */
 export async function createHttpServer(
   mcpServer: McpServer,
   options: StreamableHttpOptions
-): Promise<{ app: express.Application; start: () => Promise<void>; stop: () => void }> {
+): Promise<{ app: express.Application; start: () => Promise<void>; stop: () => void; server: Server }> {
   const { port = 3000, host = 'localhost', config } = options;
   debugTransport('Creating HTTP server on port %d, host %s', port, host);
   debugTransport('Configuration: %O', config);
@@ -161,7 +166,7 @@ export async function createHttpServer(
 
       // Clear timeout on activity
       const originalSend = transport.send.bind(transport);
-      transport.send = (message: unknown) => {
+      transport.send = (message: JSONRPCMessage) => {
         clearTimeout(timeout);
         debugTransport('Activity detected on session %s, timeout cleared', transport.sessionId);
         return originalSend(message);
@@ -175,7 +180,7 @@ export async function createHttpServer(
 
       req.on('error', (error: unknown) => {
         // Log error safely - strip all newlines and just log the error type
-        const errorType = error?.code || error?.name || 'Unknown';
+        const errorType = error && typeof error === 'object' && ('code' in error ? error.code : typeof error === 'object' && 'name' in error ? error.name : 0) || 'Unknown';
         console.error(`SSE connection error: ${errorType}`);
         debugTransport('SSE connection error for session %s: %O', transport.sessionId, error);
         transport.close();
@@ -273,7 +278,7 @@ export async function createHttpServer(
       });
 
       // Keep reference to prevent GC
-      (app as { __server: typeof server }).__server = server;
+     __server = server;
     });
   };
 
@@ -290,5 +295,5 @@ export async function createHttpServer(
     debugTransport('Server stopped');
   };
 
-  return { app, start, stop };
+  return { app, start, stop, server: __server };
 }
