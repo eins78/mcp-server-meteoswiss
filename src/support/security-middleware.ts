@@ -4,6 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import type { CorsOptions } from 'cors';
 import { debugTransport } from './logging.js';
 
 /**
@@ -23,12 +24,7 @@ const ALLOWED_ORIGINS = [
  * List of allowed host headers
  * Only local hosts are allowed to prevent DNS rebinding attacks
  */
-const ALLOWED_HOSTS: readonly string[] = [
-  'localhost',
-  '127.0.0.1',
-  '[::1]',
-  '::1',
-];
+const ALLOWED_HOSTS: readonly string[] = ['localhost', '127.0.0.1', '[::1]', '::1'];
 
 /**
  * Check if an origin is allowed (includes port matching)
@@ -42,20 +38,22 @@ function isOriginAllowed(origin: string | undefined): boolean {
   try {
     const url = new URL(origin);
     const baseOrigin = `${url.protocol}//${url.hostname}`;
-    
+
     // Check if base origin is in allowed list
     if (ALLOWED_ORIGINS.includes(baseOrigin)) {
       return true;
     }
-    
+
     // Also allow with any port number for local origins
-    if (url.hostname === 'localhost' || 
-        url.hostname === '127.0.0.1' || 
-        url.hostname === '[::1]' || 
-        url.hostname === '::1') {
+    if (
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.hostname === '[::1]' ||
+      url.hostname === '::1'
+    ) {
       return true;
     }
-    
+
     return false;
   } catch {
     // Invalid origin format
@@ -75,11 +73,11 @@ function isHostAllowed(host: string | undefined): boolean {
   // Extract hostname (remove port)
   const parts = host.split(':');
   const hostname = parts[0];
-  
+
   if (!hostname) {
     return false;
   }
-  
+
   return ALLOWED_HOSTS.includes(hostname);
 }
 
@@ -94,7 +92,7 @@ export function validateOriginHeader(req: Request, res: Response, next: NextFunc
   }
 
   const origin = req.get('Origin');
-  
+
   if (!isOriginAllowed(origin)) {
     debugTransport('Rejected SSE connection from suspicious origin: %s', origin || 'undefined');
     res.status(403).send('Forbidden: Invalid origin');
@@ -111,7 +109,7 @@ export function validateOriginHeader(req: Request, res: Response, next: NextFunc
  */
 export function validateHostHeader(req: Request, res: Response, next: NextFunction): void {
   const host = req.get('Host');
-  
+
   if (!isHostAllowed(host)) {
     debugTransport('Rejected request with suspicious host header: %s', host || 'undefined');
     res.status(403).send('Forbidden: Invalid host');
@@ -125,10 +123,12 @@ export function validateHostHeader(req: Request, res: Response, next: NextFuncti
  * Configure CORS to be restrictive by default
  * Only allow local origins unless explicitly configured
  */
-export function getCorsOptions(configuredOrigin?: string) {
+export function getCorsOptions(configuredOrigin?: string): CorsOptions {
   if (configuredOrigin === '*') {
     // User explicitly wants to allow all origins (not recommended)
-    debugTransport('WARNING: CORS configured to allow all origins. This is not recommended for production.');
+    debugTransport(
+      'WARNING: CORS configured to allow all origins. This is not recommended for production.'
+    );
     return {
       origin: true,
       credentials: true,
@@ -145,7 +145,10 @@ export function getCorsOptions(configuredOrigin?: string) {
 
   // Default: Only allow local origins
   return {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) => {
       if (isOriginAllowed(origin)) {
         callback(null, true);
       } else {
