@@ -61,6 +61,7 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: meteoswiss-mcp:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -108,7 +109,9 @@ jobs:
         run: |
           outdated_output=$(pnpm outdated --no-color --no-table 2>/dev/null || true)
           if [ -n "$outdated_output" ]; then
-            echo "::notice file=package.json,line=1::Outdated packages found:%0A$outdated_output"
+            # Convert newlines to %0A for GitHub Actions notice format
+            formatted_output=$(echo "$outdated_output" | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::notice file=package.json,line=1::Outdated packages found:%0A$formatted_output"
           else
             echo "All packages are up to date"
           fi
