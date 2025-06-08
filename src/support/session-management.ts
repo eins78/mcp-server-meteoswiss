@@ -31,7 +31,7 @@ export class SessionManager {
 
   /**
    * Add a new session
-   * @throws {Error} If max sessions limit is reached
+   * @throws {@link Error} If max sessions limit is reached
    */
   add(sessionId: string, transport: Transport): void {
     debugSession('Adding session: %s (current count: %d)', sessionId, this.sessions.size);
