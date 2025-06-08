@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import globals from 'globals';
 import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import jsdoc from 'eslint-plugin-jsdoc';
@@ -19,29 +20,10 @@ export default [
         project: './tsconfig.json',
       },
       globals: {
-        // Node.js globals
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        exports: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-        global: 'readonly',
-        // Node.js types
+        ...globals.node,
+        ...globals.es2021,
+        // TypeScript Node types
         NodeJS: 'readonly',
-        // Browser/Node shared globals
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setImmediate: 'readonly',
-        clearImmediate: 'readonly',
-        // Fetch API (available in Node 18+)
-        fetch: 'readonly',
-        AbortSignal: 'readonly',
-        AbortController: 'readonly',
       },
     },
     plugins: {
