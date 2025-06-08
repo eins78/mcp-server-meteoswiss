@@ -29,4 +29,4 @@ export const GetWeatherReportParamsSchema = z.object({
 });
 
 export type WeatherReport = z.infer<typeof WeatherReportSchema>;
-export type GetWeatherReportParams = z.infer<typeof GetWeatherReportParamsSchema>; 
+export type GetWeatherReportParams = z.infer<typeof GetWeatherReportParamsSchema>;

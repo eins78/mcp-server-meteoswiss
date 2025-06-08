@@ -58,21 +58,24 @@ async function main() {
     console.error('Configuration error:', error instanceof Error ? error.message : error);
     process.exit(1);
   }
-  
+
   // Override port from command line if provided
   const port = process.argv[2] ? parseInt(process.argv[2], 10) : config.PORT;
-  
+
   // Initialize logging
   initFileLogging('meteoswiss');
   debugMain('Starting MCP HTTP server on port: %d', port);
-  debugMain('Environment: USE_TEST_FIXTURES=%s, DEBUG_MCHMCP=%s', 
-    config.USE_TEST_FIXTURES, config.DEBUG_MCHMCP);
-  
+  debugMain(
+    'Environment: USE_TEST_FIXTURES=%s, DEBUG_MCHMCP=%s',
+    config.USE_TEST_FIXTURES,
+    config.DEBUG_MCHMCP
+  );
+
   // Create the MCP server instance
   const mcpServer = createServer();
-  
+
   let server: { start: () => Promise<void>; stop: () => void } | null = null;
-  
+
   try {
     debugMain('Creating HTTP server on port %d', port);
     server = await createHttpServer(mcpServer, { port, host: config.BIND_ADDRESS, config });
@@ -87,7 +90,7 @@ async function main() {
     debugMain('Server startup failed: %O', error);
     process.exit(1);
   }
-  
+
   // Store server reference for cleanup
   return server;
 }
@@ -136,15 +139,22 @@ debugMain('=====================================');
 
 // Start the server
 debugMain('MeteoSwiss MCP server starting...');
-debugMain('Process info: PID=%d, UID=%d, GID=%d', process.pid, process.getuid?.() || -1, process.getgid?.() || -1);
+debugMain(
+  'Process info: PID=%d, UID=%d, GID=%d',
+  process.pid,
+  process.getuid?.() || -1,
+  process.getgid?.() || -1
+);
 debugMain('Memory usage at startup: %O', process.memoryUsage());
 
-main().then((server) => {
-  globalServer = server;
-  debugMain('Server started successfully');
-  debugMain('Memory usage after startup: %O', process.memoryUsage());
-}).catch((error) => {
-  console.error('Unhandled error:', error);
-  debugMain('Unhandled error in main: %O', error);
-  process.exit(1);
-});
+main()
+  .then((server) => {
+    globalServer = server;
+    debugMain('Server started successfully');
+    debugMain('Memory usage after startup: %O', process.memoryUsage());
+  })
+  .catch((error) => {
+    console.error('Unhandled error:', error);
+    debugMain('Unhandled error in main: %O', error);
+    process.exit(1);
+  });

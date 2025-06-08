@@ -8,10 +8,12 @@ import { debugTools } from '../support/logging.js';
  * @param params - The parameters for the tool
  * @returns A Promise that resolves to the weather report
  */
-export async function meteoswissWeatherReport(params: GetWeatherReportParams): Promise<WeatherReport> {
+export async function meteoswissWeatherReport(
+  params: GetWeatherReportParams
+): Promise<WeatherReport> {
   const { region, language } = params;
   debugTools('meteoswissWeatherReport called with params: %O', params);
-  
+
   const startTime = Date.now();
   try {
     const report = await getLatestWeatherReport(region, language);

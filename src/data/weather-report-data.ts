@@ -201,7 +201,8 @@ function parseWeatherReportHtml(html: string, region: string, language: string):
 
   // Create the full content (useful for showing the entire report)
   const contentElement = document.querySelector('.textFCK');
-  const content = contentElement && contentElement.textContent ? contentElement.textContent.trim() : '';
+  const content =
+    contentElement && contentElement.textContent ? contentElement.textContent.trim() : '';
 
   return {
     region: region as any,

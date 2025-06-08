@@ -17,8 +17,11 @@ export class SessionManager {
     private readonly maxSessions: number,
     private readonly sessionTimeoutMs: number
   ) {
-    debugSession('SessionManager created with max sessions: %d, timeout: %dms', 
-      maxSessions, sessionTimeoutMs);
+    debugSession(
+      'SessionManager created with max sessions: %d, timeout: %dms',
+      maxSessions,
+      sessionTimeoutMs
+    );
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
@@ -32,7 +35,7 @@ export class SessionManager {
    */
   add(sessionId: string, transport: Transport): void {
     debugSession('Adding session: %s (current count: %d)', sessionId, this.sessions.size);
-    
+
     if (this.sessions.size >= this.maxSessions && !this.sessions.has(sessionId)) {
       debugSession('Max sessions limit reached (%d), rejecting new session', this.maxSessions);
       throw new Error(`Maximum sessions limit (${this.maxSessions}) reached`);
@@ -42,7 +45,7 @@ export class SessionManager {
       transport,
       lastActivity: Date.now(),
     });
-    
+
     debugSession('Session added successfully: %s (new count: %d)', sessionId, this.sessions.size);
   }
 
@@ -54,8 +57,12 @@ export class SessionManager {
     if (session) {
       const previousActivity = session.lastActivity;
       session.lastActivity = Date.now();
-      debugSession('Session accessed: %s, activity updated from %d to %d', 
-        sessionId, previousActivity, session.lastActivity);
+      debugSession(
+        'Session accessed: %s, activity updated from %d to %d',
+        sessionId,
+        previousActivity,
+        session.lastActivity
+      );
       return session.transport;
     }
     debugSession('Session not found: %s', sessionId);
@@ -102,7 +109,7 @@ export class SessionManager {
       console.error(`Session ${sessionId} expired, removing...`);
       this.remove(sessionId);
     }
-    
+
     if (expired.length === 0) {
       debugSession('No expired sessions found');
     }
@@ -113,7 +120,7 @@ export class SessionManager {
    */
   stop(): void {
     debugSession('Stopping SessionManager, closing %d sessions', this.sessions.size);
-    
+
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
@@ -125,7 +132,7 @@ export class SessionManager {
     for (const sessionId of sessionIds) {
       this.remove(sessionId);
     }
-    
+
     debugSession('SessionManager stopped, all sessions closed');
   }
 
