@@ -5,6 +5,7 @@ import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 import jest from 'eslint-plugin-jest';
 import tsdoc from 'eslint-plugin-tsdoc';
+import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 
 export default [
@@ -32,15 +33,25 @@ export default [
       '@typescript-eslint': typescript,
       tsdoc,
       prettier: prettierPlugin,
+      'unused-imports': unusedImports,
     },
     rules: {
       // TypeScript recommended rules
       ...typescript.configs.recommended.rules,
 
-      '@typescript-eslint/no-unused-vars': [
+      // Disable @typescript-eslint/no-unused-vars in favor of unused-imports
+      '@typescript-eslint/no-unused-vars': 'off',
+      
+      // Configure unused-imports plugin
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': [
         'error',
         {
+          vars: 'all',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
           argsIgnorePattern: '^_',
+          caughtErrors: 'all',
           caughtErrorsIgnorePattern: '^_',
           destructuredArrayIgnorePattern: '^_',
         },

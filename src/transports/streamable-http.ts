@@ -12,11 +12,7 @@ import { SessionManager } from '../support/session-management.js';
 import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
-import {
-  getServiceBaseUrl,
-  getMcpEndpointUrl,
-  getHealthEndpointUrl,
-} from '../support/url-generation.js';
+import { getMcpEndpointUrl } from '../support/url-generation.js';
 
 interface StreamableHttpOptions {
   port?: number;
