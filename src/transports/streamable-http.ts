@@ -84,6 +84,7 @@ export async function createHttpServer(
   );
 
   // Root endpoint - serves HTML documentation
+<<<<<<< HEAD
   app.get(
     '/',
     asyncHandler(async (req: Request, res: Response) => {
@@ -119,6 +120,64 @@ export async function createHttpServer(
       }
     })
   );
+=======
+  app.get('/', asyncHandler(async (req: Request, res: Response) => {
+    debugTransport('Root endpoint accessed, Accept: %s', req.get('Accept'));
+    // Check if client wants JSON (API clients)
+    if (req.accepts('json') && !req.accepts('html')) {
+      res.json({
+        name: 'MeteoSwiss MCP Server',
+        version: '1.0.0',
+        description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland via Model Context Protocol (MCP)',
+        capabilities: {
+          tools: ['meteoswissWeatherReport'],
+          prompts: [
+            'wetterNordschweiz',
+            'wetterSchweiz',
+            'meteoSuisseRomande',
+            'meteoTicino'
+          ],
+          regions: ['north', 'south', 'west'],
+          languages: ['de', 'fr', 'it']
+        },
+        mcp_endpoint: getMcpEndpointUrl(config),
+        usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
+        health: `/health`,
+        documentation: 'https://github.com/eins78/mcp-server-meteoswiss-data'
+      });
+      return;
+    }
+    
+    // Serve HTML homepage
+    try {
+      const html = await renderHomepage();
+      res.type('html').send(html);
+    } catch (error) {
+      console.error('Failed to render homepage:', error);
+      // Fallback to JSON
+      res.json({
+        name: 'MeteoSwiss MCP Server',
+        version: '1.0.0',
+        description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland via Model Context Protocol (MCP)',
+        capabilities: {
+          tools: ['meteoswissWeatherReport'],
+          prompts: [
+            'wetterNordschweiz',
+            'wetterSchweiz',
+            'meteoSuisseRomande',
+            'meteoTicino'
+          ],
+          regions: ['north', 'south', 'west'],
+          languages: ['de', 'fr', 'it']
+        },
+        mcp_endpoint: getMcpEndpointUrl(config),
+        usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
+        health: `/health`,
+        documentation: 'https://github.com/eins78/mcp-server-meteoswiss-data'
+      });
+    }
+  }));
+>>>>>>> 0b40c62 (feat: enhance MCP metadata and add multilingual prompts)
 
   // MCP SSE endpoint - establishes the event stream
   app.get(
