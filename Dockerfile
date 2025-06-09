@@ -9,20 +9,26 @@ WORKDIR /app
 # Install pnpm using npm and corepack
 RUN npm i -g corepack && pnpm -v
 
-# Install dependencies with pnpm store cache
-COPY package.json .npmrc pnpm-lock.yaml ./
+# fetch dependencies with pnpm store cache
+COPY .npmrc pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-     pnpm install --frozen-lockfile
-
-# Copy package files first for better caching
-COPY package.json ./
+    pnpm config set store-dir /root/.local/share/pnpm/store && \
+    pnpm fetch --frozen-lockfile --no-optional
 
 # Copy source code and configuration
-COPY tsconfig.json ./
+COPY package.json tsconfig.json ./
 COPY src ./src
+# Copy test fixtures for runtime (if USE_TEST_FIXTURES is enabled)
 COPY test/__fixtures__ ./test/__fixtures__
-RUN ls -la node_modules
+
+# Install dependencies
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --offline --frozen-lockfile --no-optional --ignore-scripts
+
+# Build the application
 RUN pnpm run build
+
+# ------------------------------------------------------------------------------------------------
 
 # Stage 2: Runtime stage
 FROM node:24-alpine AS runtime
@@ -43,7 +49,8 @@ COPY --from=builder /app/dist ./dist
 
 # Install production dependencies
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-     pnpm install --offline --production --no-optional --frozen-lockfile --ignore-scripts
+    pnpm config set store-dir /root/.local/share/pnpm/store && \
+    pnpm install --offline --frozen-lockfile --production --no-optional --ignore-scripts
 
 # Copy test fixtures for runtime (if USE_TEST_FIXTURES is enabled)
 COPY --from=builder /app/test/__fixtures__ ./test/__fixtures__
