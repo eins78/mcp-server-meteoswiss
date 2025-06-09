@@ -14,6 +14,11 @@ import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
 import { getMcpEndpointUrl } from '../support/url-generation.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import {
+  validateOriginHeader,
+  validateHostHeader,
+  getCorsOptions,
+} from '../support/security-middleware.js';
 
 interface StreamableHttpOptions {
   port?: number;
@@ -41,13 +46,11 @@ export async function createHttpServer(
 
   const app = express();
 
-  // Configure CORS for production
-  app.use(
-    cors({
-      origin: config.CORS_ORIGIN === '*' ? true : config.CORS_ORIGIN,
-      credentials: true,
-    })
-  );
+  // Apply security middleware first
+  app.use(validateHostHeader);
+
+  // Configure CORS with security in mind
+  app.use(cors(getCorsOptions(config.CORS_ORIGIN)));
 
   // Configure request size limit
   app.use(express.json({ limit: config.REQUEST_SIZE_LIMIT }));
@@ -123,6 +126,7 @@ export async function createHttpServer(
   // MCP SSE endpoint - establishes the event stream
   app.get(
     '/mcp',
+    validateOriginHeader,
     asyncHandler(async (req: Request, res: Response) => {
       debugTransport(
         'SSE connection requested from %s, User-Agent: %s',
