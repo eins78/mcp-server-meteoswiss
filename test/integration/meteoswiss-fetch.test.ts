@@ -1,0 +1,173 @@
+import { describe, expect, it, jest } from '@jest/globals';
+import { MCPClient } from './mcp-client.js';
+
+describe('MeteoSwiss Fetch Tool', () => {
+  let client: MCPClient;
+
+  beforeEach(async () => {
+    // Set environment variable to use test fixtures
+    process.env.USE_TEST_FIXTURES = 'true';
+    
+    client = new MCPClient();
+    await client.start();
+  });
+
+  afterEach(async () => {
+    await client.stop();
+    jest.restoreAllMocks();
+  });
+
+  describe('fetchMeteoSwissContent tool', () => {
+    it('should be registered with the name "fetch" for ChatGPT compatibility', async () => {
+      const tools = await client.listTools();
+      const fetchTool = tools.find((tool) => tool.name === 'fetch');
+      
+      expect(fetchTool).toBeDefined();
+      expect(fetchTool?.description).toContain('Fetch');
+    });
+
+    it('should accept required and optional parameters', async () => {
+      const tools = await client.listTools();
+      const fetchTool = tools.find((tool) => tool.name === 'fetch');
+      
+      expect(fetchTool?.inputSchema).toMatchObject({
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description: expect.stringContaining('content ID')
+          },
+          format: {
+            type: 'string',
+            enum: ['markdown', 'text', 'html'],
+            default: 'markdown',
+            description: expect.stringContaining('output format')
+          },
+          includeMetadata: {
+            type: 'boolean',
+            default: true,
+            description: expect.stringContaining('metadata')
+          },
+          includeImages: {
+            type: 'boolean',
+            default: false,
+            description: expect.stringContaining('images')
+          }
+        },
+        required: ['id']
+      });
+    });
+
+    it('should fetch content by ID in markdown format', async () => {
+      const result = await client.callTool('fetch', {
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        format: 'markdown'
+      });
+
+      expect(result).toMatchObject({
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        title: expect.any(String),
+        content: expect.stringContaining('#'), // Markdown heading
+        format: 'markdown',
+        metadata: expect.objectContaining({
+          url: expect.stringContaining('meteoswiss'),
+          language: expect.any(String),
+          lastModified: expect.any(String),
+          contentType: expect.any(String)
+        })
+      });
+    });
+
+    it('should fetch content in plain text format', async () => {
+      const result = await client.callTool('fetch', {
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        format: 'text'
+      });
+
+      expect(result).toMatchObject({
+        content: expect.any(String),
+        format: 'text'
+      });
+      expect(result.content).not.toContain('<'); // No HTML tags
+      expect(result.content).not.toContain('#'); // No markdown
+    });
+
+    it('should fetch content in HTML format', async () => {
+      const result = await client.callTool('fetch', {
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        format: 'html'
+      });
+
+      expect(result).toMatchObject({
+        content: expect.stringContaining('<'),
+        format: 'html'
+      });
+    });
+
+    it('should exclude metadata when requested', async () => {
+      const result = await client.callTool('fetch', {
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        includeMetadata: false
+      });
+
+      expect(result.metadata).toBeUndefined();
+    });
+
+    it('should include images when requested', async () => {
+      const result = await client.callTool('fetch', {
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        includeImages: true
+      });
+
+      expect(result).toMatchObject({
+        images: expect.any(Array)
+      });
+      
+      if (result.images.length > 0) {
+        expect(result.images[0]).toMatchObject({
+          url: expect.any(String),
+          alt: expect.any(String),
+          caption: expect.any(String)
+        });
+      }
+    });
+
+    it('should handle non-existent content IDs', async () => {
+      await expect(
+        client.callTool('fetch', {
+          id: '/non-existent-page.html'
+        })
+      ).rejects.toThrow(/not found/i);
+    });
+
+    it('should handle invalid format parameter', async () => {
+      await expect(
+        client.callTool('fetch', {
+          id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+          format: 'invalid'
+        })
+      ).rejects.toThrow(/format/i);
+    });
+
+    it('should cache content for performance', async () => {
+      const startTime = Date.now();
+      
+      // First fetch - may be slower
+      await client.callTool('fetch', {
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
+      });
+      
+      const firstFetchTime = Date.now() - startTime;
+      
+      // Second fetch - should be cached and faster
+      const secondStartTime = Date.now();
+      const result = await client.callTool('fetch', {
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
+      });
+      const secondFetchTime = Date.now() - secondStartTime;
+      
+      expect(result).toBeDefined();
+      expect(secondFetchTime).toBeLessThan(firstFetchTime / 2); // At least 2x faster
+    });
+  });
+});

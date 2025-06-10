@@ -184,6 +184,23 @@ export class MCPClient {
   }
 
   /**
+   * List available tools
+   * 
+   * @returns Array of tool descriptions
+   */
+  async listTools(): Promise<any[]> {
+    const request = {
+      jsonrpc: '2.0',
+      id: this.getNextId(),
+      method: 'tools/list',
+      params: {},
+    };
+
+    const result = await this.sendRequest(request);
+    return result.result?.tools || [];
+  }
+
+  /**
    * Call an MCP tool
    *
    * @param name The name of the tool to call
