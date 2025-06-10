@@ -78,10 +78,10 @@ async function fetchFromWeb(
   includeMetadata: boolean,
   includeImages: boolean
 ): Promise<ContentResponse> {
-  // Construct the full URL
+  // The ID should now be a full URL from the search tool
   const url = id.startsWith('http')
     ? id
-    : `https://www.meteoswiss.admin.ch${id.startsWith('/') ? id : '/' + id}`;
+    : `https://www.meteoswiss.admin.ch${id.startsWith('/') ? id : '/' + id}`; // Fallback for backward compatibility
 
   try {
     debugData('Fetching content from: %s', url);
@@ -107,17 +107,37 @@ async function fetchFromTestFixtures(
   includeMetadata: boolean,
   includeImages: boolean
 ): Promise<ContentResponse> {
+  // Extract language from URL if it's a full URL
+  let detectedLang = 'de';
+  let urlPath = id;
+
+  if (id.startsWith('http')) {
+    const url = new URL(id);
+    urlPath = url.pathname;
+
+    // Detect language from domain
+    if (url.hostname.includes('meteoschweiz')) {
+      detectedLang = 'de';
+    } else if (url.hostname.includes('meteosuisse')) {
+      detectedLang = 'fr';
+    } else if (url.hostname.includes('meteosvizzera')) {
+      detectedLang = 'it';
+    } else if (url.hostname.includes('meteoswiss')) {
+      detectedLang = 'en';
+    }
+  }
+
   // Extract filename from path
-  const fileName = id.split('/').pop() || 'index.html';
+  const fileName = urlPath.split('/').pop() || 'index.html';
   const baseName = fileName.replace(/\.[^.]+$/, '');
 
   // Try to find the fixture file
-  const languages = ['de', 'fr', 'it', 'en'];
+  const languages = [detectedLang, 'de', 'fr', 'it', 'en'];
   for (const lang of languages) {
     const fixtureFile = path.join(TEST_FIXTURES_ROOT, lang, `${baseName}.html`);
     if (existsSync(fixtureFile)) {
       const html = await fs.readFile(fixtureFile, 'utf-8');
-      const url = `https://www.meteoswiss.admin.ch${id}`;
+      const url = id.startsWith('http') ? id : `https://www.meteoswiss.admin.ch${id}`;
 
       return processHtmlContent(html, id, url, format, includeMetadata, includeImages);
     }

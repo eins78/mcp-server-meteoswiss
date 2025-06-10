@@ -26,8 +26,16 @@ interface SolrResponse {
   };
 }
 
-// Base URL for the MeteoSwiss search API
-const BASE_SEARCH_URL = 'https://www.meteoschweiz.admin.ch/api/search';
+// Language to domain mapping for MeteoSwiss
+const LANGUAGE_DOMAIN_MAP: Record<string, string> = {
+  de: 'https://www.meteoschweiz.admin.ch',
+  fr: 'https://www.meteosuisse.admin.ch',
+  it: 'https://www.meteosvizzera.admin.ch',
+  en: 'https://www.meteoswiss.admin.ch',
+};
+
+// Base path for the search API
+const SEARCH_API_PATH = '/api/search';
 
 // Test fixtures location
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -105,7 +113,8 @@ async function searchFromApi(
   const languageCode = `public-${language}`;
 
   // Build the URL
-  const url = new URL(`${BASE_SEARCH_URL}/${languageCode}/search/results.json`);
+  const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
+  const url = new URL(`${baseDomain}${SEARCH_API_PATH}/${languageCode}/search/results.json`);
   url.searchParams.append('fullText', query);
   url.searchParams.append('tenant', tenant);
   url.searchParams.append('pageGroup', pageGroup);
@@ -132,9 +141,9 @@ async function searchFromApi(
     // Transform the Solr response to our format
     const results: SearchResultItem[] =
       response.response?.docs?.map((doc) => ({
-        id: doc.path || doc.id || '',
+        id: doc.path ? `${baseDomain}${doc.path}` : doc.id || '',
         title: doc.title || 'Untitled',
-        url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
+        url: doc.path ? `${baseDomain}${doc.path}` : '',
         description: doc.lead || doc.description || '',
         contentType: doc.pageType || 'content',
         lastModified: doc.modificationDate || doc.publicationDate,
@@ -172,6 +181,8 @@ async function searchFromTestFixtures(
   pageSize: number = 12,
   sort: string = 'relevance'
 ): Promise<SearchResults> {
+  // Get the base domain for this language
+  const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
   const fixtureFile = path.join(
     TEST_FIXTURES_ROOT,
     language,
@@ -186,9 +197,9 @@ async function searchFromTestFixtures(
     // Transform fixture data to our format
     const results: SearchResultItem[] =
       response.response?.docs?.map((doc) => ({
-        id: doc.path || doc.id || '',
+        id: doc.path ? `${baseDomain}${doc.path}` : doc.id || '',
         title: doc.title || 'Untitled',
-        url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
+        url: doc.path ? `${baseDomain}${doc.path}` : '',
         description: doc.lead || doc.description || '',
         contentType: doc.pageType || 'content',
         lastModified: doc.modificationDate || doc.publicationDate,
@@ -242,10 +253,11 @@ async function searchFromTestFixtures(
           doc.content?.toLowerCase().includes(query.toLowerCase())
       );
 
+      const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
       const results: SearchResultItem[] = filteredDocs.map((doc: SolrDocument) => ({
-        id: doc.path || doc.id || '',
+        id: doc.path ? `${baseDomain}${doc.path}` : doc.id || '',
         title: doc.title || 'Untitled',
-        url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
+        url: doc.path ? `${baseDomain}${doc.path}` : '',
         description: doc.lead || doc.description || '',
         contentType: doc.pageType || 'content',
         lastModified: doc.modificationDate || doc.publicationDate,
