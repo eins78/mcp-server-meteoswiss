@@ -10,10 +10,7 @@ export const searchMeteoSwissContentSchema = z.object({
     .optional()
     .default('de')
     .describe('The language for search results'),
-  contentType: z
-    .string()
-    .optional()
-    .describe('Filter by content type (e.g., "content", "pages")'),
+  contentType: z.string().optional().describe('Filter by content type (e.g., "content", "pages")'),
   page: z
     .number()
     .int()

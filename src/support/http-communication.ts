@@ -64,7 +64,11 @@ export async function fetchWithRetry(
   url: string,
   options: HttpRequestOptions = {}
 ): Promise<string> {
-  const { retries = DEFAULT_OPTIONS.retries, retryDelay = DEFAULT_OPTIONS.retryDelay, useCache = true } = options;
+  const {
+    retries = DEFAULT_OPTIONS.retries,
+    retryDelay = DEFAULT_OPTIONS.retryDelay,
+    useCache = true,
+  } = options;
   debugHttp('Fetching URL: %s with options: %O', url, options);
 
   // Check cache first
@@ -83,7 +87,7 @@ export async function fetchWithRetry(
     try {
       // Prepare headers with conditional request support
       const requestHeaders = { ...DEFAULT_OPTIONS.headers, ...options.headers };
-      
+
       if (useCache) {
         const staleEntry = httpCache.getStaleEntry(url);
         if (staleEntry?.etag) {
@@ -131,12 +135,12 @@ export async function fetchWithRetry(
 
       const text = await response.text();
       debugHttp('Successfully fetched %d bytes from %s', text.length, url);
-      
+
       // Cache the response
       if (useCache) {
         httpCache.set(url, text, responseHeaders);
       }
-      
+
       return text;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));

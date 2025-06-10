@@ -18,6 +18,9 @@ const TEST_FIXTURES_ROOT = existsSync(TEST_FIXTURES_DEV_PATH)
 
 const USE_TEST_FIXTURES = process.env.USE_TEST_FIXTURES === 'true';
 
+// Get Document type from JSDOM
+type Document = InstanceType<typeof JSDOM>['window']['document'];
+
 // Initialize Turndown for HTML to Markdown conversion
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -50,7 +53,7 @@ export interface ContentResponse {
 
 /**
  * Fetch MeteoSwiss content by ID
- * 
+ *
  * @param params Fetch parameters
  * @returns Content response
  */
@@ -76,14 +79,14 @@ async function fetchFromWeb(
   includeImages: boolean
 ): Promise<ContentResponse> {
   // Construct the full URL
-  const url = id.startsWith('http') 
-    ? id 
+  const url = id.startsWith('http')
+    ? id
     : `https://www.meteoswiss.admin.ch${id.startsWith('/') ? id : '/' + id}`;
 
   try {
     debugData('Fetching content from: %s', url);
     const html = await fetchHtml(url);
-    
+
     return processHtmlContent(html, id, url, format, includeMetadata, includeImages);
   } catch (error) {
     if (error instanceof HttpRequestError && error.statusCode === 404) {
@@ -107,7 +110,7 @@ async function fetchFromTestFixtures(
   // Extract filename from path
   const fileName = id.split('/').pop() || 'index.html';
   const baseName = fileName.replace(/\.[^.]+$/, '');
-  
+
   // Try to find the fixture file
   const languages = ['de', 'fr', 'it', 'en'];
   for (const lang of languages) {
@@ -115,7 +118,7 @@ async function fetchFromTestFixtures(
     if (existsSync(fixtureFile)) {
       const html = await fs.readFile(fixtureFile, 'utf-8');
       const url = `https://www.meteoswiss.admin.ch${id}`;
-      
+
       return processHtmlContent(html, id, url, format, includeMetadata, includeImages);
     }
   }
@@ -139,21 +142,24 @@ function processHtmlContent(
 
   // Extract main content
   const mainContent = extractMainContent(document);
-  
+
   // Extract title
-  const title = document.querySelector('h1')?.textContent?.trim() ||
-                document.querySelector('title')?.textContent?.trim() ||
-                'Untitled';
+  const title =
+    document.querySelector('h1')?.textContent?.trim() ||
+    document.querySelector('title')?.textContent?.trim() ||
+    'Untitled';
 
   // Extract metadata
-  const metadata = includeMetadata ? {
-    url,
-    language: detectLanguage(document),
-    lastModified: extractLastModified(document),
-    contentType: extractContentType(document),
-    keywords: extractKeywords(document),
-    description: extractDescription(document),
-  } : undefined;
+  const metadata = includeMetadata
+    ? {
+        url,
+        language: detectLanguage(document),
+        lastModified: extractLastModified(document),
+        contentType: extractContentType(document),
+        keywords: extractKeywords(document),
+        description: extractDescription(document),
+      }
+    : undefined;
 
   // Extract images
   const images = includeImages ? extractImages(document, url) : undefined;
@@ -211,7 +217,7 @@ function extractMainContent(document: Document): string {
   if (body) {
     // Remove navigation, header, footer
     const toRemove = body.querySelectorAll('nav, header, footer, script, style');
-    toRemove.forEach(el => el.remove());
+    toRemove.forEach((el) => el.remove());
     return body.innerHTML;
   }
 
@@ -224,12 +230,12 @@ function extractMainContent(document: Document): string {
 function extractTextContent(html: string): string {
   const tempDom = new JSDOM(html);
   const text = tempDom.window.document.body.textContent || '';
-  
+
   // Clean up whitespace
   return text
     .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
+    .map((line: string) => line.trim())
+    .filter((line: string) => line.length > 0)
     .join('\n');
 }
 
@@ -237,10 +243,11 @@ function extractTextContent(html: string): string {
  * Detect language from the document
  */
 function detectLanguage(document: Document): string {
-  const lang = document.documentElement.getAttribute('lang') ||
-               document.querySelector('meta[property="og:locale"]')?.getAttribute('content') ||
-               'de';
-  
+  const lang =
+    document.documentElement.getAttribute('lang') ||
+    document.querySelector('meta[property="og:locale"]')?.getAttribute('content') ||
+    'de';
+
   return lang.substring(0, 2).toLowerCase();
 }
 
@@ -248,9 +255,10 @@ function detectLanguage(document: Document): string {
  * Extract last modified date
  */
 function extractLastModified(document: Document): string | undefined {
-  const lastModified = document.querySelector('meta[property="article:modified_time"]')?.getAttribute('content') ||
-                      document.querySelector('meta[name="DC.date.modified"]')?.getAttribute('content');
-  
+  const lastModified =
+    document.querySelector('meta[property="article:modified_time"]')?.getAttribute('content') ||
+    document.querySelector('meta[name="DC.date.modified"]')?.getAttribute('content');
+
   return lastModified || undefined;
 }
 
@@ -258,10 +266,11 @@ function extractLastModified(document: Document): string | undefined {
  * Extract content type
  */
 function extractContentType(document: Document): string {
-  const type = document.querySelector('meta[property="og:type"]')?.getAttribute('content') ||
-              document.querySelector('meta[name="DC.type"]')?.getAttribute('content') ||
-              'article';
-  
+  const type =
+    document.querySelector('meta[property="og:type"]')?.getAttribute('content') ||
+    document.querySelector('meta[name="DC.type"]')?.getAttribute('content') ||
+    'article';
+
   return type;
 }
 
@@ -269,43 +278,48 @@ function extractContentType(document: Document): string {
  * Extract keywords
  */
 function extractKeywords(document: Document): string[] {
-  const keywordsStr = document.querySelector('meta[name="keywords"]')?.getAttribute('content') ||
-                     document.querySelector('meta[property="article:tag"]')?.getAttribute('content') ||
-                     '';
-  
+  const keywordsStr =
+    document.querySelector('meta[name="keywords"]')?.getAttribute('content') ||
+    document.querySelector('meta[property="article:tag"]')?.getAttribute('content') ||
+    '';
+
   return keywordsStr
     .split(',')
-    .map(k => k.trim())
-    .filter(k => k.length > 0);
+    .map((k: string) => k.trim())
+    .filter((k: string) => k.length > 0);
 }
 
 /**
  * Extract description
  */
 function extractDescription(document: Document): string | undefined {
-  const description = document.querySelector('meta[name="description"]')?.getAttribute('content') ||
-                     document.querySelector('meta[property="og:description"]')?.getAttribute('content');
-  
+  const description =
+    document.querySelector('meta[name="description"]')?.getAttribute('content') ||
+    document.querySelector('meta[property="og:description"]')?.getAttribute('content');
+
   return description || undefined;
 }
 
 /**
  * Extract images from the content
  */
-function extractImages(document: Document, baseUrl: string): Array<{ url: string; alt?: string; caption?: string }> {
+function extractImages(
+  document: Document,
+  baseUrl: string
+): Array<{ url: string; alt?: string; caption?: string }> {
   const images: Array<{ url: string; alt?: string; caption?: string }> = [];
-  
+
   const imgElements = document.querySelectorAll('img');
-  imgElements.forEach(img => {
+  imgElements.forEach((img) => {
     const src = img.getAttribute('src');
     if (src) {
       // Make URL absolute
       const absoluteUrl = new URL(src, baseUrl).toString();
-      
+
       // Try to find caption
       const figure = img.closest('figure');
       const caption = figure?.querySelector('figcaption')?.textContent?.trim();
-      
+
       images.push({
         url: absoluteUrl,
         alt: img.getAttribute('alt') || undefined,
@@ -313,6 +327,6 @@ function extractImages(document: Document, baseUrl: string): Array<{ url: string
       });
     }
   });
-  
+
   return images;
 }

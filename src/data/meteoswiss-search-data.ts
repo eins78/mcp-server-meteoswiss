@@ -6,6 +6,26 @@ import { fetchJson, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
 import type { SearchMeteoSwissContentInput } from '../schemas/meteoswiss-search.js';
 
+// Solr response types
+interface SolrDocument {
+  path?: string;
+  id?: string;
+  title?: string;
+  lead?: string;
+  description?: string;
+  pageType?: string;
+  modificationDate?: string;
+  publicationDate?: string;
+  content?: string;
+}
+
+interface SolrResponse {
+  response?: {
+    numFound?: number;
+    docs?: SolrDocument[];
+  };
+}
+
 // Base URL for the MeteoSwiss search API
 const BASE_SEARCH_URL = 'https://www.meteoschweiz.admin.ch/api/search';
 
@@ -46,14 +66,21 @@ export interface SearchResults {
 
 /**
  * Search MeteoSwiss content
- * 
+ *
  * @param params Search parameters
  * @returns Search results
  */
 export async function searchMeteoSwissContent(
   params: SearchMeteoSwissContentInput
 ): Promise<SearchResults> {
-  const { query, language = 'de', contentType, page = 1, pageSize = 12, sort = 'relevance' } = params;
+  const {
+    query,
+    language = 'de',
+    contentType,
+    page = 1,
+    pageSize = 12,
+    sort = 'relevance',
+  } = params;
 
   if (USE_TEST_FIXTURES) {
     return searchFromTestFixtures(query, language, contentType, page, pageSize, sort);
@@ -76,7 +103,7 @@ async function searchFromApi(
   const tenant = 'mchweb';
   const pageGroup = 'project';
   const languageCode = `public-${language}`;
-  
+
   // Build the URL
   const url = new URL(`${BASE_SEARCH_URL}/${languageCode}/search/results.json`);
   url.searchParams.append('fullText', query);
@@ -84,14 +111,14 @@ async function searchFromApi(
   url.searchParams.append('pageGroup', pageGroup);
   url.searchParams.append('rows', String(pageSize));
   url.searchParams.append('start', String((page - 1) * pageSize));
-  
+
   if (contentType) {
     url.searchParams.append('type', contentType);
   }
-  
+
   // Map sort parameter to API format
   const sortMap: Record<string, string> = {
-    'relevance': 'score desc',
+    relevance: 'score desc',
     'date-desc': 'publicationDate desc,sortTitle asc',
     'date-asc': 'publicationDate asc,sortTitle asc',
   };
@@ -100,20 +127,21 @@ async function searchFromApi(
 
   try {
     debugData('Searching MeteoSwiss API: %s', url.toString());
-    const response = await fetchJson<any>(url.toString());
-    
+    const response = await fetchJson<SolrResponse>(url.toString());
+
     // Transform the Solr response to our format
-    const results: SearchResultItem[] = response.response?.docs?.map((doc: any) => ({
-      id: doc.path || doc.id,
-      title: doc.title || 'Untitled',
-      url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
-      description: doc.lead || doc.description || '',
-      contentType: doc.pageType || 'content',
-      lastModified: doc.modificationDate || doc.publicationDate,
-      path: doc.path,
-      lead: doc.lead,
-      publicationDate: doc.publicationDate,
-    })) || [];
+    const results: SearchResultItem[] =
+      response.response?.docs?.map((doc) => ({
+        id: doc.path || doc.id || '',
+        title: doc.title || 'Untitled',
+        url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
+        description: doc.lead || doc.description || '',
+        contentType: doc.pageType || 'content',
+        lastModified: doc.modificationDate || doc.publicationDate,
+        path: doc.path,
+        lead: doc.lead,
+        publicationDate: doc.publicationDate,
+      })) || [];
 
     return {
       totalResults: response.response?.numFound || 0,
@@ -144,25 +172,30 @@ async function searchFromTestFixtures(
   pageSize: number = 12,
   sort: string = 'relevance'
 ): Promise<SearchResults> {
-  const fixtureFile = path.join(TEST_FIXTURES_ROOT, language, `${query.toLowerCase().replace(/[^a-z0-9]/g, '-')}-results.json`);
-  
+  const fixtureFile = path.join(
+    TEST_FIXTURES_ROOT,
+    language,
+    `${query.toLowerCase().replace(/[^a-z0-9]/g, '-')}-results.json`
+  );
+
   // Try exact match first
   if (existsSync(fixtureFile)) {
     const data = await fs.readFile(fixtureFile, 'utf-8');
-    const response = JSON.parse(data);
-    
+    const response = JSON.parse(data) as SolrResponse;
+
     // Transform fixture data to our format
-    const results: SearchResultItem[] = response.response?.docs?.map((doc: any) => ({
-      id: doc.path || doc.id,
-      title: doc.title || 'Untitled',
-      url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
-      description: doc.lead || doc.description || '',
-      contentType: doc.pageType || 'content',
-      lastModified: doc.modificationDate || doc.publicationDate,
-      path: doc.path,
-      lead: doc.lead,
-      publicationDate: doc.publicationDate,
-    })) || [];
+    const results: SearchResultItem[] =
+      response.response?.docs?.map((doc) => ({
+        id: doc.path || doc.id || '',
+        title: doc.title || 'Untitled',
+        url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
+        description: doc.lead || doc.description || '',
+        contentType: doc.pageType || 'content',
+        lastModified: doc.modificationDate || doc.publicationDate,
+        path: doc.path,
+        lead: doc.lead,
+        publicationDate: doc.publicationDate,
+      })) || [];
 
     // Apply sorting
     if (sort === 'date-desc') {
@@ -182,7 +215,7 @@ async function searchFromTestFixtures(
     // Apply pagination
     const startIndex = (page - 1) * pageSize;
     const paginatedResults = results.slice(startIndex, startIndex + pageSize);
-    
+
     return {
       totalResults: response.response?.numFound || 0,
       page,
@@ -198,18 +231,19 @@ async function searchFromTestFixtures(
     if (files.length > 0 && files[0]) {
       const firstFile = files[0];
       const data = await fs.readFile(path.join(langDir, firstFile), 'utf-8');
-      const response = JSON.parse(data);
-      
+      const response = JSON.parse(data) as SolrResponse;
+
       // Filter results by query in fixtures
       const allDocs = response.response?.docs || [];
-      const filteredDocs = allDocs.filter((doc: any) => 
-        doc.title?.toLowerCase().includes(query.toLowerCase()) ||
-        doc.lead?.toLowerCase().includes(query.toLowerCase()) ||
-        doc.content?.toLowerCase().includes(query.toLowerCase())
+      const filteredDocs = allDocs.filter(
+        (doc: SolrDocument) =>
+          doc.title?.toLowerCase().includes(query.toLowerCase()) ||
+          doc.lead?.toLowerCase().includes(query.toLowerCase()) ||
+          doc.content?.toLowerCase().includes(query.toLowerCase())
       );
 
-      const results: SearchResultItem[] = filteredDocs.map((doc: any) => ({
-        id: doc.path || doc.id,
+      const results: SearchResultItem[] = filteredDocs.map((doc: SolrDocument) => ({
+        id: doc.path || doc.id || '',
         title: doc.title || 'Untitled',
         url: doc.path ? `https://www.meteoswiss.admin.ch${doc.path}` : '',
         description: doc.lead || doc.description || '',
@@ -223,7 +257,7 @@ async function searchFromTestFixtures(
       // Apply pagination
       const startIndex = (page - 1) * pageSize;
       const paginatedResults = results.slice(startIndex, startIndex + pageSize);
-      
+
       return {
         totalResults: results.length,
         page,
