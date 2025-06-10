@@ -143,11 +143,13 @@ describe('MCP Server Integration Tests', () => {
 
       // List tools
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(1);
-      expect(tools.tools[0]).toMatchObject({
-        name: 'meteoswissWeatherReport',
-        description: expect.stringContaining('MeteoSwiss weather report'),
-      });
+      expect(tools.tools).toHaveLength(3);
+      
+      // Check that we have all three tools
+      const toolNames = tools.tools.map(t => t.name);
+      expect(toolNames).toContain('meteoswissWeatherReport');
+      expect(toolNames).toContain('search');
+      expect(toolNames).toContain('fetch');
     });
 
     test('should call meteoswissWeatherReport tool via HTTP', async () => {
