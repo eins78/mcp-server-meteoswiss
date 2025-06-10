@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
 import { fetchHtml, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
 import type { FetchMeteoSwissContentInput } from '../schemas/meteoswiss-fetch.js';
@@ -39,6 +40,9 @@ const turndownService = new TurndownService({
   bulletListMarker: '-',
   codeBlockStyle: 'fenced',
 });
+
+// Add GFM plugin for better markdown support (tables, strikethrough, task lists)
+turndownService.use(gfm);
 
 /**
  * Content response structure
