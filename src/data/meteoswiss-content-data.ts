@@ -21,6 +21,18 @@ const USE_TEST_FIXTURES = process.env.USE_TEST_FIXTURES === 'true';
 // Get Document type from JSDOM
 type Document = InstanceType<typeof JSDOM>['window']['document'];
 
+// Allowed MeteoSwiss domains
+const ALLOWED_DOMAINS = [
+  'www.meteoschweiz.admin.ch',
+  'www.meteosuisse.admin.ch',
+  'www.meteosvizzera.admin.ch',
+  'www.meteoswiss.admin.ch',
+  'meteoschweiz.admin.ch',
+  'meteosuisse.admin.ch',
+  'meteosvizzera.admin.ch',
+  'meteoswiss.admin.ch',
+];
+
 // Initialize Turndown for HTML to Markdown conversion
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -76,6 +88,21 @@ async function fetchFromWeb(
   const url = id.startsWith('http')
     ? id
     : `https://www.meteoswiss.admin.ch${id.startsWith('/') ? id : '/' + id}`; // Fallback for backward compatibility
+
+  // Validate the URL is from an allowed MeteoSwiss domain
+  try {
+    const parsedUrl = new URL(url);
+    if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
+      throw new Error(
+        `Invalid domain: ${parsedUrl.hostname}. Only MeteoSwiss domains are allowed.`
+      );
+    }
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(`Invalid URL: ${url}`);
+    }
+    throw error;
+  }
 
   try {
     debugData('Fetching content from: %s', url);
