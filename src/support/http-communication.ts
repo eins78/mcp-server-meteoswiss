@@ -4,6 +4,7 @@
  */
 
 import { debugHttp } from './logging.js';
+import { httpCache } from './http-cache.js';
 
 /**
  * Options for HTTP requests
@@ -17,6 +18,8 @@ export type HttpRequestOptions = {
   timeout?: number;
   /** Request headers */
   headers?: Record<string, string>;
+  /** Whether to use cache (default: true) */
+  useCache?: boolean;
 };
 
 /**
@@ -61,22 +64,60 @@ export async function fetchWithRetry(
   url: string,
   options: HttpRequestOptions = {}
 ): Promise<string> {
-  const { retries = DEFAULT_OPTIONS.retries, retryDelay = DEFAULT_OPTIONS.retryDelay } = options;
+  const { retries = DEFAULT_OPTIONS.retries, retryDelay = DEFAULT_OPTIONS.retryDelay, useCache = true } = options;
   debugHttp('Fetching URL: %s with options: %O', url, options);
 
+  // Check cache first
+  if (useCache) {
+    const cached = httpCache.get<string>(url);
+    if (cached) {
+      return cached.data;
+    }
+  }
+
   let lastError: Error | null = null;
+  let responseHeaders: Record<string, string> = {};
 
   for (let attempt = 0; attempt <= retries!; attempt++) {
     debugHttp('Attempt %d/%d for URL: %s', attempt + 1, retries! + 1, url);
     try {
+      // Prepare headers with conditional request support
+      const requestHeaders = { ...DEFAULT_OPTIONS.headers, ...options.headers };
+      
+      if (useCache) {
+        const staleEntry = httpCache.getStaleEntry(url);
+        if (staleEntry?.etag) {
+          requestHeaders['If-None-Match'] = staleEntry.etag;
+        }
+        if (staleEntry?.lastModified) {
+          requestHeaders['If-Modified-Since'] = staleEntry.lastModified;
+        }
+      }
+
       const startTime = Date.now();
       const response = await fetch(url, {
-        headers: { ...DEFAULT_OPTIONS.headers, ...options.headers },
+        headers: requestHeaders,
         signal: options.timeout ? AbortSignal.timeout(options.timeout) : undefined,
       });
       const duration = Date.now() - startTime;
 
       debugHttp('Response received in %dms: %d %s', duration, response.status, response.statusText);
+
+      // Store response headers
+      responseHeaders = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+
+      // Handle 304 Not Modified
+      if (response.status === 304 && useCache) {
+        debugHttp('Content not modified, using cached version');
+        httpCache.updateNotModified(url, responseHeaders);
+        const cached = httpCache.get<string>(url);
+        if (cached) {
+          return cached.data;
+        }
+      }
 
       if (!response.ok) {
         const error = new HttpRequestError(
@@ -90,6 +131,12 @@ export async function fetchWithRetry(
 
       const text = await response.text();
       debugHttp('Successfully fetched %d bytes from %s', text.length, url);
+      
+      // Cache the response
+      if (useCache) {
+        httpCache.set(url, text, responseHeaders);
+      }
+      
       return text;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
