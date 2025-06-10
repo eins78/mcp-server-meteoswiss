@@ -6,11 +6,11 @@ import { debugTools } from '../support/logging.js';
  * Fetch full content from MeteoSwiss website
  *
  * This tool retrieves the full content of a specific page from the MeteoSwiss website.
- * It can convert HTML content to different formats (markdown, text, or HTML) and
- * optionally include metadata and images found in the content.
+ * It can convert HTML content to different formats (markdown or text) and
+ * optionally include metadata.
  *
  * @param input Fetch parameters
- * @returns Content with optional metadata and images
+ * @returns Content with optional metadata
  */
 export async function meteoswissFetchTool(input: unknown): Promise<unknown> {
   debugTools('Fetch tool called with input: %O', input);

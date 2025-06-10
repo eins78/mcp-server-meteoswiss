@@ -35,7 +35,7 @@ export interface ContentResponse {
   id: string;
   title?: string;
   content: string;
-  format: 'markdown' | 'text' | 'html';
+  format: 'markdown' | 'text';
   metadata?: {
     url: string;
     language?: string;
@@ -44,11 +44,6 @@ export interface ContentResponse {
     keywords?: string[];
     description?: string;
   };
-  images?: Array<{
-    url: string;
-    alt?: string;
-    caption?: string;
-  }>;
 }
 
 /**
@@ -60,13 +55,13 @@ export interface ContentResponse {
 export async function fetchMeteoSwissContent(
   params: FetchMeteoSwissContentInput
 ): Promise<ContentResponse> {
-  const { id, format = 'markdown', includeMetadata = true, includeImages = false } = params;
+  const { id, format = 'markdown', includeMetadata = true } = params;
 
   if (USE_TEST_FIXTURES) {
-    return fetchFromTestFixtures(id, format, includeMetadata, includeImages);
+    return fetchFromTestFixtures(id, format, includeMetadata);
   }
 
-  return fetchFromWeb(id, format, includeMetadata, includeImages);
+  return fetchFromWeb(id, format, includeMetadata);
 }
 
 /**
@@ -74,9 +69,8 @@ export async function fetchMeteoSwissContent(
  */
 async function fetchFromWeb(
   id: string,
-  format: 'markdown' | 'text' | 'html',
-  includeMetadata: boolean,
-  includeImages: boolean
+  format: 'markdown' | 'text',
+  includeMetadata: boolean
 ): Promise<ContentResponse> {
   // The ID should now be a full URL from the search tool
   const url = id.startsWith('http')
@@ -87,7 +81,7 @@ async function fetchFromWeb(
     debugData('Fetching content from: %s', url);
     const html = await fetchHtml(url);
 
-    return processHtmlContent(html, id, url, format, includeMetadata, includeImages);
+    return processHtmlContent(html, id, url, format, includeMetadata);
   } catch (error) {
     if (error instanceof HttpRequestError && error.statusCode === 404) {
       throw new Error(`Content not found: ${id}`);
@@ -103,9 +97,8 @@ async function fetchFromWeb(
  */
 async function fetchFromTestFixtures(
   id: string,
-  format: 'markdown' | 'text' | 'html',
-  includeMetadata: boolean,
-  includeImages: boolean
+  format: 'markdown' | 'text',
+  includeMetadata: boolean
 ): Promise<ContentResponse> {
   // Extract language from URL if it's a full URL
   let detectedLang = 'de';
@@ -139,7 +132,7 @@ async function fetchFromTestFixtures(
       const html = await fs.readFile(fixtureFile, 'utf-8');
       const url = id.startsWith('http') ? id : `https://www.meteoswiss.admin.ch${id}`;
 
-      return processHtmlContent(html, id, url, format, includeMetadata, includeImages);
+      return processHtmlContent(html, id, url, format, includeMetadata);
     }
   }
 
@@ -153,9 +146,8 @@ function processHtmlContent(
   html: string,
   id: string,
   url: string,
-  format: 'markdown' | 'text' | 'html',
-  includeMetadata: boolean,
-  includeImages: boolean
+  format: 'markdown' | 'text',
+  includeMetadata: boolean
 ): ContentResponse {
   const dom = new JSDOM(html);
   const document = dom.window.document;
@@ -181,9 +173,6 @@ function processHtmlContent(
       }
     : undefined;
 
-  // Extract images
-  const images = includeImages ? extractImages(document, url) : undefined;
-
   // Convert content to requested format
   let content: string;
   switch (format) {
@@ -192,9 +181,6 @@ function processHtmlContent(
       break;
     case 'text':
       content = extractTextContent(mainContent);
-      break;
-    case 'html':
-      content = mainContent;
       break;
     default:
       throw new Error(`Invalid format: ${format}`);
@@ -206,7 +192,6 @@ function processHtmlContent(
     content,
     format,
     metadata,
-    images,
   };
 }
 
@@ -318,35 +303,4 @@ function extractDescription(document: Document): string | undefined {
     document.querySelector('meta[property="og:description"]')?.getAttribute('content');
 
   return description || undefined;
-}
-
-/**
- * Extract images from the content
- */
-function extractImages(
-  document: Document,
-  baseUrl: string
-): Array<{ url: string; alt?: string; caption?: string }> {
-  const images: Array<{ url: string; alt?: string; caption?: string }> = [];
-
-  const imgElements = document.querySelectorAll('img');
-  imgElements.forEach((img) => {
-    const src = img.getAttribute('src');
-    if (src) {
-      // Make URL absolute
-      const absoluteUrl = new URL(src, baseUrl).toString();
-
-      // Try to find caption
-      const figure = img.closest('figure');
-      const caption = figure?.querySelector('figcaption')?.textContent?.trim();
-
-      images.push({
-        url: absoluteUrl,
-        alt: img.getAttribute('alt') || undefined,
-        caption: caption || undefined,
-      });
-    }
-  });
-
-  return images;
 }
