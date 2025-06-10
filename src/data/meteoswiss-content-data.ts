@@ -230,6 +230,52 @@ function processHtmlContent(
  * Extract main content from the page
  */
 function extractMainContent(document: Document): string {
+  // Remove screenreader titles in all languages
+  const screenreaderTitles = [
+    'Inhaltsbereich', // German
+    'Contenu principal', // French
+    'Contenuto principale', // Italian
+    'Main content', // English
+  ];
+
+  // Remove elements with screenreader-only titles
+  document.querySelectorAll('h1, h2, h3').forEach((heading) => {
+    const text = heading.textContent?.trim() || '';
+    if (
+      screenreaderTitles.includes(text) ||
+      heading.classList.contains('a11y-description--hidden') ||
+      heading.classList.contains('sr-only') ||
+      heading.classList.contains('visually-hidden')
+    ) {
+      heading.remove();
+    }
+  });
+
+  // Remove share widgets
+  const shareSelectors = [
+    '[data-share]',
+    '.share-widget',
+    '.social-share',
+    'mch-share-dialog',
+    '[class*="share"]',
+    '[id*="share"]',
+  ];
+
+  shareSelectors.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((el) => {
+      // Check if element contains share-related text
+      const text = el.textContent?.toLowerCase() || '';
+      if (
+        text.includes('seite teilen') ||
+        text.includes('partager') ||
+        text.includes('condividi') ||
+        text.includes('share')
+      ) {
+        el.remove();
+      }
+    });
+  });
+
   // Try different selectors for main content
   const selectors = [
     'main',
@@ -251,8 +297,8 @@ function extractMainContent(document: Document): string {
   // Fallback to body content
   const body = document.querySelector('body');
   if (body) {
-    // Remove navigation, header, footer
-    const toRemove = body.querySelectorAll('nav, header, footer, script, style');
+    // Remove navigation, header, footer, scripts, styles
+    const toRemove = body.querySelectorAll('nav, header, footer, script, style, noscript');
     toRemove.forEach((el) => el.remove());
     return body.innerHTML;
   }
