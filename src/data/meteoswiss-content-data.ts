@@ -107,7 +107,6 @@ async function fetchFromWeb(
   try {
     const parsedUrl = new URL(url);
     if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
-      debugData('Domain validation failed: %s not in allowed list', parsedUrl.hostname);
       throw new Error(
         `Invalid domain: ${parsedUrl.hostname}. Only MeteoSwiss domains are allowed.`
       );
@@ -126,7 +125,7 @@ async function fetchFromWeb(
 
     return processHtmlContent(html, id, url, format, includeMetadata);
   } catch (error) {
-    debugData('Content fetch error: %o', error);
+    console.error('Content fetch error:', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
       throw new Error(`Content not found: ${id}`);
     }
