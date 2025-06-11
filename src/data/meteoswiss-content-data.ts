@@ -288,14 +288,15 @@ function extractMainContent(document: Document): string {
 
   // First, expand any shadow DOM content by looking for slot elements
   // and moving their assigned content into the main DOM
+  // Note: JSDOM doesn't fully support shadow DOM, so this is a best-effort approach
   document.querySelectorAll('slot[name="main"]').forEach((slot) => {
     const parent = slot.parentElement;
-    if (parent && slot.assignedNodes) {
-      const assigned = slot.assignedNodes();
-      assigned.forEach(node => {
-        if (node.nodeType === 1) { // Element node
-          parent.appendChild(node.cloneNode(true));
-        }
+    if (parent) {
+      // In JSDOM, slots don't have assignedNodes, so we'll just look for child elements
+      // that might be slotted content
+      const children = Array.from(slot.children);
+      children.forEach((child) => {
+        parent.appendChild(child.cloneNode(true));
       });
     }
   });

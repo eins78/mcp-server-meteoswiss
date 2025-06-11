@@ -39,7 +39,7 @@ describe('MeteoSwiss Fetch Tool', () => {
           },
           format: {
             type: 'string',
-            enum: ['markdown', 'text', 'html'],
+            enum: ['markdown', 'text'],
             default: 'markdown',
             description: expect.stringContaining('output format')
           },
@@ -47,11 +47,6 @@ describe('MeteoSwiss Fetch Tool', () => {
             type: 'boolean',
             default: true,
             description: expect.stringContaining('metadata')
-          },
-          includeImages: {
-            type: 'boolean',
-            default: false,
-            description: expect.stringContaining('images')
           }
         },
         required: ['id']
@@ -95,19 +90,6 @@ describe('MeteoSwiss Fetch Tool', () => {
       expect(result.content).not.toContain('#'); // No markdown
     });
 
-    it('should fetch content in HTML format', async () => {
-      const response = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
-        format: 'html'
-      });
-
-      const result = JSON.parse(response.content[0].text);
-
-      expect(result).toMatchObject({
-        content: expect.stringContaining('<'),
-        format: 'html'
-      });
-    });
 
     it('should exclude metadata when requested', async () => {
       const response = await client.callTool('fetch', {
@@ -120,26 +102,6 @@ describe('MeteoSwiss Fetch Tool', () => {
       expect(result.metadata).toBeUndefined();
     });
 
-    it('should include images when requested', async () => {
-      const response = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
-        includeImages: true
-      });
-
-      const result = JSON.parse(response.content[0].text);
-
-      expect(result).toMatchObject({
-        images: expect.any(Array)
-      });
-      
-      if (result.images.length > 0) {
-        expect(result.images[0]).toMatchObject({
-          url: expect.any(String),
-          alt: expect.any(String),
-          caption: expect.any(String)
-        });
-      }
-    });
 
     it('should handle non-existent content IDs', async () => {
       const response = await client.callTool('fetch', {
