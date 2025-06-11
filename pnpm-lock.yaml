@@ -47,6 +47,9 @@ importers:
       turndown:
         specifier: ^7.2.0
         version: 7.2.0
+      turndown-plugin-gfm:
+        specifier: ^1.0.2
+        version: 1.0.2
       zod:
         specifier: ^3.25.56
         version: 3.25.56
@@ -123,9 +126,6 @@ importers:
       ts-jest:
         specifier: ^29.3.4
         version: 29.3.4(@babel/core@7.27.4)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.27.4))(jest@29.7.0(@types/node@20.19.0)(ts-node@10.9.2(@types/node@20.19.0)(typescript@5.8.3)))(typescript@5.8.3)
-      turndown-plugin-gfm:
-        specifier: ^1.0.2
-        version: 1.0.2
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
