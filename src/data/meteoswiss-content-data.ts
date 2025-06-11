@@ -186,9 +186,11 @@ function processHtmlContent(
   // Extract main content
   const mainContent = extractMainContent(document);
 
-  // Extract title
+  // Extract title - try multiple selectors
   const title =
     document.querySelector('h1')?.textContent?.trim() ||
+    document.querySelector('mch-title[level="1"]')?.textContent?.trim() ||
+    document.querySelector('[heading]')?.getAttribute('heading') ||
     document.querySelector('title')?.textContent?.trim() ||
     'Untitled';
 
@@ -209,9 +211,17 @@ function processHtmlContent(
   switch (format) {
     case 'markdown':
       content = turndownService.turndown(mainContent);
+      // Prepend title as H1 if we have one and it's not already in the content
+      if (title && title !== 'Untitled' && !content.includes(`# ${title}`)) {
+        content = `# ${title}\n\n${content}`;
+      }
       break;
     case 'text':
       content = extractTextContent(mainContent);
+      // Prepend title for text format too
+      if (title && title !== 'Untitled') {
+        content = `${title}\n\n${content}`;
+      }
       break;
     default:
       throw new Error(`Invalid format: ${format}`);
@@ -276,6 +286,20 @@ function extractMainContent(document: Document): string {
     });
   });
 
+  // First, expand any shadow DOM content by looking for slot elements
+  // and moving their assigned content into the main DOM
+  document.querySelectorAll('slot[name="main"]').forEach((slot) => {
+    const parent = slot.parentElement;
+    if (parent && slot.assignedNodes) {
+      const assigned = slot.assignedNodes();
+      assigned.forEach(node => {
+        if (node.nodeType === 1) { // Element node
+          parent.appendChild(node.cloneNode(true));
+        }
+      });
+    }
+  });
+
   // Try different selectors for main content
   const selectors = [
     'main',
@@ -285,12 +309,20 @@ function extractMainContent(document: Document): string {
     'article',
     '.mch-article',
     '#content',
+    '.page-main__wrapper', // MeteoSwiss specific
+    'mch-detail-page', // MeteoSwiss component
   ];
 
   for (const selector of selectors) {
     const element = document.querySelector(selector);
     if (element) {
-      return element.innerHTML;
+      // Also include any slot content that might be after the main content
+      const slotContent = element.querySelectorAll('slot[slot="main"], [slot="main"]');
+      let additionalContent = '';
+      slotContent.forEach((el) => {
+        additionalContent += el.innerHTML || el.textContent || '';
+      });
+      return element.innerHTML + additionalContent;
     }
   }
 
