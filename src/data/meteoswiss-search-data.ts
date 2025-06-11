@@ -90,10 +90,21 @@ export async function searchMeteoSwissContent(
     sort = 'relevance',
   } = params;
 
+  debugData('searchMeteoSwissContent called with params: %o', {
+    query,
+    language,
+    contentType,
+    page,
+    pageSize,
+    sort,
+  });
+
   if (USE_TEST_FIXTURES) {
+    debugData('Using test fixtures for search');
     return searchFromTestFixtures(query, language, contentType, page, pageSize, sort);
   }
 
+  debugData('Using live API for search');
   return searchFromApi(query, language, contentType, page, pageSize, sort);
 }
 
@@ -138,6 +149,8 @@ async function searchFromApi(
     debugData('Searching MeteoSwiss API: %s', url.toString());
     const response = await fetchJson<SolrResponse>(url.toString());
 
+    debugData('API response received: %d documents found', response.response?.numFound || 0);
+
     // Transform the Solr response to our format
     const results: SearchResultItem[] =
       response.response?.docs?.map((doc) => ({
@@ -152,6 +165,8 @@ async function searchFromApi(
         publicationDate: doc.publicationDate,
       })) || [];
 
+    debugData('Transformed %d search results', results.length);
+
     return {
       totalResults: response.response?.numFound || 0,
       page,
@@ -159,6 +174,7 @@ async function searchFromApi(
       results,
     };
   } catch (error) {
+    debugData('Search API error: %o', error);
     if (error instanceof HttpRequestError) {
       throw new Error(
         `Failed to search MeteoSwiss content: HTTP error ${error.statusCode || 'unknown'}`
@@ -189,8 +205,11 @@ async function searchFromTestFixtures(
     `${query.toLowerCase().replace(/[^a-z0-9]/g, '-')}-results.json`
   );
 
+  debugData('Looking for test fixture: %s', fixtureFile);
+
   // Try exact match first
   if (existsSync(fixtureFile)) {
+    debugData('Loading test fixture from: %s', fixtureFile);
     const data = await fs.readFile(fixtureFile, 'utf-8');
     const response = JSON.parse(data) as SolrResponse;
 

@@ -73,10 +73,18 @@ export async function fetchMeteoSwissContent(
 ): Promise<ContentResponse> {
   const { id, format = 'markdown', includeMetadata = true } = params;
 
+  debugData('fetchMeteoSwissContent called with params: %o', {
+    id,
+    format,
+    includeMetadata,
+  });
+
   if (USE_TEST_FIXTURES) {
+    debugData('Using test fixtures for content fetch');
     return fetchFromTestFixtures(id, format, includeMetadata);
   }
 
+  debugData('Using live API for content fetch');
   return fetchFromWeb(id, format, includeMetadata);
 }
 
@@ -93,10 +101,13 @@ async function fetchFromWeb(
     ? id
     : `https://www.meteoswiss.admin.ch${id.startsWith('/') ? id : '/' + id}`; // Fallback for backward compatibility
 
+  debugData('Fetching content from URL: %s', url);
+
   // Validate the URL is from an allowed MeteoSwiss domain
   try {
     const parsedUrl = new URL(url);
     if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
+      debugData('Domain validation failed: %s not in allowed list', parsedUrl.hostname);
       throw new Error(
         `Invalid domain: ${parsedUrl.hostname}. Only MeteoSwiss domains are allowed.`
       );
@@ -109,11 +120,13 @@ async function fetchFromWeb(
   }
 
   try {
-    debugData('Fetching content from: %s', url);
+    debugData('Making HTTP request to fetch content');
     const html = await fetchHtml(url);
+    debugData('Content fetched successfully, size: %d bytes', html.length);
 
     return processHtmlContent(html, id, url, format, includeMetadata);
   } catch (error) {
+    debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
       throw new Error(`Content not found: ${id}`);
     }
@@ -131,6 +144,8 @@ async function fetchFromTestFixtures(
   format: 'markdown' | 'text',
   includeMetadata: boolean
 ): Promise<ContentResponse> {
+  debugData('Looking for test fixture for ID: %s', id);
+
   // Extract language from URL if it's a full URL
   let detectedLang = 'de';
   let urlPath = id;
@@ -159,7 +174,9 @@ async function fetchFromTestFixtures(
   const languages = [detectedLang, 'de', 'fr', 'it', 'en'];
   for (const lang of languages) {
     const fixtureFile = path.join(TEST_FIXTURES_ROOT, lang, `${baseName}.html`);
+    debugData('Checking for fixture file: %s', fixtureFile);
     if (existsSync(fixtureFile)) {
+      debugData('Loading test fixture from: %s', fixtureFile);
       const html = await fs.readFile(fixtureFile, 'utf-8');
       const url = id.startsWith('http') ? id : `https://www.meteoswiss.admin.ch${id}`;
 
@@ -167,6 +184,7 @@ async function fetchFromTestFixtures(
     }
   }
 
+  debugData('No test fixture found for ID: %s', id);
   throw new Error(`Content not found: ${id}`);
 }
 
@@ -180,6 +198,8 @@ function processHtmlContent(
   format: 'markdown' | 'text',
   includeMetadata: boolean
 ): ContentResponse {
+  debugData('Processing HTML content, format: %s, includeMetadata: %s', format, includeMetadata);
+
   const dom = new JSDOM(html);
   const document = dom.window.document;
 
@@ -226,6 +246,8 @@ function processHtmlContent(
     default:
       throw new Error(`Invalid format: ${format}`);
   }
+
+  debugData('Content processed successfully, content length: %d characters', content.length);
 
   return {
     id,
