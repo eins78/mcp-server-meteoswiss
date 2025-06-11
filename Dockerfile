@@ -44,6 +44,7 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Copy package files and built application from builder
+COPY --from=builder /root/.local/share/pnpm/store /root/.local/share/pnpm/store
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder /app/dist ./dist
 
