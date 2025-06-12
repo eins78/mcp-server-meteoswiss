@@ -174,7 +174,7 @@ async function searchFromApi(
       results,
     };
   } catch (error) {
-    console.error('Search API error:', error);
+    debugData('Search API error: %o', error);
     if (error instanceof HttpRequestError) {
       throw new Error(
         `Failed to search MeteoSwiss content: HTTP error ${error.statusCode || 'unknown'}`

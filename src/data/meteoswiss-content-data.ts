@@ -125,7 +125,7 @@ async function fetchFromWeb(
 
     return processHtmlContent(html, id, url, format, includeMetadata);
   } catch (error) {
-    console.error('Content fetch error:', error);
+    debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
       throw new Error(`Content not found: ${id}`);
     }

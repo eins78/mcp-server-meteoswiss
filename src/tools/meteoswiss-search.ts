@@ -25,7 +25,7 @@ export async function meteoswissSearchTool(input: unknown): Promise<SearchResult
 
     return results;
   } catch (error) {
-    console.error('Search tool error:', error);
+    debugTools('Search tool error: %O', error);
     throw error;
   }
 }

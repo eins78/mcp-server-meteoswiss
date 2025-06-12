@@ -26,7 +26,7 @@ export async function meteoswissFetchTool(input: unknown): Promise<unknown> {
 
     return content;
   } catch (error) {
-    console.error('Fetch tool error:', error);
+    debugTools('Fetch tool error: %O', error);
     throw error;
   }
 }
