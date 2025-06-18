@@ -130,8 +130,8 @@ export function getCorsOptions(configuredOrigin?: string): CorsOptions {
       'WARNING: CORS configured to allow all origins. This is not recommended for production.'
     );
     return {
-      origin: true,
-      credentials: true,
+      origin: '*',
+      credentials: false, // Can't use credentials with wildcard origin
     };
   }
 

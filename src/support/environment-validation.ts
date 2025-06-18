@@ -83,7 +83,7 @@ const envSchema = z.object({
     .refine((val) => !isNaN(val) && val > 0, {
       message: 'RATE_LIMIT_MAX_REQUESTS must be a positive number',
     }),
-  CORS_ORIGIN: z.string().optional().default('*'),
+  CORS_ORIGIN: z.string().optional(), // No default - will use restrictive local-only CORS
   REQUEST_SIZE_LIMIT: z.string().optional().default('10mb'),
   PUBLIC_URL: z
     .string()

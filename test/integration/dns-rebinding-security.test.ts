@@ -254,16 +254,29 @@ describe('DNS Rebinding Attack Protection', () => {
       for (const host of suspiciousHosts) {
         // Note: In a real attack, the DNS would resolve to localhost but Host header would be evil
         // For testing, we simulate this by setting the Host header explicitly
-        const response = await fetch(`http://127.0.0.1:${testPort}/mcp`, {
-          headers: {
-            'Host': host,
-            'Accept': 'text/event-stream',
-          },
+        // Using http module directly as fetch might override Host header
+        const http = await import('http');
+        
+        const response = await new Promise<{ status: number; body: string }>((resolve) => {
+          const req = http.request({
+            hostname: '127.0.0.1',
+            port: testPort,
+            path: '/mcp',
+            method: 'GET',
+            headers: {
+              'Host': host,
+              'Accept': 'text/event-stream',
+            },
+          }, (res) => {
+            let body = '';
+            res.on('data', (chunk) => body += chunk);
+            res.on('end', () => resolve({ status: res.statusCode || 0, body }));
+          });
+          req.end();
         });
 
         expect(response.status).toBe(403);
-        const body = await response.text();
-        expect(body).toContain('Invalid host');
+        expect(response.body).toContain('Invalid host');
       }
     });
 

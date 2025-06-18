@@ -154,10 +154,10 @@ describe('Port Mapping Configuration', () => {
       expect(response.body.mcp_endpoint).toBe('http://external.com:9999/mcp');
     });
 
-    it('should bind to 0.0.0.0 by default for Docker compatibility', async () => {
-      // Default BIND_ADDRESS should be 0.0.0.0
+    it('should bind to 127.0.0.1 by default for security', async () => {
+      // Default BIND_ADDRESS should be 127.0.0.1 for security
       const { config } = await setupServer();
-      expect(config.BIND_ADDRESS).toBe('0.0.0.0');
+      expect(config.BIND_ADDRESS).toBe('127.0.0.1');
     });
   });
 });

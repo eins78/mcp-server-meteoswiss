@@ -48,6 +48,7 @@ export async function createHttpServer(
 
   // Apply security middleware first
   app.use(validateHostHeader);
+  app.use(validateOriginHeader);
 
   // Configure CORS with security in mind
   app.use(cors(getCorsOptions(config.CORS_ORIGIN)));
