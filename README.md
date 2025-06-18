@@ -133,11 +133,40 @@ pnpm run lint
 
 ## Available Tools
 
-- `meteoswissWeatherReport`: Weather report for Swiss regions (north, south, west) in multiple languages
-- `search`: Search MeteoSwiss website content with pagination and multi-language support
-- `fetch`: Retrieve full content from MeteoSwiss pages in various formats (markdown, text, HTML)
+### meteoswissWeatherReport
+Get official MeteoSwiss weather reports for Swiss regions.
+
+**Parameters:**
+- `region`: Swiss region (`north`, `south`, or `west`)
+  - `north`: Northern Switzerland (Zurich, Basel, Bern, Swiss Plateau)
+  - `south`: Southern Switzerland (Ticino and southern valleys)
+  - `west`: Western Switzerland/Romandy (Geneva, Lausanne, western Alps)
+- `language`: Report language (`de`, `fr`, or `it` - English not available)
+  - Default: `de`
+
+**Returns:** Detailed weather report with daily forecasts, temperatures, and regional conditions.
+
+### search
+Search MeteoSwiss website content with pagination and multi-language support.
+
+### fetch
+Retrieve full content from MeteoSwiss pages in various formats (markdown, text, HTML).
 
 See the [API documentation](docs/architecture/api-design.md) for detailed tool specifications.
+
+## Available Prompts
+
+Pre-configured prompts for common weather queries:
+
+### German
+- `wetterNordschweiz`: Current weather report for Northern Switzerland
+- `wetterSchweiz`: Interactive prompt for any Swiss region
+
+### French
+- `meteoSuisseRomande`: Current weather report for Western Switzerland (Romandy)
+
+### Italian
+- `meteoTicino`: Current weather report for Southern Switzerland (Ticino)
 
 ## Debugging
 

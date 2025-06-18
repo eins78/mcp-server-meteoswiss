@@ -97,6 +97,21 @@ export async function createHttpServer(
           mcp_endpoint: getMcpEndpointUrl(config),
           usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
           health: `/health`,
+          capabilities: {
+            tools: [
+              'meteoswissWeatherReport',
+              'search',
+              'fetch'
+            ],
+            prompts: [
+              'wetterNordschweiz',
+              'wetterSchweiz',
+              'meteoSuisseRomande',
+              'meteoTicino'
+            ],
+            regions: ['north', 'south', 'west'],
+            languages: ['de', 'fr', 'it']
+          }
         });
         return;
       }
@@ -115,6 +130,21 @@ export async function createHttpServer(
           mcp_endpoint: getMcpEndpointUrl(config),
           usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
           health: `/health`,
+          capabilities: {
+            tools: [
+              'meteoswissWeatherReport',
+              'search',
+              'fetch'
+            ],
+            prompts: [
+              'wetterNordschweiz',
+              'wetterSchweiz',
+              'meteoSuisseRomande',
+              'meteoTicino'
+            ],
+            regions: ['north', 'south', 'west'],
+            languages: ['de', 'fr', 'it']
+          }
         });
       }
     })
