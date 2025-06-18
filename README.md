@@ -9,8 +9,11 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 ## Features
 
 - Weather reports for regions in Switzerland (North, South, West)
+- Search MeteoSwiss website content across multiple topics
+- Fetch full content from MeteoSwiss pages with format conversion
 - Multi-language support (German, French, Italian, English)
 - Weather forecasts with daily breakdowns
+- Intelligent HTTP caching with ETag support
 - Test fixtures for development
 
 ## Architecture
@@ -131,6 +134,8 @@ pnpm run lint
 ## Available Tools
 
 - `meteoswissWeatherReport`: Weather report for Swiss regions (north, south, west) in multiple languages
+- `search`: Search MeteoSwiss website content with pagination and multi-language support
+- `fetch`: Retrieve full content from MeteoSwiss pages in various formats (markdown, text, HTML)
 
 See the [API documentation](docs/architecture/api-design.md) for detailed tool specifications.
 

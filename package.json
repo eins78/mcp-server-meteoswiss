@@ -1,5 +1,5 @@
 {
-  "name": "mcp-meteoswiss",
+  "name": "mcp-server-meteoswiss",
   "version": "1.0.0",
   "description": "A Model Context Protocol (MCP) server for MeteoSwiss weather data.",
   "license": "CC0-1.0",
@@ -27,7 +27,9 @@
     "test:watch": "pnpm run test --watch",
     "test:integration": "NODE_OPTIONS='--experimental-vm-modules' jest test/integration",
     "build": "tsc",
-    "build:windows": "tsc"
+    "dev:docker": "pnpm run build:docker && pnpm run start:docker",
+    "build:docker": "docker build -t mcp-server-meteoswiss:dev .",
+    "start:docker": "docker run mcp-server-meteoswiss:dev"
   },
   "repository": {
     "type": "git",
@@ -55,6 +57,8 @@
     "micromark": "^4.0.2",
     "micromark-extension-gfm": "^3.0.0",
     "tsx": "^4.19.4",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2",
     "zod": "^3.25.56"
   },
   "devDependencies": {
@@ -64,6 +68,7 @@
     "@types/jest": "^29.5.14",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.19.0",
+    "@types/turndown": "^5.0.5",
     "@typescript-eslint/eslint-plugin": "^8.33.1",
     "@typescript-eslint/parser": "^8.33.1",
     "cross-env": "^7.0.3",
