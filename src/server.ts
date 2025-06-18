@@ -24,7 +24,8 @@ export function createServer(): McpServer {
   const server = new McpServer({
     name: 'mcp-server-meteoswiss',
     version: '1.0.0',
-    description: 'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, and Italian.',
+    description:
+      'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, and Italian.',
   });
   debugServer('MCP server created with name: mcp-server-meteoswiss');
 
@@ -183,7 +184,7 @@ The reports use standardized probability terms for precipitation forecasts.`,
 
   // Register prompts
   debugServer('Registering prompts');
-  
+
   // German prompt for Northern Switzerland
   server.prompt(
     'wetterNordschweiz',
@@ -195,39 +196,35 @@ The reports use standardized probability terms for precipitation forecasts.`,
             role: 'user' as const,
             content: {
               type: 'text' as const,
-              text: 'Wie ist das Wetter in der Nordschweiz heute und in den nächsten Tagen?'
-            }
+              text: 'Wie ist das Wetter in der Nordschweiz heute und in den nächsten Tagen?',
+            },
           },
           {
             role: 'assistant' as const,
             content: {
               type: 'text' as const,
-              text: 'Ich hole den aktuellen Wetterbericht für die Nordschweiz.\n\n[Tool: meteoswissWeatherReport mit region="north" und language="de"]'
-            }
-          }
-        ]
+              text: 'Ich hole den aktuellen Wetterbericht für die Nordschweiz.\n\n[Tool: meteoswissWeatherReport mit region="north" und language="de"]',
+            },
+          },
+        ],
       };
     }
   );
 
   // German prompt for flexible region
-  server.prompt(
-    'wetterSchweiz',
-    'Interaktiver Wetterbericht für alle Regionen auf Deutsch',
-    () => {
-      return {
-        messages: [
-          {
-            role: 'user' as const,
-            content: {
-              type: 'text' as const,
-              text: 'Für welche Region möchten Sie den Wetterbericht? Verfügbar sind:\n- Nordschweiz (north)\n- Südschweiz/Tessin (south)\n- Westschweiz/Romandie (west)'
-            }
-          }
-        ]
-      };
-    }
-  );
+  server.prompt('wetterSchweiz', 'Interaktiver Wetterbericht für alle Regionen auf Deutsch', () => {
+    return {
+      messages: [
+        {
+          role: 'user' as const,
+          content: {
+            type: 'text' as const,
+            text: 'Für welche Region möchten Sie den Wetterbericht? Verfügbar sind:\n- Nordschweiz (north)\n- Südschweiz/Tessin (south)\n- Westschweiz/Romandie (west)',
+          },
+        },
+      ],
+    };
+  });
 
   // French prompt for Western Switzerland (Romandy)
   server.prompt(
@@ -240,46 +237,42 @@ The reports use standardized probability terms for precipitation forecasts.`,
             role: 'user' as const,
             content: {
               type: 'text' as const,
-              text: 'Quel temps fait-il en Suisse romande aujourd\'hui et pour les prochains jours?'
-            }
+              text: "Quel temps fait-il en Suisse romande aujourd'hui et pour les prochains jours?",
+            },
           },
           {
             role: 'assistant' as const,
             content: {
               type: 'text' as const,
-              text: 'Je vais chercher le bulletin météo actuel pour la Suisse romande.\n\n[Outil: meteoswissWeatherReport avec region="west" et language="fr"]'
-            }
-          }
-        ]
+              text: 'Je vais chercher le bulletin météo actuel pour la Suisse romande.\n\n[Outil: meteoswissWeatherReport avec region="west" et language="fr"]',
+            },
+          },
+        ],
       };
     }
   );
 
   // Italian prompt for Southern Switzerland (Ticino)
-  server.prompt(
-    'meteoTicino',
-    'Bollettino meteo attuale per il Ticino in italiano',
-    () => {
-      return {
-        messages: [
-          {
-            role: 'user' as const,
-            content: {
-              type: 'text' as const,
-              text: 'Com\'è il tempo in Ticino oggi e nei prossimi giorni?'
-            }
+  server.prompt('meteoTicino', 'Bollettino meteo attuale per il Ticino in italiano', () => {
+    return {
+      messages: [
+        {
+          role: 'user' as const,
+          content: {
+            type: 'text' as const,
+            text: "Com'è il tempo in Ticino oggi e nei prossimi giorni?",
           },
-          {
-            role: 'assistant' as const,
-            content: {
-              type: 'text' as const,
-              text: 'Recupero il bollettino meteo attuale per il Ticino.\n\n[Strumento: meteoswissWeatherReport con region="south" e language="it"]'
-            }
-          }
-        ]
-      };
-    }
-  );
+        },
+        {
+          role: 'assistant' as const,
+          content: {
+            type: 'text' as const,
+            text: 'Recupero il bollettino meteo attuale per il Ticino.\n\n[Strumento: meteoswissWeatherReport con region="south" e language="it"]',
+          },
+        },
+      ],
+    };
+  });
 
   return server;
 }

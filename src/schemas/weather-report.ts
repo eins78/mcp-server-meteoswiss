@@ -26,11 +26,15 @@ export const WeatherReportSchema = z.object({
 export const GetWeatherReportParamsSchema = z.object({
   region: z
     .enum(['north', 'south', 'west'])
-    .describe('Swiss region: north (Northern Switzerland including Zurich, Basel, Bern), south (Ticino and southern valleys), west (Romandy including Geneva, Lausanne)'),
+    .describe(
+      'Swiss region: north (Northern Switzerland including Zurich, Basel, Bern), south (Ticino and southern valleys), west (Romandy including Geneva, Lausanne)'
+    ),
   language: z
     .enum(['de', 'fr', 'it'])
     .default('de')
-    .describe('Language for the weather report. MeteoSwiss only provides reports in Swiss official languages: German (de), French (fr), Italian (it). English is not available.'),
+    .describe(
+      'Language for the weather report. MeteoSwiss only provides reports in Swiss official languages: German (de), French (fr), Italian (it). English is not available.'
+    ),
 });
 
 export type WeatherReport = z.infer<typeof WeatherReportSchema>;
