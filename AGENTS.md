@@ -120,24 +120,51 @@ When transforming MeteoSwiss data:
 When working on this project, be aware of these key files:
 
 ### Core Implementation
-- `src/index.ts` - Main entry point
+- `src/index.ts` - Main entry point for HTTP/SSE transport
 - `src/server.ts` - MCP server implementation
+- `src/transports/streamable-http.ts` - HTTP/SSE transport layer
 - `package.json` - Project metadata and dependencies
 
 ### Schemas
 - `src/schemas/weather-report.ts` - Weather report data schemas
+- `src/schemas/meteoswiss-search.ts` - Search functionality schemas
+- `src/schemas/meteoswiss-fetch.ts` - Content fetch schemas
 
 ### Tools
-- `src/tools/get-weather-report.ts` - Weather report MCP tool
+- `src/tools/meteoswiss-weather-report.ts` - Weather report MCP tool
+- `src/tools/meteoswiss-search.ts` - Search functionality
+- `src/tools/meteoswiss-fetch.ts` - Content fetching
 
 ### Data Access
 - `src/data/weather-report-data.ts` - Weather data access functions
+- `src/data/meteoswiss-endpoints.ts` - API endpoint definitions
+
+### Support Utilities
+- `src/support/environment-validation.ts` - Environment config validation
+- `src/support/http-client.ts` - HTTP client with caching
+- `src/support/security-middleware.ts` - Security middleware
+
+### Test Fixtures
+- `test/__fixtures__/` - Sample data for testing
+- `test/integration/` - Integration tests
 
 ### Documentation
 - `README.md` - Project overview
-- `CLAUDE.md` - Claude-specific instructions
-- `docs/` - Detailed documentation
+- `CLAUDE.md` - Claude-specific instructions and commands
+- `docs/debugging-guide.md` - MCP debugging guide
+- `docs/architecture/` - Architecture documentation
+- `docs/analysis/` - Data analysis and schemas
 - This file (`AGENTS.md`) - AI assistant guidelines
+
+## MCP Server Debugging
+
+When debugging MCP server connections:
+
+1. Check Claude Desktop logs at `~/Library/Logs/Claude/` for connection errors
+2. Use `SSEServerTransport` for HTTP/SSE transport or `StdioServerTransport` for stdio
+3. Test your server locally before connecting to Claude Desktop
+4. Use the `node:` prefix for Node.js built-in modules when working with ESM
+5. See `docs/debugging-guide.md` for detailed debugging steps
 
 ## General AI Assistant Guidelines
 
@@ -147,15 +174,47 @@ When working on this project, be aware of these key files:
 4. **Update documentation**: Keep docs in sync with code changes
 5. **Ask when uncertain**: If something is unclear, ask for clarification rather than guessing
 
-## Node.js Version Requirements
+## Node.js and TypeScript Requirements
 
+### Version Requirements
 - Use Node.js 23.11.0 or later (specified in `.nvmrc` and `package.json` engines field)
 - The project uses Node.js native TypeScript support when available
 - For environment setup, suggest running `nvm use` to ensure correct Node.js version
 
+### TypeScript Import Guidelines
+- Always use the `type` keyword when importing types:
+  ```typescript
+  // ✅ Correct
+  import type { MyType } from './types.ts';
+  import { someFunction, type AnotherType } from './module.ts';
+  
+  // ❌ Incorrect - will cause runtime errors
+  import { MyType } from './types.ts';
+  ```
+
+### Node.js Native TypeScript Limitations
+- Does not support `enum` declarations (without experimental flags)
+- No runtime `namespace` declarations
+- No parameter properties
+- No import aliases or path aliases from tsconfig.json
+
 ## Package Management
 
-This project uses pnpm. AI assistants should:
-1. Always suggest pnpm commands instead of npm
-2. Use `pnpm add` for dependencies, `pnpm add -D` for dev dependencies
-3. Remind users to commit `pnpm-lock.yaml` but not `.pnpm` directory
+This project uses pnpm as the package manager. AI assistants should:
+
+### Basic Commands
+1. Always suggest pnpm commands instead of npm:
+   - `pnpm install` instead of `npm install`
+   - `pnpm add <pkg>` instead of `npm i <pkg>`
+   - `pnpm run <script>` instead of `npm run <script>`
+
+### Adding Dependencies
+- Production dependencies: `pnpm add <package-name>`
+- Development dependencies: `pnpm add -D <package-name>`
+- Workspace root (if applicable): use `-w` or `--workspace-root` flag
+
+### Best Practices
+1. Always commit `pnpm-lock.yaml`
+2. Never commit the `.pnpm` directory
+3. When migrating from npm: delete `node_modules` and `package-lock.json` first
+4. Run `pnpm install` after pulling changes that modify `pnpm-lock.yaml`
