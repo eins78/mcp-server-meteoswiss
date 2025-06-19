@@ -1,0 +1,5 @@
+# Mark vendor directory as vendored for GitHub language statistics
+vendor/* linguist-vendored
+
+# Mark test fixtures as vendored
+test/__fixtures__/* linguist-vendored
