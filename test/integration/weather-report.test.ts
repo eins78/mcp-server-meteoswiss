@@ -241,5 +241,22 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
       // Error should be caught
       expect(error).toBeDefined();
     }
+
+    // Test with English language (should be rejected)
+    try {
+      await client.callTool('meteoswissWeatherReport', {
+        region: 'north',
+        language: 'en',
+      });
+      // If we get here, the test should fail
+      fail('Should have thrown an error for English language');
+    } catch (error) {
+      // Error should be caught and contain helpful message
+      expect(error).toBeDefined();
+      const errorStr = error.toString();
+      expect(errorStr).toContain('Invalid arguments');
+      // The error will contain our custom error message
+      expect(errorStr).toContain('English is NOT supported');
+    }
   });
 });

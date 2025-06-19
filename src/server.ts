@@ -48,6 +48,13 @@ export function createServer(): McpServer {
     'meteoswissWeatherReport',
     `Get the official MeteoSwiss weather report for a Swiss region. Returns detailed daily forecasts including weather conditions, temperatures, and regional outlooks.
 
+IMPORTANT: This tool ONLY supports Swiss official languages. English (en) is NOT supported and will return an error.
+
+Supported languages:
+- German (de) - Use for Zurich, Basel, Bern, and most queries unless a specific language is requested
+- French (fr) - Use for Geneva, Lausanne, or when French is specifically requested
+- Italian (it) - Use for Ticino or when Italian is specifically requested
+
 MeteoSwiss divides Switzerland into three main forecast regions:
 - north: Northern Switzerland (including Zurich, Basel, Bern, and the Swiss Plateau)
 - south: Southern Switzerland (Ticino and southern valleys)
@@ -59,13 +66,6 @@ Weather reports are updated twice daily (morning and afternoon) and include:
 - Temperature ranges and trends
 - Precipitation probability using standardized terms
 - Regional-specific conditions (e.g., Föhn effects, valley fog)
-
-Language support reflects Switzerland's multilingual nature:
-- German (de): Primary language for northern regions
-- French (fr): Primary language for western regions
-- Italian (it): Primary language for southern regions (Ticino)
-
-Note: Weather reports are only available in Switzerland's official languages (German, French, Italian). English translations are not provided by MeteoSwiss.
 
 The reports use standardized probability terms for precipitation forecasts.`,
     GetWeatherReportParamsSchema.shape,
