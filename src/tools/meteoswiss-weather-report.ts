@@ -15,7 +15,8 @@ export async function meteoswissWeatherReport(
   debugTools('meteoswissWeatherReport called with params: %O', params);
 
   // Additional validation for common mistakes
-  if ((params as any).language === 'en' || (params as any).language === 'english') {
+  const paramsWithAny = params as Record<string, unknown>;
+  if (paramsWithAny.language === 'en' || paramsWithAny.language === 'english') {
     throw new Error(
       'English language is NOT supported by MeteoSwiss. Please use one of the Swiss official languages: German (de), French (fr), or Italian (it). For Zurich, use German (de).'
     );

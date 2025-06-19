@@ -28,13 +28,15 @@ export const GetWeatherReportParamsSchema = z.object({
     .enum(['north', 'south', 'west'], {
       errorMap: (issue, ctx) => {
         if (issue.code === 'invalid_enum_value') {
-          return { message: `Region must be one of: 'north' (Northern Switzerland including Zurich, Basel, Bern), 'south' (Ticino and southern valleys), or 'west' (Romandy including Geneva, Lausanne). Received: '${issue.received}'` };
+          return {
+            message: `Region must be one of: 'north' (Northern Switzerland including Zurich, Basel, Bern), 'south' (Ticino and southern valleys), or 'west' (Romandy including Geneva, Lausanne). Received: '${issue.received}'`,
+          };
         }
         if (issue.code === 'invalid_type' && issue.received === 'undefined') {
           return { message: `Region is required. Please specify 'north', 'south', or 'west'` };
         }
         return { message: ctx.defaultError };
-      }
+      },
     })
     .describe(
       'Swiss region: north (Northern Switzerland including Zurich, Basel, Bern), south (Ticino and southern valleys), west (Romandy including Geneva, Lausanne)'
@@ -44,12 +46,16 @@ export const GetWeatherReportParamsSchema = z.object({
       errorMap: (issue, ctx) => {
         if (issue.code === 'invalid_enum_value') {
           if (issue.received === 'en' || issue.received === 'english') {
-            return { message: `English is NOT supported by MeteoSwiss. Please use one of the Swiss official languages: 'de' (German), 'fr' (French), or 'it' (Italian). For Zurich, use 'de'.` };
+            return {
+              message: `English is NOT supported by MeteoSwiss. Please use one of the Swiss official languages: 'de' (German), 'fr' (French), or 'it' (Italian). For Zurich, use 'de'.`,
+            };
           }
-          return { message: `Language must be one of the Swiss official languages: 'de' (German), 'fr' (French), or 'it' (Italian). Received: '${issue.received}'. English is NOT supported.` };
+          return {
+            message: `Language must be one of the Swiss official languages: 'de' (German), 'fr' (French), or 'it' (Italian). Received: '${issue.received}'. English is NOT supported.`,
+          };
         }
         return { message: ctx.defaultError };
-      }
+      },
     })
     .default('de')
     .describe(

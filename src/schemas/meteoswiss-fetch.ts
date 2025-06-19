@@ -12,10 +12,12 @@ export const fetchMeteoSwissContentSchema = z.object({
     .enum(['markdown', 'text'], {
       errorMap: (issue, ctx) => {
         if (issue.code === 'invalid_enum_value') {
-          return { message: `Format must be either 'markdown' or 'text'. Received: '${issue.received}'` };
+          return {
+            message: `Format must be either 'markdown' or 'text'. Received: '${issue.received}'`,
+          };
         }
         return { message: ctx.defaultError };
-      }
+      },
     })
     .optional()
     .default('markdown')

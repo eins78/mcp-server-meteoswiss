@@ -12,10 +12,12 @@ export const searchMeteoSwissContentSchema = z.object({
     .enum(['de', 'fr', 'it', 'en'], {
       errorMap: (issue, ctx) => {
         if (issue.code === 'invalid_enum_value') {
-          return { message: `Language must be one of: 'de' (German), 'fr' (French), 'it' (Italian), or 'en' (English). Received: '${issue.received}'` };
+          return {
+            message: `Language must be one of: 'de' (German), 'fr' (French), 'it' (Italian), or 'en' (English). Received: '${issue.received}'`,
+          };
         }
         return { message: ctx.defaultError };
-      }
+      },
     })
     .optional()
     .default('de')
@@ -46,10 +48,12 @@ export const searchMeteoSwissContentSchema = z.object({
     .enum(['relevance', 'date-desc', 'date-asc'], {
       errorMap: (issue, ctx) => {
         if (issue.code === 'invalid_enum_value') {
-          return { message: `Sort order must be one of: 'relevance', 'date-desc', or 'date-asc'. Received: '${issue.received}'` };
+          return {
+            message: `Sort order must be one of: 'relevance', 'date-desc', or 'date-asc'. Received: '${issue.received}'`,
+          };
         }
         return { message: ctx.defaultError };
-      }
+      },
     })
     .optional()
     .default('relevance')
