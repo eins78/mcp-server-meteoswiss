@@ -22,7 +22,21 @@ export const searchMeteoSwissContentSchema = z.object({
     .optional()
     .default('de')
     .describe('The language for search results'),
-  contentType: z.string().optional().describe('Filter by content type (e.g., "content", "pages")'),
+  contentType: z
+    .enum(['content', 'press-release', 'blog-article', 'publication'], {
+      errorMap: (issue, ctx) => {
+        if (issue.code === 'invalid_enum_value') {
+          return {
+            message: `Content type must be one of: 'content' (general content pages), 'press-release', 'blog-article', or 'publication' (official reports and scientific publications). Received: '${issue.received}'`,
+          };
+        }
+        return { message: ctx.defaultError };
+      },
+    })
+    .optional()
+    .describe(
+      'Filter by content type. Defaults to "content" to exclude application pages. Use "publication" for official reports.'
+    ),
   page: z
     .number({
       invalid_type_error: 'Page must be a number',

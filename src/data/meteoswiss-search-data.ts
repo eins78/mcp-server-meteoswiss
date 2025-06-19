@@ -132,8 +132,14 @@ async function searchFromApi(
   url.searchParams.append('rows', String(pageSize));
   url.searchParams.append('start', String((page - 1) * pageSize));
 
-  if (contentType) {
+  // Always set content type, defaulting to 'content' to exclude application pages
+  // Only allow specific content types that are relevant
+  const allowedContentTypes = ['content', 'press-release', 'blog-article', 'publication'];
+  if (contentType && allowedContentTypes.includes(contentType)) {
     url.searchParams.append('type', contentType);
+  } else {
+    // Default to 'content' type to exclude application pages and other irrelevant types
+    url.searchParams.append('type', 'content');
   }
 
   // Map sort parameter to API format

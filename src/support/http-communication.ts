@@ -45,7 +45,7 @@ export class HttpRequestError extends Error {
 const DEFAULT_OPTIONS: HttpRequestOptions = {
   retries: 3,
   retryDelay: 1000,
-  timeout: 5000,
+  timeout: 30000, // Increased from 5s to 30s for complex pages
   headers: {
     Accept: 'application/json, text/html',
     'User-Agent': 'MeteoSwiss-MCP-Server/1.0',
