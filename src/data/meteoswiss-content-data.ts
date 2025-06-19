@@ -282,29 +282,37 @@ function extractMainContent(document: Document): string {
     }
   });
 
-  // Remove share widgets
+  // Remove share widgets and dialogs
   const shareSelectors = [
+    'dialog.share-dialog',  // Share dialog container
+    '.share-dialog',        // Share dialog elements
+    '.share-dialog-button__share--dark', // Share button
     '[data-share]',
     '.share-widget',
     '.social-share',
     'mch-share-dialog',
-    '[class*="share"]',
-    '[id*="share"]',
+    '.mch-page-intro__controls', // Container that includes share button
   ];
 
   shareSelectors.forEach((selector) => {
     document.querySelectorAll(selector).forEach((el) => {
-      // Check if element contains share-related text
-      const text = el.textContent?.toLowerCase() || '';
-      if (
-        text.includes('seite teilen') ||
-        text.includes('partager') ||
-        text.includes('condividi') ||
-        text.includes('share')
-      ) {
-        el.remove();
-      }
+      el.remove();
     });
+  });
+
+  // Also remove elements that contain share-related text but use generic classes
+  document.querySelectorAll('[class*="share"], [id*="share"]').forEach((el) => {
+    const text = el.textContent?.toLowerCase() || '';
+    if (
+      text.includes('seite teilen') ||
+      text.includes('partager') ||
+      text.includes('condividi') ||
+      text.includes('share') ||
+      text.includes('copy link') ||
+      text.includes('link kopieren')
+    ) {
+      el.remove();
+    }
   });
 
   // First, expand any shadow DOM content by looking for slot elements
