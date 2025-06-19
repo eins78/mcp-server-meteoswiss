@@ -121,6 +121,7 @@ describe('MCP Server Integration Tests', () => {
       
       expect(health).toMatchObject({
         status: 'ok',
+        version: expect.any(String),
         sessions: expect.any(Number),
         endpoint: expect.stringMatching(/^https?:\/\/[^\/]+\/mcp$/),
       });

@@ -15,6 +15,7 @@ import { meteoswissSearchTool } from './tools/meteoswiss-search.js';
 import { meteoswissFetchTool } from './tools/meteoswiss-fetch.js';
 import { debugServer, debugTools } from './support/logging.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
+import { getVersion } from './support/version.js';
 
 /**
  * Create and configure the MeteoSwiss MCP server
@@ -24,7 +25,7 @@ export function createServer(): McpServer {
   debugServer('Creating MCP server instance');
   const server = new McpServer({
     name: 'mcp-server-meteoswiss',
-    version: '1.0.0',
+    version: getVersion(),
     description:
       'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, and Italian.',
   });
