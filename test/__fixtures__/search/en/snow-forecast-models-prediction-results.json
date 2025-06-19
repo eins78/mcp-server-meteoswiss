@@ -1,0 +1,18 @@
+{
+  "response": {
+    "numFound": 8,
+    "start": 0,
+    "docs": [
+      {
+        "path": "/weather/models/snow-prediction-models.html",
+        "id": "snow-models-1",
+        "title": "Snow Forecast Models and Prediction",
+        "lead": "Overview of numerical weather prediction models used for snow forecasting.",
+        "description": "Technical details about snow forecast models and prediction methods.",
+        "pageType": "content",
+        "modificationDate": "2024-02-28T16:00:00Z",
+        "publicationDate": "2023-12-01T10:00:00Z"
+      }
+    ]
+  }
+}

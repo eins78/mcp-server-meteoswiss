@@ -1,0 +1,28 @@
+{
+  "response": {
+    "numFound": 15,
+    "start": 0,
+    "docs": [
+      {
+        "path": "/services-and-publications/services/forecast-accuracy.html",
+        "id": "forecast-accuracy-1",
+        "title": "Forecast Accuracy and Verification",
+        "lead": "Information about the accuracy of MeteoSwiss weather forecasts and verification methods.",
+        "description": "Learn about how MeteoSwiss verifies forecast accuracy and the methods used.",
+        "pageType": "content",
+        "modificationDate": "2024-01-15T10:00:00Z",
+        "publicationDate": "2023-06-01T09:00:00Z"
+      },
+      {
+        "path": "/about-us/research/forecast-verification.html",
+        "id": "forecast-accuracy-2",
+        "title": "Forecast Verification Methods",
+        "lead": "Scientific methods used to verify weather forecast accuracy.",
+        "description": "Detailed information about forecast verification techniques.",
+        "pageType": "content",
+        "modificationDate": "2024-02-20T14:30:00Z",
+        "publicationDate": "2023-07-15T10:00:00Z"
+      }
+    ]
+  }
+}

@@ -126,7 +126,13 @@ async function searchFromApi(
   // Build the URL
   const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
   const url = new URL(`${baseDomain}${SEARCH_API_PATH}/${languageCode}/search/results.json`);
-  url.searchParams.append('fullText', query);
+
+  // The MeteoSwiss API doesn't handle URL-encoded spaces properly in multi-word queries.
+  // It returns 400 errors for queries with spaces, even when properly encoded.
+  // However, it accepts '+' as a literal character to search for multiple terms.
+  // So we replace spaces with '+' to make the API search for all terms.
+  const processedQuery = query.replace(/\s+/g, '+');
+  url.searchParams.append('fullText', processedQuery);
   url.searchParams.append('tenant', tenant);
   url.searchParams.append('pageGroup', pageGroup);
   url.searchParams.append('rows', String(pageSize));
@@ -205,10 +211,14 @@ async function searchFromTestFixtures(
 ): Promise<SearchResults> {
   // Get the base domain for this language
   const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
+  // Replace spaces with hyphens for fixture filename, consistent with how we name fixture files
   const fixtureFile = path.join(
     TEST_FIXTURES_ROOT,
     language,
-    `${query.toLowerCase().replace(/[^a-z0-9]/g, '-')}-results.json`
+    `${query
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '-')}-results.json`
   );
 
   debugData('Looking for test fixture: %s', fixtureFile);
