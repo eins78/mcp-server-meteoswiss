@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const RegionSchema = z.enum(['north', 'south', 'west']);
-export const LanguageSchema = z.enum(['de', 'fr', 'it', 'en']).default('en');
+export const LanguageSchema = z.enum(['de', 'fr', 'it']).default('de');
 
 export type Region = z.infer<typeof RegionSchema>;
 export type Language = z.infer<typeof LanguageSchema>;

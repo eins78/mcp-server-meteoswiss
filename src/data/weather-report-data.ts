@@ -6,7 +6,12 @@ import { JSDOM } from 'jsdom';
 import type { WeatherReport } from '../schemas/weather-report.js';
 import { fetchHtml, fetchJson, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
-import { validateLanguage, validateRegion } from '../types/meteoswiss.js';
+import {
+  validateLanguage,
+  validateRegion,
+  type Language,
+  type Region,
+} from '../types/meteoswiss.js';
 
 // Base URL for the MeteoSwiss product output
 const BASE_URL = 'https://www.meteoswiss.admin.ch/product/output/weather-report';
@@ -28,30 +33,33 @@ const USE_TEST_FIXTURES = process.env.USE_TEST_FIXTURES === 'true';
  * Gets the latest weather report version for a specific region and language
  *
  * @param region - The region to get the report for (north, south, west)
- * @param language - The language to get the report in (de, fr, it, en)
+ * @param language - The language to get the report in (de, fr, it)
  * @returns The weather report data
  */
 export async function getLatestWeatherReport(
   region: string,
   language: string
 ): Promise<WeatherReport> {
+  // Validate inputs
+  const validatedRegion = validateRegion(region);
+  const validatedLanguage = validateLanguage(language);
+
   // Map language code to directory
-  const languageMap: Record<string, string> = {
-    en: 'de', // English reports are in the German directory with _en suffix
+  const languageMap: Record<Language, string> = {
     de: 'de',
     fr: 'fr',
     it: 'it',
   };
 
-  const languageDir = languageMap[language] || 'de';
+  const languageDir = languageMap[validatedLanguage];
 
   // Use test fixtures if USE_TEST_FIXTURES is set to true, regardless of NODE_ENV
   if (USE_TEST_FIXTURES) {
-    return fetchWeatherReportFromTestFixtures(region, language, languageDir);
+    return fetchWeatherReportFromTestFixtures(validatedRegion, validatedLanguage, languageDir);
   }
 
   // In normal mode, fetch from HTTP
-  return fetchWeatherReportFromHttp(region, language, languageDir);
+  return fetchWeatherReportFromHttp(validatedRegion, validatedLanguage, languageDir);
 }
 
 /**
@@ -63,8 +71,8 @@ export async function getLatestWeatherReport(
  * @returns The weather report data
  */
 async function fetchWeatherReportFromHttp(
-  region: string,
-  language: string,
+  region: Region,
+  language: Language,
   languageDir: string
 ): Promise<WeatherReport> {
   // Construct the URL for the versions.json file
@@ -76,7 +84,7 @@ async function fetchWeatherReportFromHttp(
     const currentVersionDir = versions.currentVersionDirectory;
 
     // Determine which file to read based on language
-    const fileSuffix = language === 'en' ? '_en' : `_${language}`;
+    const fileSuffix = `_${language}`;
     const reportUrl = `${BASE_URL}/${languageDir}/${region}/${currentVersionDir}/textproduct${fileSuffix}.xhtml`;
 
     // Fetch the report HTML
@@ -103,8 +111,8 @@ async function fetchWeatherReportFromHttp(
  * @returns The weather report data
  */
 async function fetchWeatherReportFromTestFixtures(
-  region: string,
-  language: string,
+  region: Region,
+  language: Language,
   languageDir: string
 ): Promise<WeatherReport> {
   const reportPath = path.join(TEST_FIXTURES_ROOT, languageDir, region);
@@ -138,7 +146,7 @@ async function fetchWeatherReportFromTestFixtures(
     debugData('Current version directory from fixture: %s', currentVersionDir);
 
     // Determine which file to read based on language
-    const fileSuffix = language === 'en' ? '_en' : `_${language}`;
+    const fileSuffix = `_${language}`;
     const reportFilePath = path.join(
       reportPath,
       currentVersionDir,
@@ -173,7 +181,7 @@ async function fetchWeatherReportFromTestFixtures(
  * @param language - The language of the report
  * @returns Structured weather report data
  */
-function parseWeatherReportHtml(html: string, region: string, language: string): WeatherReport {
+function parseWeatherReportHtml(html: string, region: Region, language: Language): WeatherReport {
   const dom = new JSDOM(html);
   const document = dom.window.document;
 

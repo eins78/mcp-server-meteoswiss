@@ -107,6 +107,20 @@ import { someFunction, type AnotherType } from './module.ts';
     );
   }
   ```
+- **Domain Types Over Loose Types**: Always prefer specific domain types over loose generic types for better type safety and compile-time validation:
+  ```typescript
+  // ❌ Bad - loose typing allows any string
+  const languageMap: Record<string, string> = { de: 'de', fr: 'fr' };
+  
+  // ✅ Good - using domain type restricts to valid values
+  const languageMap: Record<Language, string> = { de: 'de', fr: 'fr' };
+  
+  // ❌ Bad - loose string parameter
+  function processLanguage(lang: string) { ... }
+  
+  // ✅ Good - using domain type enforces valid input
+  function processLanguage(lang: Language) { ... }
+  ```
 
 ### Testing Strategy
 - **Integration tests** in `test/integration/` for all MCP tools
@@ -214,9 +228,11 @@ docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
 ## Development Workflow
 
 ### Mandatory Practices
-1. **ALWAYS Run Build Before Tests**: Before running tests, always run `pnpm run build` to ensure TypeScript compilation succeeds. This catches type errors early.
-2. **ALWAYS Run Tests Before Committing**: Before any commit, run `pnpm run build && pnpm run test && pnpm run test:integration` to ensure all tests pass. This is CRITICAL.
-3. **Commit After Logical Tasks**: Always commit after completing a logical task or set of related changes, ensuring tests are green before committing. This creates a clean, understandable commit history.
+1. **ALWAYS Fix Before CI**: Run `pnpm run fix` to auto-fix formatting and other fixable lint errors (includes prettier fixes).
+2. **ALWAYS Run Full CI Before Committing**: Before any commit, run `pnpm run fix && pnpm run ci` (which runs lint, build, and test). This is CRITICAL.
+   - The `fix` script runs ESLint with --fix flag, which fixes both formatting (prettier) and other auto-fixable errors
+   - The `ci` script runs: lint (TypeScript + ESLint), build, and test
+3. **Commit After Logical Tasks**: Always commit after completing a logical task or set of related changes, ensuring all checks pass before committing. This creates a clean, understandable commit history.
 4. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
 5. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
 6. **Documentation Updates**: Always update documentation when changing code, especially:

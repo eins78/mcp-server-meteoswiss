@@ -14,6 +14,7 @@ import { meteoswissWeatherReport } from './tools/meteoswiss-weather-report.js';
 import { meteoswissSearchTool } from './tools/meteoswiss-search.js';
 import { meteoswissFetchTool } from './tools/meteoswiss-fetch.js';
 import { debugServer, debugTools } from './support/logging.js';
+import type { McpPromptResponse } from './types/mcp-prompts.js';
 
 /**
  * Create and configure the MeteoSwiss MCP server
@@ -24,7 +25,8 @@ export function createServer(): McpServer {
   const server = new McpServer({
     name: 'mcp-server-meteoswiss',
     version: '1.0.0',
-    description: 'MCP server for MeteoSwiss weather data',
+    description:
+      'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, and Italian.',
   });
   debugServer('MCP server created with name: mcp-server-meteoswiss');
 
@@ -44,7 +46,28 @@ export function createServer(): McpServer {
   debugServer('Registering tool: meteoswissWeatherReport');
   server.tool(
     'meteoswissWeatherReport',
-    'Retrieves the latest MeteoSwiss weather report for a specified region (Northern, Southern, Western parts of Switzerland), in German, French, Italian or English',
+    `Get the official MeteoSwiss weather report for a Swiss region. Returns detailed daily forecasts including weather conditions, temperatures, and regional outlooks.
+
+IMPORTANT: This tool ONLY supports Swiss official languages. English (en) is NOT supported and will return an error.
+
+Supported languages:
+- German (de) - Use for Zurich, Basel, Bern, and most queries unless a specific language is requested
+- French (fr) - Use for Geneva, Lausanne, or when French is specifically requested
+- Italian (it) - Use for Ticino or when Italian is specifically requested
+
+MeteoSwiss divides Switzerland into three main forecast regions:
+- north: Northern Switzerland (including Zurich, Basel, Bern, and the Swiss Plateau)
+- south: Southern Switzerland (Ticino and southern valleys)
+- west: Western Switzerland (Romandy, including Geneva, Lausanne, and western Alps)
+
+Weather reports are updated twice daily (morning and afternoon) and include:
+- General weather situation and outlook
+- Daily forecasts for the next 3-5 days
+- Temperature ranges and trends
+- Precipitation probability using standardized terms
+- Regional-specific conditions (e.g., Föhn effects, valley fog)
+
+The reports use standardized probability terms for precipitation forecasts.`,
     GetWeatherReportParamsSchema.shape,
     async (params: GetWeatherReportParams) => {
       try {
@@ -157,6 +180,106 @@ export function createServer(): McpServer {
           isError: true,
         };
       }
+    }
+  );
+
+  // Register prompts
+  debugServer('Registering prompts');
+
+  // German prompt for Northern Switzerland
+  server.prompt(
+    'wetterNordschweiz',
+    'Aktueller Wetterbericht für die Nordschweiz auf Deutsch',
+    (): McpPromptResponse => {
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: 'Wie ist das Wetter in der Nordschweiz heute und in den nächsten Tagen?',
+            },
+          },
+          {
+            role: 'assistant',
+            content: {
+              type: 'text',
+              text: 'Ich hole den aktuellen Wetterbericht für die Nordschweiz.\n\n[Tool: meteoswissWeatherReport mit region="north" und language="de"]',
+            },
+          },
+        ],
+      };
+    }
+  );
+
+  // German prompt for flexible region
+  server.prompt(
+    'wetterSchweiz',
+    'Interaktiver Wetterbericht für alle Regionen auf Deutsch',
+    (): McpPromptResponse => {
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: 'Für welche Region möchten Sie den Wetterbericht? Verfügbar sind:\n- Nordschweiz (north)\n- Südschweiz/Tessin (south)\n- Westschweiz/Romandie (west)',
+            },
+          },
+        ],
+      };
+    }
+  );
+
+  // French prompt for Western Switzerland (Romandy)
+  server.prompt(
+    'meteoSuisseRomande',
+    'Bulletin météo actuel pour la Suisse romande en français',
+    (): McpPromptResponse => {
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: "Quel temps fait-il en Suisse romande aujourd'hui et pour les prochains jours?",
+            },
+          },
+          {
+            role: 'assistant',
+            content: {
+              type: 'text',
+              text: 'Je vais chercher le bulletin météo actuel pour la Suisse romande.\n\n[Tool: meteoswissWeatherReport avec region="west" et language="fr"]',
+            },
+          },
+        ],
+      };
+    }
+  );
+
+  // Italian prompt for Southern Switzerland (Ticino)
+  server.prompt(
+    'meteoTicino',
+    'Bollettino meteo attuale per il Ticino in italiano',
+    (): McpPromptResponse => {
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: "Com'è il tempo in Ticino oggi e nei prossimi giorni?",
+            },
+          },
+          {
+            role: 'assistant',
+            content: {
+              type: 'text',
+              text: 'Recupero il bollettino meteo attuale per il Ticino.\n\n[Tool: meteoswissWeatherReport con region="south" e language="it"]',
+            },
+          },
+        ],
+      };
     }
   );
 

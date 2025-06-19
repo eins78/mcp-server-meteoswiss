@@ -14,6 +14,14 @@ export async function meteoswissWeatherReport(
   const { region, language } = params;
   debugTools('meteoswissWeatherReport called with params: %O', params);
 
+  // Additional validation for common mistakes
+  const paramsWithAny = params as Record<string, unknown>;
+  if (paramsWithAny.language === 'en' || paramsWithAny.language === 'english') {
+    throw new Error(
+      'English language is NOT supported by MeteoSwiss. Please use one of the Swiss official languages: German (de), French (fr), or Italian (it). For Zurich, use German (de).'
+    );
+  }
+
   const startTime = Date.now();
   try {
     const report = await getLatestWeatherReport(region, language);
