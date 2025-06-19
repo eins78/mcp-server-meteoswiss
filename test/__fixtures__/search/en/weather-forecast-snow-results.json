@@ -1,0 +1,28 @@
+{
+  "response": {
+    "numFound": 42,
+    "start": 0,
+    "docs": [
+      {
+        "path": "/weather/forecasts/snow-forecast.html",
+        "id": "snow-forecast-1",
+        "title": "Snow Weather Forecast",
+        "lead": "Current snow forecast for Switzerland including snowfall predictions.",
+        "description": "Detailed snow weather forecast with regional predictions.",
+        "pageType": "content",
+        "modificationDate": "2024-03-01T08:00:00Z",
+        "publicationDate": "2024-01-10T09:00:00Z"
+      },
+      {
+        "path": "/weather/warnings/snow-warnings.html",
+        "id": "snow-forecast-2",
+        "title": "Snow Weather Warnings",
+        "lead": "Weather warnings for snowfall and snow-related hazards.",
+        "description": "Current snow weather warnings and forecast alerts.",
+        "pageType": "content",
+        "modificationDate": "2024-03-02T12:00:00Z",
+        "publicationDate": "2024-01-15T10:00:00Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "response": {
+    "numFound": 25,
+    "start": 0,
+    "docs": [
+      {
+        "path": "/weather/climate-change-impacts.html",
+        "id": "weather-climate-1",
+        "title": "Weather & Climate: Understanding the Connection",
+        "lead": "How weather patterns relate to climate and climate change.",
+        "description": "Comprehensive overview of weather and climate interactions.",
+        "pageType": "content",
+        "modificationDate": "2024-03-10T11:00:00Z",
+        "publicationDate": "2023-09-15T09:00:00Z"
+      }
+    ]
+  }
+}
