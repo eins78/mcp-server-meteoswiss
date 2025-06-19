@@ -123,7 +123,14 @@ async function fetchFromWeb(
     const html = await fetchHtml(url);
     debugData('Content fetched successfully, size: %d bytes', html.length);
 
-    return processHtmlContent(html, id, url, format, includeMetadata);
+    // Add timeout protection for HTML processing
+    const processingTimeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('HTML processing timeout after 10 seconds')), 10000);
+    });
+
+    const contentProcessing = processHtmlContent(html, id, url, format, includeMetadata);
+
+    return await Promise.race([contentProcessing, processingTimeout]);
   } catch (error) {
     debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
@@ -197,7 +204,17 @@ function processHtmlContent(
   format: 'markdown' | 'text',
   includeMetadata: boolean
 ): ContentResponse {
-  debugData('Processing HTML content, format: %s, includeMetadata: %s', format, includeMetadata);
+  debugData(
+    'Processing HTML content, format: %s, includeMetadata: %s, size: %d bytes',
+    format,
+    includeMetadata,
+    html.length
+  );
+
+  // Warn if HTML is very large
+  if (html.length > 500000) {
+    debugData('WARNING: Large HTML document (%d bytes), processing may be slow', html.length);
+  }
 
   const dom = new JSDOM(html);
   const document = dom.window.document;
