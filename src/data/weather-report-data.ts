@@ -6,7 +6,7 @@ import { JSDOM } from 'jsdom';
 import type { WeatherReport } from '../schemas/weather-report.js';
 import { fetchHtml, fetchJson, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
-import { validateLanguage, validateRegion } from '../types/meteoswiss.js';
+import { validateLanguage, validateRegion, type Language } from '../types/meteoswiss.js';
 
 // Base URL for the MeteoSwiss product output
 const BASE_URL = 'https://www.meteoswiss.admin.ch/product/output/weather-report';
@@ -36,7 +36,7 @@ export async function getLatestWeatherReport(
   language: string
 ): Promise<WeatherReport> {
   // Map language code to directory
-  const languageMap: Record<string, string> = {
+  const languageMap: Record<Language, string> = {
     de: 'de',
     fr: 'fr',
     it: 'it',

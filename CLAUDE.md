@@ -107,6 +107,20 @@ import { someFunction, type AnotherType } from './module.ts';
     );
   }
   ```
+- **Domain Types Over Loose Types**: Always prefer specific domain types over loose generic types for better type safety and compile-time validation:
+  ```typescript
+  // ❌ Bad - loose typing allows any string
+  const languageMap: Record<string, string> = { de: 'de', fr: 'fr' };
+  
+  // ✅ Good - using domain type restricts to valid values
+  const languageMap: Record<Language, string> = { de: 'de', fr: 'fr' };
+  
+  // ❌ Bad - loose string parameter
+  function processLanguage(lang: string) { ... }
+  
+  // ✅ Good - using domain type enforces valid input
+  function processLanguage(lang: Language) { ... }
+  ```
 
 ### Testing Strategy
 - **Integration tests** in `test/integration/` for all MCP tools
