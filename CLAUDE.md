@@ -214,9 +214,11 @@ docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
 ## Development Workflow
 
 ### Mandatory Practices
-1. **ALWAYS Run Build Before Tests**: Before running tests, always run `pnpm run build` to ensure TypeScript compilation succeeds. This catches type errors early.
-2. **ALWAYS Run Tests Before Committing**: Before any commit, run `pnpm run build && pnpm run test && pnpm run test:integration` to ensure all tests pass. This is CRITICAL.
-3. **Commit After Logical Tasks**: Always commit after completing a logical task or set of related changes, ensuring tests are green before committing. This creates a clean, understandable commit history.
+1. **ALWAYS Fix Before CI**: Run `pnpm run fix` to auto-fix formatting and other fixable lint errors (includes prettier fixes).
+2. **ALWAYS Run Full CI Before Committing**: Before any commit, run `pnpm run fix && pnpm run ci` (which runs lint, build, and test). This is CRITICAL.
+   - The `fix` script runs ESLint with --fix flag, which fixes both formatting (prettier) and other auto-fixable errors
+   - The `ci` script runs: lint (TypeScript + ESLint), build, and test
+3. **Commit After Logical Tasks**: Always commit after completing a logical task or set of related changes, ensuring all checks pass before committing. This creates a clean, understandable commit history.
 4. **Run Tests After Changes**: After each change, run `pnpm test` to catch regressions early
 5. **Dependency Management**: Always use pnpm CLI to add or remove dependencies so correct versions are recorded in `package.json`
 6. **Documentation Updates**: Always update documentation when changing code, especially:
