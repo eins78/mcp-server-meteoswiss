@@ -284,8 +284,8 @@ function extractMainContent(document: Document): string {
 
   // Remove share widgets and dialogs
   const shareSelectors = [
-    'dialog.share-dialog',  // Share dialog container
-    '.share-dialog',        // Share dialog elements
+    'dialog.share-dialog', // Share dialog container
+    '.share-dialog', // Share dialog elements
     '.share-dialog-button__share--dark', // Share button
     '[data-share]',
     '.share-widget',
