@@ -1,6 +1,10 @@
 /**
  * Streamable HTTP transport for MCP server
- * Implements Server-Sent Events (SSE) for real-time communication
+ * Implements the MCP Streamable HTTP transport protocol with:
+ * - HTTP POST for client-to-server messages
+ * - Optional Server-Sent Events (SSE) for server-to-client streaming
+ * - Session management with short UUIDs
+ * - Rate limiting and security features
  */
 
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -32,7 +36,13 @@ export interface HttpServerInterface {
 }
 
 /**
- * Create HTTP server with SSE transport
+ * Create HTTP server with Streamable HTTP transport
+ * 
+ * Endpoints:
+ * - GET /mcp - SSE streaming for server-to-client messages (requires session ID)
+ * - POST /mcp - Initialize sessions and handle client-to-server messages
+ * - DELETE /mcp - Terminate sessions
+ * - GET /health - Health check endpoint
  */
 export async function createHttpServer(
   mcpServer: McpServer,
@@ -141,7 +151,7 @@ export async function createHttpServer(
     })
   );
 
-  // MCP GET endpoint - handles SSE connections
+  // MCP GET endpoint - handles SSE streaming for server-to-client messages
   app.get(
     '/mcp',
     asyncHandler(async (req: Request, res: Response) => {
@@ -154,9 +164,9 @@ export async function createHttpServer(
       }
 
       const transport = transports.get(sessionId)!;
-      debugTransport('SSE connection requested for session: %s', sessionId);
+      debugTransport('SSE streaming connection requested for session: %s', sessionId);
 
-      // Let the transport handle the SSE connection
+      // Let the transport handle the SSE streaming connection
       await transport.handleRequest(req, res);
     })
   );

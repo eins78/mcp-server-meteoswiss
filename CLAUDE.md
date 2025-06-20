@@ -32,19 +32,20 @@ When running in a devcontainer, use the following for git commits:
 
 This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, implemented using:
 - **Node.js 18+**: Using `tsx` for TypeScript execution
-- **MCP TypeScript SDK**: Using `McpServer` class with HTTP/SSE transport
+- **MCP TypeScript SDK**: Using `McpServer` class with Streamable HTTP transport
 - **Zod**: For runtime validation and schema definitions
-- **Express + SSE**: For HTTP transport with Server-Sent Events
+- **Express + Streamable HTTP**: HTTP POST for requests, optional SSE for streaming
 - **mcp-remote**: For Claude Desktop integration
 
 ### Key Components
 
-1. **Entry Point** (`src/index.ts`): HTTP server with SSE endpoint
+1. **Entry Point** (`src/index.ts`): HTTP server with Streamable HTTP transport
 2. **Core Server** (`src/server.ts`): MCP server implementation
-3. **Transport** (`src/transports/streamable-http.ts`): HTTP server with SSE
+3. **Transport** (`src/transports/streamable-http.ts`): Streamable HTTP server
    - `/` - Information endpoint
-   - `/mcp` - MCP SSE endpoint
-   - `/messages` - Message handling endpoint
+   - `/mcp` (GET) - SSE streaming for server-to-client messages
+   - `/mcp` (POST) - Initialize sessions and handle client-to-server messages
+   - `/mcp` (DELETE) - Terminate sessions
    - `/health` - Health check endpoint
 4. **Tools** (`src/tools/`): MCP tools for weather data queries
    - `meteoswissWeatherReport`: Weather reports for Swiss regions (north/south/west) in multiple languages
@@ -54,9 +55,12 @@ This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, imple
 
 ### Data Flow
 1. MCP client connects via `mcp-remote` to HTTP endpoint
-2. Tool requests are validated using Zod schemas
-3. Data is fetched from MeteoSwiss HTTP endpoints (or test fixtures in dev mode)
-4. Results are returned as JSON through MCP protocol
+2. Client sends initialization request via POST to `/mcp`
+3. Server responds with session ID in headers
+4. Client can open SSE connection for streaming (optional)
+5. Tool requests are validated using Zod schemas
+6. Data is fetched from MeteoSwiss HTTP endpoints (or test fixtures in dev mode)
+7. Results are returned as JSON through MCP protocol
 
 ## Critical Development Guidelines
 
@@ -161,9 +165,12 @@ When implementing MCP tools:
 5. Document tool behavior and parameters
 
 ### Transport Support
-- **HTTP/SSE**: Server runs on configurable port (default: 3000)
+- **Streamable HTTP**: Server runs on configurable port (default: 3000)
+  - POST `/mcp` for client-to-server messages
+  - GET `/mcp` for optional SSE streaming
+  - DELETE `/mcp` for session termination
 - **mcp-remote**: Used for Claude Desktop integration
-- Supports multiple concurrent sessions
+- Supports multiple concurrent sessions with short UUID identifiers
 
 ## Environment Variables
 - `USE_TEST_FIXTURES`: When `true`, uses local test data instead of HTTP requests
@@ -189,7 +196,7 @@ The application uses the `debug` npm module for comprehensive production debuggi
 #### Debug Namespaces
 - `mcp:main` - Application lifecycle, startup/shutdown, configuration
 - `mcp:server` - MCP server events, tool registration, protocol operations
-- `mcp:transport` - HTTP/SSE transport layer, connections, sessions, rate limiting
+- `mcp:transport` - Streamable HTTP transport layer, connections, sessions, rate limiting
 - `mcp:tools` - Tool execution, parameters, results, errors
 - `mcp:data` - Data fetching, caching, transformation, API calls
 - `mcp:http` - HTTP client operations, retries, errors

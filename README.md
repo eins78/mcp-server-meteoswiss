@@ -18,7 +18,11 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 
 ## Architecture
 
-This MCP server runs as an HTTP service with Server-Sent Events (SSE) for real-time communication. It's designed to be accessed remotely using `mcp-remote` for Claude Desktop integration.
+This MCP server implements the Streamable HTTP transport protocol:
+- HTTP POST for client-to-server communication
+- Server-Sent Events (SSE) for optional server-to-client streaming
+- Session management with short UUID identifiers
+- Designed for remote access using `mcp-remote` for Claude Desktop integration
 
 ## Quick Start
 
@@ -90,8 +94,9 @@ PORT=8080 pnpm start
 
 The HTTP server provides:
 - GET `/` - Server information
-- GET `/mcp` - MCP SSE endpoint for client connections
-- POST `/messages?sessionId=...` - Message handling endpoint
+- GET `/mcp` - SSE streaming for server-to-client messages (requires session ID header)
+- POST `/mcp` - Initialize sessions and handle client-to-server messages
+- DELETE `/mcp` - Terminate sessions
 - GET `/health` - Health check endpoint
 
 #### Development Mode

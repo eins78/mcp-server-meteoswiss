@@ -64,7 +64,7 @@ The server will be built using the following technology stack:
 - **MCP TypeScript SDK**: For implementing the Model Context Protocol
   - Using the high-level McpServer class for simplified server setup
   - Implementing tools and resources via the SDK interfaces
-  - Utilizing HTTP with Server-Sent Events (SSE) for real-time communication
+  - Utilizing Streamable HTTP transport for bidirectional communication
 
 - **Zod**: For runtime type validation and schema definition
   - Defining schemas for input validation on tools
@@ -82,7 +82,7 @@ The server will be built using the following technology stack:
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from 'express';
 
 const server = new McpServer({
@@ -93,10 +93,12 @@ const server = new McpServer({
 // Register tools
 server.tool('meteoswissWeatherReport', weatherReportSchema, meteoswissWeatherReportHandler);
 
-// Set up HTTP server with SSE
+// Set up HTTP server with Streamable transport
 const app = express();
-app.get('/mcp', (req, res) => {
-  const transport = new SSEServerTransport('/messages', res);
+app.post('/mcp', async (req, res) => {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => generateShortId()
+  });
   await server.connect(transport);
 });
 ```

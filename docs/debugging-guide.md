@@ -46,7 +46,9 @@ cat ~/Library/Logs/Claude/mcp.log | tail -n 20
    - ES2022 or higher is required for optional chaining (`?.`) and nullish coalescing (`??`)
 
 3. **Transport Issues**
-   - This server uses HTTP with Server-Sent Events (SSE) for communication
+   - This server uses Streamable HTTP transport for communication
+   - HTTP POST for client-to-server messages
+   - Optional Server-Sent Events (SSE) for server-to-client streaming
    - The server runs on a configurable port (default: 3000)
    - Connect using mcp-remote:
 
