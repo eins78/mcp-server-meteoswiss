@@ -246,6 +246,18 @@ docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
 - **Running commands**: Use `npx` for one-off commands in shell, or define scripts in `package.json`
 - **Example**: Instead of `npm install -g typescript`, use `pnpm add -D typescript` and run with `npx tsc` or via package.json scripts
 
+### Dependency Classification
+- **Runtime Dependencies** (`dependencies`): Modules imported by production code must be runtime dependencies
+  - Any module imported in `src/` files that runs in production
+  - Type definitions (`@types/*`) needed for TypeScript compilation
+  - Tools like `tsx` used to run the server in production
+- **Development Dependencies** (`devDependencies`): Only for development, testing, and build tools
+  - Test frameworks (Jest, nock)
+  - Linters and formatters (ESLint, Prettier)
+  - Build tools (TypeScript compiler when not used at runtime)
+  - Development utilities (nodemon, MCP inspector)
+- **Important**: Always verify by checking if the module is imported in `src/` files before classifying
+
 ## Open Tasks and Issues
 <!-- Document outstanding tasks, bugs, or technical debt here -->
 
