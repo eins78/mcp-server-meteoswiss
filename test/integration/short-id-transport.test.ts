@@ -3,6 +3,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createHttpServer } from '../../src/transports/streamable-http.js';
 import { validateEnv } from '../../src/support/environment-validation.js';
 import debugModule from 'debug';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 // Enable debug for test
 debugModule.enable('mcp:transport');
@@ -16,6 +18,8 @@ describe('Short ID Transport', () => {
       errorLogs.push(args.join(' '));
       originalError(...args);
     };
+    
+    let client: Client | null = null;
     
     try {
       const mcpServer = new McpServer({
@@ -33,33 +37,23 @@ describe('Short ID Transport', () => {
       const address = httpServer.address() as { port: number };
       const port = address.port;
       
-      // Create SSE connection
-      await new Promise<void>((resolve, reject) => {
-        const req = http.get(`http://localhost:${port}/mcp`, {
-          headers: {
-            'Accept': 'text/event-stream'
-          }
-        }, (res) => {
-          expect(res.statusCode).toBe(200);
-          expect(res.headers['content-type']).toMatch(/text\/event-stream/);
-          
-          // Give it a moment to establish connection
-          setTimeout(() => {
-            req.destroy();
-            resolve();
-          }, 100);
-        });
-        
-        req.on('error', reject);
+      // Create MCP client with StreamableHTTP transport
+      const transport = new StreamableHTTPClientTransport(new URL(`http://localhost:${port}/mcp`));
+      client = new Client({
+        name: 'test-client',
+        version: '1.0.0'
       });
       
+      // Connect - this will handle initialization and session creation
+      await client.connect(transport);
+      
       // Check the logs for short session ID
-      const sessionLog = errorLogs.find(log => log.includes('New SSE connection established:'));
+      const sessionLog = errorLogs.find(log => log.includes('New session initialized:'));
       expect(sessionLog).toBeDefined();
       
       if (sessionLog) {
-        // Extract session ID from log: "New SSE connection established: SESSION_ID"
-        const match = sessionLog.match(/New SSE connection established: ([a-zA-Z0-9_-]+)/);
+        // Extract session ID from log: "New session initialized: SESSION_ID"
+        const match = sessionLog.match(/New session initialized: ([a-zA-Z0-9_-]+)/);
         const sessionId = match?.[1];
         
         expect(sessionId).toBeDefined();
@@ -71,11 +65,13 @@ describe('Short ID Transport', () => {
         expect(sessionId).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
       }
       
-      // Cleanup
-      server.stop();
-      await new Promise<void>((resolve) => {
-        httpServer.close(() => resolve());
-      });
+      // Clean up client
+      if (client) {
+        await client.close();
+      }
+      
+      // Clean up server
+      await server.stop();
     } finally {
       console.error = originalError;
     }

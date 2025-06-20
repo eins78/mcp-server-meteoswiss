@@ -6,7 +6,7 @@ import { spawn, exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { ChildProcess } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import * as path from 'node:path';
 
 const execAsync = promisify(exec);
@@ -126,8 +126,8 @@ describe('MCP Server Integration Tests', () => {
       });
 
       // Now test actual MCP connection
-      console.log('Creating SSE transport...');
-      const transport = new SSEClientTransport(new URL(`${serverUrl}/mcp`));
+      console.log('Creating StreamableHTTP transport...');
+      const transport = new StreamableHTTPClientTransport(new URL(`${serverUrl}/mcp`));
       
       console.log('Creating MCP client...');
       client = new Client({
@@ -154,7 +154,7 @@ describe('MCP Server Integration Tests', () => {
 
     test('should call meteoswissWeatherReport tool via HTTP', async () => {
       
-      const transport = new SSEClientTransport(new URL(`${serverUrl}/mcp`));
+      const transport = new StreamableHTTPClientTransport(new URL(`${serverUrl}/mcp`));
       
       client = new Client({
         name: 'test-client',
