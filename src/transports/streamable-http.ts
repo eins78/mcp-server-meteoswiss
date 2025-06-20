@@ -6,7 +6,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { ShortIdSSEServerTransport } from './short-id-sse-transport.js';
 import rateLimit from 'express-rate-limit';
 import { SessionManager } from '../support/session-management.js';
 import type { EnvConfig } from '../support/environment-validation.js';
@@ -143,7 +143,7 @@ export async function createHttpServer(
       res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
 
       // Create transport with the POST endpoint URL
-      const transport = new SSEServerTransport('/messages', res);
+      const transport = new ShortIdSSEServerTransport('/messages', res);
       const sessionId = transport.sessionId;
 
       // Run all session-related code within the session context
@@ -261,7 +261,7 @@ export async function createHttpServer(
           return;
         }
 
-        const transport = sessionManager.get(sessionId) as SSEServerTransport;
+        const transport = sessionManager.get(sessionId) as ShortIdSSEServerTransport;
         if (!transport) {
           debugTransport('Session not found: %s', sessionId);
           res.status(404).json({ error: 'Session not found' });
