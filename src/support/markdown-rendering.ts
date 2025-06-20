@@ -5,6 +5,7 @@ import { gfm, gfmHtml } from 'micromark-extension-gfm';
 import { validateEnv } from './environment-validation.js';
 import { getMcpEndpointUrl, getServiceBaseUrl } from './url-generation.js';
 import { mainCss } from './styles.js';
+import { getVersion } from './version.js';
 
 /**
  * Renders markdown files into HTML for the homepage
@@ -60,7 +61,7 @@ export async function renderHomepage(): Promise<string> {
     <div class="endpoint-info">
       <strong>MCP Endpoint:</strong> <code>${getMcpEndpointUrl(config)}</code><br>
       <strong>Health Check:</strong> <a href="/health">/health</a><br>
-      <strong>API Version:</strong> 1.0.0
+      <strong>API Version:</strong> ${getVersion()}
     </div>
     ${html}
   </div>

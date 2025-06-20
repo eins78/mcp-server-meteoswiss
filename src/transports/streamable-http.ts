@@ -14,6 +14,7 @@ import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
 import { getMcpEndpointUrl } from '../support/url-generation.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import { getVersion } from '../support/version.js';
 
 interface StreamableHttpOptions {
   port?: number;
@@ -92,7 +93,7 @@ export async function createHttpServer(
       if (req.accepts('json') && !req.accepts('html')) {
         res.json({
           name: 'MeteoSwiss MCP Server',
-          version: '1.0.0',
+          version: getVersion(),
           description: 'Model Context Protocol server for MeteoSwiss weather data',
           mcp_endpoint: getMcpEndpointUrl(config),
           usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
@@ -116,7 +117,7 @@ export async function createHttpServer(
         // Fallback to JSON
         res.json({
           name: 'MeteoSwiss MCP Server',
-          version: '1.0.0',
+          version: getVersion(),
           description: 'Model Context Protocol server for MeteoSwiss weather data',
           mcp_endpoint: getMcpEndpointUrl(config),
           usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
@@ -272,6 +273,7 @@ export async function createHttpServer(
   app.get('/health', (_req: Request, res: Response) => {
     const health = {
       status: 'ok',
+      version: getVersion(),
       sessions: sessionManager.size,
       endpoint: getMcpEndpointUrl(config),
     };

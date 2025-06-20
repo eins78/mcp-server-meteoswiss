@@ -5,6 +5,7 @@
 
 import { debugHttp } from './logging.js';
 import { httpCache } from './http-cache.js';
+import { getVersion } from './version.js';
 
 /**
  * Options for HTTP requests
@@ -48,7 +49,7 @@ const DEFAULT_OPTIONS: HttpRequestOptions = {
   timeout: 30000, // Increased from 5s to 30s for complex pages
   headers: {
     Accept: 'application/json, text/html',
-    'User-Agent': 'MeteoSwiss-MCP-Server/1.0',
+    'User-Agent': `MeteoSwiss-MCP-Server/${getVersion()}`,
   },
 };
 

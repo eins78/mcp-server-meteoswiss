@@ -9,6 +9,7 @@ import { createHttpServer } from './transports/streamable-http.js';
 import { debugMain, initFileLogging, closeFileLogging } from './support/logging.js';
 import { validateEnv } from './support/environment-validation.js';
 import { getMcpEndpointUrl } from './support/url-generation.js';
+import { getAppName, getVersion } from './support/version.js';
 import type { HttpServerInterface } from './transports/streamable-http.js';
 
 // Check Node.js version requirement
@@ -83,6 +84,7 @@ async function main(): Promise<HttpServerInterface> {
     await server.start();
     debugMain('HTTP server started');
     const mcpUrl = getMcpEndpointUrl(config);
+    console.log(`${getAppName()} v${getVersion()}`);
     console.log(`MCP server running at ${mcpUrl}`);
     console.log(`Connect with: npx mcp-remote ${mcpUrl}`);
     console.log(`Inspect with: npx @modelcontextprotocol/inspector ${mcpUrl}`);
