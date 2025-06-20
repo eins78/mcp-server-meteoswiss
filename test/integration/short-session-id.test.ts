@@ -1,24 +1,26 @@
-import { generateShortId, shortIdToUuid } from '../../src/support/short-id.js';
+import short from 'short-uuid';
 import { randomUUID } from 'node:crypto';
 
 describe('Short Session IDs', () => {
+  const translator = short();
+  
   it('should generate short IDs from UUIDs', () => {
     const uuid = randomUUID();
-    const shortId = generateShortId(uuid);
+    const shortId = translator.fromUUID(uuid);
     
     // Short ID should be significantly shorter than UUID
     expect(shortId.length).toBeLessThan(uuid.length);
     expect(shortId.length).toBeGreaterThan(0);
     
     // Should be able to convert back to UUID
-    const convertedUuid = shortIdToUuid(shortId);
+    const convertedUuid = translator.toUUID(shortId);
     expect(convertedUuid).toBe(uuid);
   });
   
   it('should generate unique short IDs', () => {
     const ids = new Set<string>();
     for (let i = 0; i < 100; i++) {
-      ids.add(generateShortId());
+      ids.add(translator.fromUUID(randomUUID()));
     }
     
     // All IDs should be unique
@@ -27,8 +29,8 @@ describe('Short Session IDs', () => {
   
   it('should generate consistent short IDs for the same UUID', () => {
     const uuid = randomUUID();
-    const shortId1 = generateShortId(uuid);
-    const shortId2 = generateShortId(uuid);
+    const shortId1 = translator.fromUUID(uuid);
+    const shortId2 = translator.fromUUID(uuid);
     
     expect(shortId1).toBe(shortId2);
   });
