@@ -7,9 +7,43 @@ import debugModule from 'debug';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// AsyncLocalStorage for session context
+const sessionContext = new AsyncLocalStorage<{ sessionId: string }>();
+
+// Export session context utilities
+export function runWithSession<T>(sessionId: string, fn: () => T): T {
+  return sessionContext.run({ sessionId }, fn);
+}
+
+export function getSessionId(): string | undefined {
+  return sessionContext.getStore()?.sessionId;
+}
+
+// Custom formatter for debug that includes ISO timestamp and session ID
+function customFormatArgs(this: debugModule.Debugger, args: unknown[]): void {
+  const timestamp = new Date().toISOString();
+  const sessionId = getSessionId();
+  const sessionPart = sessionId ? ` [${sessionId.substring(0, 8)}]` : '';
+
+  // Get the namespace color from the debug instance
+  const namespace = this.namespace;
+  const color = this.color;
+
+  // Format: "TIMESTAMP [SESSION] namespace message"
+  if (typeof args[0] === 'string') {
+    // Apply color to namespace
+    const coloredNamespace = `\u001b[3${color};1m${namespace}\u001b[0m`;
+    args[0] = `${timestamp}${sessionPart} ${coloredNamespace} ${args[0]}`;
+  }
+}
+
+// Override the formatArgs function
+debugModule.formatArgs = customFormatArgs;
 
 // Create debug namespaces for different components
 export const debugMain = debugModule('mcp:main');

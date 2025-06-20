@@ -11,7 +11,7 @@ import rateLimit from 'express-rate-limit';
 import { SessionManager } from '../support/session-management.js';
 import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
-import { debugTransport } from '../support/logging.js';
+import { debugTransport, runWithSession } from '../support/logging.js';
 import { getMcpEndpointUrl } from '../support/url-generation.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
@@ -136,13 +136,7 @@ export async function createHttpServer(
   app.get(
     '/mcp',
     asyncHandler(async (req: Request, res: Response) => {
-      debugTransport(
-        'SSE connection requested from %s, User-Agent: %s',
-        req.ip,
-        req.get('User-Agent')
-      );
-
-      // Set SSE headers
+      // Set SSE headers first
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
@@ -150,82 +144,98 @@ export async function createHttpServer(
 
       // Create transport with the POST endpoint URL
       const transport = new SSEServerTransport('/messages', res);
-      debugTransport('Created SSE transport with session ID: %s', transport.sessionId);
+      const sessionId = transport.sessionId;
 
-      // Store transport in session manager
-      try {
-        sessionManager.add(transport.sessionId, transport);
-        console.error(`New SSE connection established: ${transport.sessionId}`);
-        debugTransport('Session added successfully, current sessions: %d', sessionManager.size);
-      } catch (error) {
-        console.error(`Failed to add session: ${error}`);
-        debugTransport('Failed to add session: %O', error);
-        res.status(503).end('Server capacity reached');
-        return;
-      }
-
-      // Set up cleanup on close
-      transport.onclose = () => {
-        console.error(`SSE connection closed: ${transport.sessionId}`);
-        debugTransport('Transport closed, removing session: %s', transport.sessionId);
-        sessionManager.remove(transport.sessionId);
-        debugTransport('Active sessions after removal: %d', sessionManager.size);
-      };
-
-      // Set connection timeout
-      const timeout = setTimeout(() => {
-        console.error(`SSE connection timeout: ${transport.sessionId}`);
-        debugTransport('Session timeout triggered for: %s', transport.sessionId);
-        transport.close();
-      }, config.SESSION_TIMEOUT_MS);
-
-      // Clear timeout on activity
-      const originalSend = transport.send.bind(transport);
-      transport.send = (message: JSONRPCMessage) => {
-        clearTimeout(timeout);
-        debugTransport('Activity detected on session %s, timeout cleared', transport.sessionId);
-        return originalSend(message);
-      };
-
-      // Handle errors
-      req.on('close', () => {
-        debugTransport('Client disconnected for session: %s', transport.sessionId);
-        transport.close();
-      });
-
-      req.on('error', (error: unknown) => {
-        // Log error safely - strip all newlines and just log the error type
-        const errorType =
-          (error &&
-            typeof error === 'object' &&
-            ('code' in error
-              ? error.code
-              : typeof error === 'object' && 'name' in error
-                ? error.name
-                : 0)) ||
-          'Unknown';
-        console.error(`SSE connection error: ${errorType}`);
-        debugTransport('SSE connection error for session %s: %O', transport.sessionId, error);
-        transport.close();
-      });
-
-      // Connect transport to MCP server
-      // Note: connect() automatically calls start() on the transport
-      try {
-        debugTransport('Connecting transport to MCP server for session: %s', transport.sessionId);
-        await mcpServer.connect(transport);
-        debugTransport('Transport connected successfully for session: %s', transport.sessionId);
-      } catch (error) {
-        console.error(`Failed to connect transport: ${error}`);
+      // Run all session-related code within the session context
+      await runWithSession(sessionId, async () => {
         debugTransport(
-          'Failed to connect transport for session %s: %O',
-          transport.sessionId,
-          error
+          'SSE connection requested from %s, User-Agent: %s',
+          req.ip,
+          req.get('User-Agent')
         );
-        sessionManager.remove(transport.sessionId);
-        clearTimeout(timeout);
-        throw error;
-      }
+        debugTransport('Created SSE transport with session ID: %s', sessionId);
+
+        // Store transport in session manager
+        try {
+          sessionManager.add(sessionId, transport);
+          console.error(`New SSE connection established: ${sessionId}`);
+          debugTransport('Session added successfully, current sessions: %d', sessionManager.size);
+        } catch (error) {
+          console.error(`Failed to add session: ${error}`);
+          debugTransport('Failed to add session: %O', error);
+          res.status(503).end('Server capacity reached');
+          return;
+        }
+
+        // Set up cleanup on close
+        transport.onclose = () => {
+          runWithSession(sessionId, () => {
+            console.error(`SSE connection closed: ${sessionId}`);
+            debugTransport('Transport closed, removing session: %s', sessionId);
+            sessionManager.remove(sessionId);
+            debugTransport('Active sessions after removal: %d', sessionManager.size);
+          });
+        };
+
+        // Set connection timeout
+        const timeout = setTimeout(() => {
+          runWithSession(sessionId, () => {
+            console.error(`SSE connection timeout: ${sessionId}`);
+            debugTransport('Session timeout triggered for: %s', sessionId);
+            transport.close();
+          });
+        }, config.SESSION_TIMEOUT_MS);
+
+        // Clear timeout on activity
+        const originalSend = transport.send.bind(transport);
+        transport.send = (message: JSONRPCMessage) => {
+          clearTimeout(timeout);
+          runWithSession(sessionId, () => {
+            debugTransport('Activity detected on session %s, timeout cleared', sessionId);
+          });
+          return originalSend(message);
+        };
+
+        // Handle errors
+        req.on('close', () => {
+          runWithSession(sessionId, () => {
+            debugTransport('Client disconnected for session: %s', sessionId);
+            transport.close();
+          });
+        });
+
+        req.on('error', (error: unknown) => {
+          runWithSession(sessionId, () => {
+            // Log error safely - strip all newlines and just log the error type
+            const errorType =
+              (error &&
+                typeof error === 'object' &&
+                ('code' in error
+                  ? error.code
+                  : typeof error === 'object' && 'name' in error
+                    ? error.name
+                    : 0)) ||
+              'Unknown';
+            console.error(`SSE connection error: ${errorType}`);
+            debugTransport('SSE connection error for session %s: %O', sessionId, error);
+            transport.close();
+          });
+        });
+
+        // Connect transport to MCP server
+        // Note: connect() automatically calls start() on the transport
+        try {
+          debugTransport('Connecting transport to MCP server for session: %s', sessionId);
+          await mcpServer.connect(transport);
+          debugTransport('Transport connected successfully for session: %s', sessionId);
+        } catch (error) {
+          console.error(`Failed to connect transport: ${error}`);
+          debugTransport('Failed to connect transport for session %s: %O', sessionId, error);
+          sessionManager.remove(sessionId);
+          clearTimeout(timeout);
+          throw error;
+        }
+      });
     })
   );
 
@@ -234,7 +244,6 @@ export async function createHttpServer(
     '/messages',
     asyncHandler(async (req: Request, res: Response) => {
       const sessionId = req.query.sessionId as string;
-      debugTransport('Message received for session: %s', sessionId);
 
       if (!sessionId || typeof sessionId !== 'string') {
         debugTransport('Invalid session ID in message request');
@@ -242,29 +251,34 @@ export async function createHttpServer(
         return;
       }
 
-      // Validate request body
-      if (!req.body || typeof req.body !== 'object') {
-        res.status(400).json({ error: 'Invalid request body' });
-        return;
-      }
+      // Run the entire message handling within session context
+      await runWithSession(sessionId, async () => {
+        debugTransport('Message received for session: %s', sessionId);
 
-      const transport = sessionManager.get(sessionId) as SSEServerTransport;
-      if (!transport) {
-        debugTransport('Session not found: %s', sessionId);
-        res.status(404).json({ error: 'Session not found' });
-        return;
-      }
+        // Validate request body
+        if (!req.body || typeof req.body !== 'object') {
+          res.status(400).json({ error: 'Invalid request body' });
+          return;
+        }
 
-      try {
-        // Let the transport handle the message
-        debugTransport('Processing message for session %s: %O', sessionId, req.body);
-        await transport.handlePostMessage(req, res, req.body);
-        debugTransport('Message processed successfully for session: %s', sessionId);
-      } catch (error) {
-        console.error('Error handling message:', error);
-        debugTransport('Error handling message for session %s: %O', sessionId, error);
-        res.status(500).json({ error: 'Internal server error' });
-      }
+        const transport = sessionManager.get(sessionId) as SSEServerTransport;
+        if (!transport) {
+          debugTransport('Session not found: %s', sessionId);
+          res.status(404).json({ error: 'Session not found' });
+          return;
+        }
+
+        try {
+          // Let the transport handle the message
+          debugTransport('Processing message for session %s: %O', sessionId, req.body);
+          await transport.handlePostMessage(req, res, req.body);
+          debugTransport('Message processed successfully for session: %s', sessionId);
+        } catch (error) {
+          console.error('Error handling message:', error);
+          debugTransport('Error handling message for session %s: %O', sessionId, error);
+          res.status(500).json({ error: 'Internal server error' });
+        }
+      });
     })
   );
 

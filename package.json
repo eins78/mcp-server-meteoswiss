@@ -85,6 +85,7 @@
     "nock": "^14.0.5",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
+    "short-uuid": "^5.2.0",
     "ts-jest": "^29.3.4",
     "typescript": "^5.8.3"
   },
