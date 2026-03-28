@@ -213,50 +213,34 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
   });
 
   /**
-   * Test error handling for invalid parameters
+   * Test error handling for invalid parameters.
+   *
+   * MCP SDK 1.28.0 returns validation errors as tool results with isError: true
+   * (instead of throwing), so we check the result content for error messages.
    */
   test('should handle invalid parameters', async () => {
     // Test with invalid region
-    try {
-      await client.callTool('meteoswissWeatherReport', {
-        region: 'invalid',
-        language: 'de',
-      });
-      // If we get here, the test should fail
-      fail('Should have thrown an error for invalid region');
-    } catch (error) {
-      // Error should be caught
-      expect(error).toBeDefined();
-    }
+    const invalidRegionResult = await client.callTool('meteoswissWeatherReport', {
+      region: 'invalid',
+      language: 'de',
+    });
+    expect(invalidRegionResult.isError).toBe(true);
 
     // Test with invalid language
-    try {
-      await client.callTool('meteoswissWeatherReport', {
-        region: 'north',
-        language: 'invalid',
-      });
-      // If we get here, the test should fail
-      fail('Should have thrown an error for invalid language');
-    } catch (error) {
-      // Error should be caught
-      expect(error).toBeDefined();
-    }
+    const invalidLangResult = await client.callTool('meteoswissWeatherReport', {
+      region: 'north',
+      language: 'invalid',
+    });
+    expect(invalidLangResult.isError).toBe(true);
 
     // Test with English language (should be rejected)
-    try {
-      await client.callTool('meteoswissWeatherReport', {
-        region: 'north',
-        language: 'en',
-      });
-      // If we get here, the test should fail
-      fail('Should have thrown an error for English language');
-    } catch (error) {
-      // Error should be caught and contain helpful message
-      expect(error).toBeDefined();
-      const errorStr = error.toString();
-      expect(errorStr).toContain('Invalid arguments');
-      // The error will contain our custom error message
-      expect(errorStr).toContain('English is NOT supported');
-    }
+    const englishResult = await client.callTool('meteoswissWeatherReport', {
+      region: 'north',
+      language: 'en',
+    });
+    expect(englishResult.isError).toBe(true);
+    const errorText = englishResult.content[0].text;
+    expect(errorText).toContain('Invalid arguments');
+    expect(errorText).toContain('English is NOT supported');
   });
 });

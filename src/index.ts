@@ -73,14 +73,12 @@ async function main(): Promise<HttpServerInterface> {
     config.DEBUG_MCHMCP
   );
 
-  // Create the MCP server instance
-  const mcpServer = createServer();
-
   let server: HttpServerInterface | null = null;
 
   try {
     debugMain('Creating HTTP server on port %d', port);
-    server = await createHttpServer(mcpServer, { port, host: config.BIND_ADDRESS, config });
+    // Pass a factory — the SDK requires a fresh McpServer per transport/session
+    server = await createHttpServer(createServer, { port, host: config.BIND_ADDRESS, config });
     await server.start();
     debugMain('HTTP server started');
     const mcpUrl = getMcpEndpointUrl(config);

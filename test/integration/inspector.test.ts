@@ -1,12 +1,13 @@
 /**
- * Integration tests using MCP Inspector
+ * Integration tests using MCP SDK client with Streamable HTTP transport
  */
 
-import { spawn, exec } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { promisify } from 'node:util';
+import { exec } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import * as path from 'node:path';
 
 const execAsync = promisify(exec);
@@ -43,11 +44,11 @@ describe('MCP Server Integration Tests', () => {
     beforeEach(async () => {
       // Start HTTP server using built JS
       const serverPath = path.join(process.cwd(), 'dist', 'index.js');
-      serverProcess = spawn('node', [serverPath, '3456'], {
+      serverProcess = spawn('node', [serverPath, '13456'], {
         env: { ...process.env, USE_TEST_FIXTURES: 'true' },
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: false,
-        shell: false
+        shell: false,
       });
 
       // Wait for server to start by checking logs
@@ -71,7 +72,7 @@ describe('MCP Server Integration Tests', () => {
             setTimeout(resolve, 2000);
           }
         };
-        
+
         // Monitor stderr for errors
         const stderrHandler = (data: Buffer) => {
           console.log('Server stderr:', data.toString());
@@ -89,18 +90,17 @@ describe('MCP Server Integration Tests', () => {
         serverProcess!.on('error', errorHandler);
       });
 
-      serverUrl = 'http://localhost:3456';
+      serverUrl = 'http://localhost:13456';
     });
 
     test('should connect via HTTP and list tools', async () => {
-      
       console.log('Testing server health endpoint...');
-      
+
       // Check if server process is still running
       if (serverProcess?.killed || serverProcess?.exitCode !== null) {
         throw new Error(`Server process exited with code ${serverProcess?.exitCode}`);
       }
-      
+
       // Add retry logic for health check
       let healthResponse;
       let retries = 5;
@@ -115,10 +115,10 @@ describe('MCP Server Integration Tests', () => {
           retries--;
         }
       }
-      
+
       const health = await healthResponse!.json();
       console.log('Health check passed:', health);
-      
+
       expect(health).toMatchObject({
         status: 'ok',
         version: expect.any(String),
@@ -126,17 +126,20 @@ describe('MCP Server Integration Tests', () => {
         endpoint: expect.stringMatching(/^https?:\/\/[^\/]+\/mcp$/),
       });
 
-      // Now test actual MCP connection
-      console.log('Creating SSE transport...');
-      const transport = new SSEClientTransport(new URL(`${serverUrl}/mcp`));
-      
+      // Now test actual MCP connection using Streamable HTTP transport
+      console.log('Creating Streamable HTTP transport...');
+      const transport = new StreamableHTTPClientTransport(new URL(`${serverUrl}/mcp`));
+
       console.log('Creating MCP client...');
-      client = new Client({
-        name: 'test-client',
-        version: '1.0.0',
-      }, {
-        capabilities: {},
-      });
+      client = new Client(
+        {
+          name: 'test-client',
+          version: '1.0.0',
+        },
+        {
+          capabilities: {},
+        }
+      );
 
       console.log('Connecting client to transport...');
       await client.connect(transport);
@@ -145,7 +148,7 @@ describe('MCP Server Integration Tests', () => {
       // List tools
       const tools = await client.listTools();
       expect(tools.tools).toHaveLength(3);
-      
+
       // Check that we have all three tools
       const toolNames = tools.tools.map(t => t.name);
       expect(toolNames).toContain('meteoswissWeatherReport');
@@ -154,15 +157,17 @@ describe('MCP Server Integration Tests', () => {
     });
 
     test('should call meteoswissWeatherReport tool via HTTP', async () => {
-      
-      const transport = new SSEClientTransport(new URL(`${serverUrl}/mcp`));
-      
-      client = new Client({
-        name: 'test-client',
-        version: '1.0.0',
-      }, {
-        capabilities: {},
-      });
+      const transport = new StreamableHTTPClientTransport(new URL(`${serverUrl}/mcp`));
+
+      client = new Client(
+        {
+          name: 'test-client',
+          version: '1.0.0',
+        },
+        {
+          capabilities: {},
+        }
+      );
 
       await client.connect(transport);
 
@@ -177,7 +182,7 @@ describe('MCP Server Integration Tests', () => {
 
       expect(result.content).toHaveLength(1);
       expect((result as any).content[0]!.type).toBe('text');
-      
+
       const weatherData = JSON.parse((result as any).content[0].text);
       expect(weatherData).toMatchObject({
         region: 'south',
@@ -210,18 +215,18 @@ describe('MCP Inspector CLI Tests', () => {
   test.skip('should call tool via inspector CLI against HTTP server', async () => {
     // Start HTTP server using built JS
     const serverPath = path.join(process.cwd(), 'dist', 'index.js');
-    serverProcess = spawn('node', [serverPath, '3457'], {
+    serverProcess = spawn('node', [serverPath, '13457'], {
       env: { ...process.env, USE_TEST_FIXTURES: 'true' },
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
-      shell: false
+      shell: false,
     });
 
     // Wait for server to start
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       const timeout = setTimeout(resolve, 5000);
       let buffer = '';
-      serverProcess!.stderr!.on('data', (data) => {
+      serverProcess!.stderr!.on('data', (data: Buffer) => {
         buffer += data.toString();
         if (buffer.includes('MCP server listening')) {
           clearTimeout(timeout);
@@ -233,14 +238,14 @@ describe('MCP Inspector CLI Tests', () => {
 
     // Run inspector CLI command
     const { stdout, stderr } = await execAsync(
-      `npx @modelcontextprotocol/inspector --cli http://localhost:3457/mcp --method tools/call --tool-name meteoswissWeatherReport --tool-arg region=north --tool-arg language=de`,
+      `npx @modelcontextprotocol/inspector --cli http://localhost:13457/mcp --method tools/call --tool-name meteoswissWeatherReport --tool-arg region=north --tool-arg language=de`,
       {
         env: { ...process.env },
         timeout: 10000,
       }
-    ).catch(err => ({ 
-      stdout: err.stdout || '', 
-      stderr: err.stderr || err.message 
+    ).catch(err => ({
+      stdout: err.stdout || '',
+      stderr: err.stderr || err.message,
     }));
 
     // Check for successful response
