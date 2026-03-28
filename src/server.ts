@@ -13,6 +13,9 @@ import type { FetchMeteoSwissContentInput } from './schemas/meteoswiss-fetch.js'
 import { meteoswissWeatherReport } from './tools/meteoswiss-weather-report.js';
 import { meteoswissSearchTool } from './tools/meteoswiss-search.js';
 import { meteoswissFetchTool } from './tools/meteoswiss-fetch.js';
+import { GetLocalForecastParamsSchema } from './schemas/ogd-local-forecast.js';
+import type { GetLocalForecastParams } from './schemas/ogd-local-forecast.js';
+import { ogdLocalForecastTool } from './tools/ogd-local-forecast.js';
 import { debugServer, debugTools } from './support/logging.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
 import { getVersion } from './support/version.js';
@@ -176,6 +179,56 @@ The reports use standardized probability terms for precipitation forecasts.`,
             {
               type: 'text' as const,
               text: `Fetch failed: ${errorMessage}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getLocalForecast tool (OGD)
+  debugServer('Registering tool: getLocalForecast');
+  server.tool(
+    'getLocalForecast',
+    `Get a multi-day weather forecast for any Swiss location. Returns daily summaries with temperature, precipitation, and weather icons.
+
+This uses official MeteoSwiss Open Government Data — the same forecasts powering the MeteoSwiss app.
+
+Accepts:
+- Postal codes: "8001" (Zurich), "3000" (Bern), "1200" (Geneva)
+- Station abbreviations: "ZUE" (Zurich Fluntern), "BER" (Bern)
+- Place names: "Zurich", "Basel", "Lugano"
+
+Coverage: ~6000 Swiss locations (all postal codes + weather stations + mountain points).
+Forecast horizon: up to 9 days. Updated hourly.`,
+    GetLocalForecastParamsSchema.shape,
+    async (params: GetLocalForecastParams) => {
+      try {
+        console.error(
+          `Processing getLocalForecast request for location: ${params.location}, days: ${params.days}`
+        );
+        debugTools('getLocalForecast called with params: %O', params);
+        const result = await ogdLocalForecastTool(params);
+        console.error('Successfully retrieved local forecast');
+        debugTools('Local forecast retrieved successfully');
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        console.error('Error in getLocalForecast tool:', error);
+        debugTools('Error in getLocalForecast: %O', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get local forecast: ${errorMessage}`,
             },
           ],
           isError: true,
