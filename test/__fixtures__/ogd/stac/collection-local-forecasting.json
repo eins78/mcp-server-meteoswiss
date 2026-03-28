@@ -1,0 +1,109 @@
+{
+  "stac_version": "1.0.0",
+  "id": "ch.meteoschweiz.ogd-local-forecasting",
+  "title": "Localised forecasting data – Point data",
+  "description": "The localised forecasting data is based on a mix of different models (INCA, ICON-CH1-EPS, ICON-CH2-EPS, ECMWF) and is available for all ZIP-codes, SwissMetNet-stations and selected POI in the mountains as point data. The forecast is available for the time period from +0h to +192h and is being updated hourly. It is the same forecast data used in the MeteoSwiss app and on the website for each ZIP-code.",
+  "summaries": {},
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          5.96,
+          45.82,
+          10.49,
+          47.81
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2026-03-28T04:00:36.263451Z",
+          "2026-03-28T04:00:36.263943Z"
+        ]
+      ]
+    }
+  },
+  "providers": [
+    {
+      "name": "Federal Office of Meteorology and Climatology MeteoSwiss",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://www.meteoswiss.admin.ch"
+    }
+  ],
+  "license": "CC-BY",
+  "created": "2025-03-10T07:04:51.657342Z",
+  "updated": "2026-03-28T16:07:08.184177Z",
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting"
+    },
+    {
+      "rel": "root",
+      "href": "https://data.geo.admin.ch/api/stac/v1/"
+    },
+    {
+      "rel": "parent",
+      "href": "https://data.geo.admin.ch/api/stac/v1/"
+    },
+    {
+      "rel": "items",
+      "href": "https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting/items"
+    },
+    {
+      "rel": "assets",
+      "href": "https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting/assets"
+    },
+    {
+      "rel": "alternate",
+      "title": "STAC Browser",
+      "type": "text/html",
+      "href": "https://data.geo.admin.ch/browser/index.html#/collections/ch.meteoschweiz.ogd-local-forecasting"
+    },
+    {
+      "href": "https://www.geocat.ch/geonetwork/srv/eng/catalog.search#/metadata/e3a93b5c-7e90-4404-9c80-dae8783fc1d3",
+      "rel": "describedby",
+      "title": "Metadata"
+    },
+    {
+      "href": "https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html",
+      "rel": "about",
+      "title": "Further information"
+    }
+  ],
+  "crs": [
+    "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+  ],
+  "itemType": "Feature",
+  "assets": {
+    "ogd-local-forecasting_meta_parameters.csv": {
+      "type": "text/csv",
+      "href": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-local-forecasting/ogd-local-forecasting_meta_parameters.csv",
+      "description": "This a collection asset for ogd-local-forecasting_meta_parameters.csv",
+      "created": "2025-03-28T12:05:10.617718Z",
+      "updated": "2026-02-24T09:20:09.688307Z",
+      "file:checksum": "12202dbd37d0dee98d7dbd108fd727945edc4774fd827d27519a03407d1d8bb79027"
+    },
+    "ogd-local-forcasting_meta_point.csv": {
+      "type": "text/csv",
+      "href": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-local-forecasting/ogd-local-forcasting_meta_point.csv",
+      "description": "This a collection asset for ogd-local-forcasting_meta_point.csv",
+      "created": "2025-09-03T14:06:46.963313Z",
+      "updated": "2025-12-19T03:55:18.511767Z",
+      "file:checksum": "122007774b4e6d741c4dfea864915ba81cb1b949bdc847ecce7a205fb75805db3c0a"
+    },
+    "ogd-local-forecasting_meta_point.csv": {
+      "type": "text/csv",
+      "href": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-local-forecasting/ogd-local-forecasting_meta_point.csv",
+      "description": "This a collection asset for ogd-local-forecasting_meta_point.csv",
+      "created": "2026-01-16T03:55:18.617804Z",
+      "updated": "2026-03-01T03:55:15.659786Z",
+      "file:checksum": "122038ec3cfc4e224d8e4e1d9a8b930c955c4db47b8e12a4390eb63a4553601de270"
+    }
+  },
+  "type": "Collection"
+}
