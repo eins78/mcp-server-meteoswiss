@@ -5,7 +5,7 @@
  */
 
 import { getCollection } from './ogd-stac-client.js';
-import { getCsvData } from './ogd-data-store.js';
+import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
@@ -50,7 +50,7 @@ async function loadForecastIndex(): Promise<ForecastIndex> {
     throw new Error('Forecast point metadata asset not found in collection');
   }
 
-  const rows = await getCsvData(metaAsset.href, 'metadata/forecast-points.csv', 'metadata');
+  const rows = await getLatin1CsvData(metaAsset.href, 'metadata/forecast-points.csv', 'metadata');
   debugData('[ogd-resolver] Loaded %d forecast point rows', rows.length);
 
   const points: ForecastPoint[] = rows.map((row) => ({

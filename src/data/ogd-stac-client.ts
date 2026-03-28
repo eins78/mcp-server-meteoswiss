@@ -26,18 +26,21 @@ export async function getCollection(collectionId: string): Promise<StacCollectio
 
 /**
  * Get the most recent item in a collection (e.g., latest forecast run).
- * Items are sorted by datetime descending by default.
+ * The swisstopo STAC API does not reliably sort by datetime, so we fetch
+ * recent items and pick the one with the latest ID (IDs are date-based).
  */
 export async function getLatestItem(collectionId: string): Promise<StacItem> {
-  const url = `${STAC_BASE}/collections/${collectionId}/items?limit=1`;
-  debugData('[ogd-stac] Fetching latest item for: %s', collectionId);
+  const url = `${STAC_BASE}/collections/${collectionId}/items?limit=10`;
+  debugData('[ogd-stac] Fetching items for: %s', collectionId);
   const raw = await fetchJson(url);
   const parsed = StacItemCollectionSchema.parse(raw);
   if (parsed.features.length === 0) {
     throw new Error(`No items found in collection ${collectionId}`);
   }
-  debugData('[ogd-stac] Latest item: %s', parsed.features[0]!.id);
-  return parsed.features[0]!;
+  // Pick the item with the lexicographically latest ID (date-based IDs like "20260328-ch")
+  const sorted = parsed.features.sort((a, b) => b.id.localeCompare(a.id));
+  debugData('[ogd-stac] Latest item: %s (from %d items)', sorted[0]!.id, parsed.features.length);
+  return sorted[0]!;
 }
 
 /**

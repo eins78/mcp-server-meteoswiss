@@ -7,9 +7,11 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { fetchWithRetry } from '../support/http-communication.js';
+import { fetchWithRetry, fetchBinary } from '../support/http-communication.js';
 import { parseCsv, type CsvRow } from '../support/ogd-csv-parser.js';
 import { debugData } from '../support/logging.js';
+
+const LATIN1_DECODER = new TextDecoder('latin1');
 
 /** Cache TTLs in milliseconds */
 export const CACHE_TTL = {
@@ -35,15 +37,29 @@ async function writeToDiskCache(cachePath: string, data: string | Buffer): Promi
 }
 
 /**
- * Get parsed CSV data from the OGD data store.
- * Downloads and caches on first request; serves from disk cache on subsequent requests.
- * Raw bytes are cached to preserve original encoding; decoding happens at read time.
+ * Read a cached file, decoding it as UTF-8 text.
+ * Returns null if the cache entry is missing or stale.
+ */
+async function readCacheUtf8(cachePath: string, ttl: number): Promise<string | null> {
+  try {
+    const stat = await fs.stat(cachePath);
+    const age = Date.now() - stat.mtimeMs;
+    if (age < ttl) {
+      return await fs.readFile(cachePath, 'utf-8');
+    }
+  } catch {
+    // cache miss
+  }
+  return null;
+}
+
+/**
+ * Get parsed CSV data, fetching as UTF-8 text (for CSVs served with proper charset).
  *
  * @param url - Direct download URL for the CSV file
- * @param cacheKey - Unique key for disk cache (e.g., "forecasts/tre200dx.csv")
+ * @param cacheKey - Unique key for disk cache
  * @param tier - Cache TTL tier
  * @param filter - Optional row filter to reduce memory for large CSVs
- * @returns Parsed CSV rows
  */
 export async function getCsvData(
   url: string,
@@ -54,32 +70,48 @@ export async function getCsvData(
   const cachePath = path.join(CACHE_DIR, cacheKey);
   const ttl = CACHE_TTL[tier];
 
-  // Check disk cache
-  try {
-    const stat = await fs.stat(cachePath);
-    const age = Date.now() - stat.mtimeMs;
-    if (age < ttl) {
-      debugData('[ogd-store] Cache hit for %s (age: %dms)', cacheKey, Math.round(age));
-      const text = await fs.readFile(cachePath, 'utf-8');
-      return parseCsv(text, filter);
-    }
-    debugData(
-      '[ogd-store] Cache stale for %s (age: %dms, ttl: %dms)',
-      cacheKey,
-      Math.round(age),
-      ttl
-    );
-  } catch {
-    debugData('[ogd-store] Cache miss for %s', cacheKey);
+  const cached = await readCacheUtf8(cachePath, ttl);
+  if (cached !== null) {
+    debugData('[ogd-store] Cache hit for %s', cacheKey);
+    return parseCsv(cached, filter);
   }
 
-  // Download fresh data
   debugData('[ogd-store] Downloading %s', url);
   const text = await fetchWithRetry(url, { useCache: false, timeout: 60_000 });
-
-  // Write to disk cache atomically, store as UTF-8
   await writeToDiskCache(cachePath, text);
   debugData('[ogd-store] Cached %d bytes to %s', text.length, cacheKey);
+  return parseCsv(text, filter);
+}
 
+/**
+ * Get parsed CSV data, fetching as binary and decoding from Latin1.
+ * MeteoSwiss metadata CSVs are served without charset header and are Latin1-encoded.
+ *
+ * @param url - Direct download URL for the CSV file
+ * @param cacheKey - Unique key for disk cache
+ * @param tier - Cache TTL tier
+ * @param filter - Optional row filter
+ */
+export async function getLatin1CsvData(
+  url: string,
+  cacheKey: string,
+  tier: CacheTier,
+  filter?: (row: CsvRow) => boolean
+): Promise<CsvRow[]> {
+  const cachePath = path.join(CACHE_DIR, cacheKey);
+  const ttl = CACHE_TTL[tier];
+
+  // Cache stores the decoded UTF-8 text
+  const cached = await readCacheUtf8(cachePath, ttl);
+  if (cached !== null) {
+    debugData('[ogd-store] Cache hit for %s', cacheKey);
+    return parseCsv(cached, filter);
+  }
+
+  debugData('[ogd-store] Downloading (binary/Latin1) %s', url);
+  const buffer = await fetchBinary(url, { timeout: 60_000 });
+  const text = LATIN1_DECODER.decode(buffer);
+  await writeToDiskCache(cachePath, text);
+  debugData('[ogd-store] Cached %d bytes (decoded) to %s', text.length, cacheKey);
   return parseCsv(text, filter);
 }
