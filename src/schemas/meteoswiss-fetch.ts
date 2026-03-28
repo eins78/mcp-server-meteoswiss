@@ -17,7 +17,7 @@ export const fetchMeteoSwissContentSchema = z.object({
     .describe('The output format for the content'),
   includeMetadata: z
     .boolean({
-      invalid_type_error: 'includeMetadata must be a boolean (true or false)',
+      message: 'includeMetadata must be a boolean (true or false)',
     })
     .optional()
     .default(true)

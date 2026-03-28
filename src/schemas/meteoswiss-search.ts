@@ -26,20 +26,14 @@ export const searchMeteoSwissContentSchema = z.object({
       'Filter by content type. Defaults to "content" to exclude application pages. Use "publication" for official reports.'
     ),
   page: z
-    .number({
-      invalid_type_error: 'Page must be a number',
-      required_error: 'Page is required when specified',
-    })
+    .number({ message: 'Page must be a number' })
     .int({ message: 'Page must be a whole number' })
     .positive({ message: 'Page number must be greater than 0' })
     .optional()
     .default(1)
     .describe('Page number for pagination (1-based)'),
   pageSize: z
-    .number({
-      invalid_type_error: 'Page size must be a number',
-      required_error: 'Page size is required when specified',
-    })
+    .number({ message: 'Page size must be a number' })
     .int({ message: 'Page size must be a whole number' })
     .positive({ message: 'Page size must be greater than 0' })
     .max(100, { message: 'Page size cannot exceed 100 results per page' })
