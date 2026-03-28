@@ -40,8 +40,8 @@ console.log(`Health: ${health.status} (v${health.version})\n`);
 const tools = await client.listTools();
 console.log(`Tools: ${tools.tools.map(t => t.name).join(', ')}\n`);
 
-await test('Tool count is 8', () => {
-  assert(tools.tools.length === 8, `Expected 8 tools, got ${tools.tools.length}`);
+await test('Tool count is 7', () => {
+  assert(tools.tools.length === 7, `Expected 7 tools, got ${tools.tools.length}`);
 });
 
 // --- OGD Tools ---
@@ -111,12 +111,6 @@ await test('meteoswissStations: search "Lugano"', async () => {
   assert(data.total > 0, 'Expected Lugano stations');
 });
 
-await test('meteoswissClimateNormals: SMA, July', async () => {
-  const r = await client.callTool({ name: 'meteoswissClimateNormals', arguments: { station: 'SMA', month: 7 } });
-  const text = r.content[0].text;
-  // May fail for some stations — just verify it doesn't crash
-  assert(text.length > 0, 'Expected response');
-});
 
 await test('meteoswissPollenData: all stations', async () => {
   const r = await client.callTool({ name: 'meteoswissPollenData', arguments: {} });

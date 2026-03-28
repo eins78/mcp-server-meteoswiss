@@ -22,9 +22,6 @@ import { getCurrentWeather } from './data/ogd-current-weather.js';
 import { ListStationsParamsSchema } from './schemas/ogd-station-list.js';
 import type { ListStationsParams } from './schemas/ogd-station-list.js';
 import { listStations } from './data/ogd-station-list.js';
-import { GetClimateNormalsParamsSchema } from './schemas/ogd-climate-normals.js';
-import type { GetClimateNormalsParams } from './schemas/ogd-climate-normals.js';
-import { getClimateNormals } from './data/ogd-climate-normals.js';
 import { GetPollenDataParamsSchema } from './schemas/ogd-pollen-data.js';
 import type { GetPollenDataParams } from './schemas/ogd-pollen-data.js';
 import { getPollenData } from './data/ogd-pollen-data.js';
@@ -305,35 +302,6 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
             {
               type: 'text' as const,
               text: `Failed to list stations: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // Register getClimateNormals tool (OGD)
-  debugServer('Registering tool: getClimateNormals');
-  server.tool(
-    'meteoswissClimateNormals',
-    `Get 1991-2020 climate normal values (30-year averages) for a Swiss weather station. Shows average temperature, precipitation, and sunshine by month. Useful for "what's normal for this location?" questions.`,
-    GetClimateNormalsParamsSchema.shape,
-    async (params: GetClimateNormalsParams) => {
-      try {
-        console.error(`Processing meteoswissClimateNormals request for station: ${params.station}`);
-        debugTools('getClimateNormals called with params: %O', params);
-        const result = await getClimateNormals(params);
-        console.error('Successfully retrieved climate normals');
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-      } catch (error: unknown) {
-        console.error('Error in meteoswissClimateNormals tool:', error);
-        debugTools('Error in getClimateNormals: %O', error);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Failed to get climate normals: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,

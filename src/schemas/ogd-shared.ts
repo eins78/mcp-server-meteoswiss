@@ -86,7 +86,6 @@ export const OGD_COLLECTIONS = {
   SMN: 'ch.meteoschweiz.ogd-smn',
   SMN_PRECIP: 'ch.meteoschweiz.ogd-smn-precip',
   SMN_TOWER: 'ch.meteoschweiz.ogd-smn-tower',
-  CLIMATE_NORMALS: 'ch.meteoschweiz.ogd-climate-normals',
   NBCN: 'ch.meteoschweiz.ogd-nbcn',
   POLLEN: 'ch.meteoschweiz.ogd-pollen',
   RADIOSOUNDING: 'ch.meteoschweiz.ogd-radiosounding',
