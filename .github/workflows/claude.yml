@@ -19,23 +19,19 @@ jobs:
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+      contents: read
+      pull-requests: read
+      issues: read
       id-token: write
-      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@094bd24d575e7b30ac1576024817bf1a97c81262
+        uses: anthropics/claude-code-action@beta
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          additional_permissions: |
-            actions: read
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
