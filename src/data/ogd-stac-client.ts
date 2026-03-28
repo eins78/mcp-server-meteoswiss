@@ -37,9 +37,19 @@ export async function getLatestItem(collectionId: string): Promise<StacItem> {
   if (parsed.features.length === 0) {
     throw new Error(`No items found in collection ${collectionId}`);
   }
-  // Pick the item with the lexicographically latest ID (date-based IDs like "20260328-ch")
-  const sorted = parsed.features.sort((a, b) => b.id.localeCompare(a.id));
-  debugData('[ogd-stac] Latest item: %s (from %d items)', sorted[0]!.id, parsed.features.length);
+  // Pick the item with the lexicographically latest ID that has assets
+  // (newly created items may exist before data is published)
+  const withAssets = parsed.features.filter((f) => Object.keys(f.assets).length > 0);
+  if (withAssets.length === 0) {
+    throw new Error(`No items with assets found in collection ${collectionId}`);
+  }
+  const sorted = withAssets.sort((a, b) => b.id.localeCompare(a.id));
+  debugData(
+    '[ogd-stac] Latest item: %s (from %d items, %d with assets)',
+    sorted[0]!.id,
+    parsed.features.length,
+    withAssets.length
+  );
   return sorted[0]!;
 }
 
