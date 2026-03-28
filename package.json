@@ -29,7 +29,10 @@
     "build": "tsc",
     "dev:docker": "pnpm run build:docker && pnpm run start:docker",
     "build:docker": "docker build -t mcp-server-meteoswiss:dev .",
-    "start:docker": "docker run mcp-server-meteoswiss:dev"
+    "start:docker": "docker run mcp-server-meteoswiss:dev",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "./scripts/release.sh"
   },
   "repository": {
     "type": "git",
@@ -62,6 +65,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/inspector": "^0.21.1",
     "@types/debug": "^4.1.13",

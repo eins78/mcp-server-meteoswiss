@@ -249,6 +249,8 @@ To use your local instance with Claude Desktop, add this to your configuration:
 
 Contributions are welcome! Please ensure you follow the architecture guidelines outlined in the documentation.
 
+When making user-facing changes, add a changeset (`pnpm changeset`) to your PR. See [docs/releasing.md](docs/releasing.md) for the full release process.
+
 ## License
 
 ISC
