@@ -259,10 +259,13 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
     GetCurrentWeatherParamsSchema.shape,
     async (params: GetCurrentWeatherParams) => {
       try {
+        console.error(`Processing meteoswissCurrentWeather request for station: ${params.station}`);
         debugTools('getCurrentWeather called with params: %O', params);
         const result = await getCurrentWeather(params);
+        console.error('Successfully retrieved current weather');
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (error: unknown) {
+        console.error('Error in meteoswissCurrentWeather tool:', error);
         debugTools('Error in getCurrentWeather: %O', error);
         return {
           content: [
@@ -285,10 +288,15 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
     ListStationsParamsSchema.shape,
     async (params: ListStationsParams) => {
       try {
+        console.error(
+          `Processing meteoswissStations request: search=${params.search ?? ''}, canton=${params.canton ?? ''}`
+        );
         debugTools('listStations called with params: %O', params);
         const result = await listStations(params);
+        console.error(`Successfully listed ${result.total} stations`);
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (error: unknown) {
+        console.error('Error in meteoswissStations tool:', error);
         debugTools('Error in listStations: %O', error);
         return {
           content: [
@@ -311,10 +319,13 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
     GetClimateNormalsParamsSchema.shape,
     async (params: GetClimateNormalsParams) => {
       try {
+        console.error(`Processing meteoswissClimateNormals request for station: ${params.station}`);
         debugTools('getClimateNormals called with params: %O', params);
         const result = await getClimateNormals(params);
+        console.error('Successfully retrieved climate normals');
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (error: unknown) {
+        console.error('Error in meteoswissClimateNormals tool:', error);
         debugTools('Error in getClimateNormals: %O', error);
         return {
           content: [
@@ -337,10 +348,15 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
     GetPollenDataParamsSchema.shape,
     async (params: GetPollenDataParams) => {
       try {
+        console.error(
+          `Processing meteoswissPollenData request: station=${params.station ?? 'all'}`
+        );
         debugTools('getPollenData called with params: %O', params);
         const result = await getPollenData(params);
+        console.error(`Successfully retrieved pollen data for ${result.stations.length} stations`);
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (error: unknown) {
+        console.error('Error in meteoswissPollenData tool:', error);
         debugTools('Error in getPollenData: %O', error);
         return {
           content: [

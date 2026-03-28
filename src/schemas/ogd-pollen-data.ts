@@ -14,10 +14,10 @@ export const GetPollenDataParamsSchema = z.object({
 });
 export type GetPollenDataParams = z.infer<typeof GetPollenDataParamsSchema>;
 
-/** Pollen measurement for a single type */
+/** Pollen measurement for a single type (only present when data is available) */
 export type PollenMeasurement = {
   type: string;
-  value: number | null;
+  value: number;
   unit: string;
 };
 

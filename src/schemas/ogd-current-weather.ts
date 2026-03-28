@@ -14,9 +14,9 @@ export const GetCurrentWeatherParamsSchema = z.object({
 });
 export type GetCurrentWeatherParams = z.infer<typeof GetCurrentWeatherParamsSchema>;
 
-/** Measurement value with unit */
+/** Measurement value with unit (only present when data is available) */
 export type MeasurementValue = {
-  value: number | null;
+  value: number;
   unit: string;
 };
 
