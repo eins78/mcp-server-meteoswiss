@@ -13,7 +13,7 @@ import { getAppName, getVersion } from './support/version.js';
 import type { HttpServerInterface } from './transports/streamable-http.js';
 
 // Check Node.js version requirement
-const MIN_NODE_VERSION = 20;
+const MIN_NODE_VERSION = 22;
 const nodeVersionMatch = process.version.match(/^v(\d+)\.(\d+)\.(\d+)/);
 if (nodeVersionMatch) {
   const majorVersion = parseInt(nodeVersionMatch[1] || '0', 10);

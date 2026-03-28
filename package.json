@@ -7,7 +7,7 @@
   "main": "src/index.ts",
   "type": "module",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.0.0"
   },
   "directories": {
     "doc": "docs",
