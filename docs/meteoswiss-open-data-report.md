@@ -38,12 +38,12 @@ MeteoSwiss publishes approximately 21 STAC collections across 5 major categories
 
 | Collection ID | Description | Stations | Temporal Resolution | Update Frequency |
 |---|---|---|---|---|
-| `ch.meteoschweiz.ogd-smn` | Automatic weather stations (SwissMetNet) | 158 | 10-min, hourly, daily, monthly, yearly | ~10 min (now), daily (recent), yearly (historical) |
-| `ch.meteoschweiz.ogd-smn-precip` | Automatic precipitation stations | ~300 | 10-min, hourly, daily, monthly, yearly | Same as above |
-| `ch.meteoschweiz.ogd-smn-tower` | Tower stations (profiles) | ~7 | 10-min, hourly, daily, monthly, yearly | Same as above |
-| `ch.meteoschweiz.ogd-nime` | Manual precipitation stations | ~300 | Daily, monthly, yearly | Daily |
-| `ch.meteoschweiz.ogd-obs` | Visual meteorological observations | Variable | 2-8x daily, monthly, yearly | Several times daily |
-| `ch.meteoschweiz.ogd-tot` | Totaliser precipitation stations | ~80 | Monthly, yearly | Monthly |
+| `ch.meteoschweiz.ogd-smn` | Automatic weather stations (SwissMetNet) | ~160 | 10-min, hourly, daily, monthly, yearly | ~10 min (now), daily (recent), yearly (historical) |
+| `ch.meteoschweiz.ogd-smn-precip` | Automatic precipitation stations | ~140 | 10-min, hourly, daily, monthly, yearly | Same as above |
+| `ch.meteoschweiz.ogd-smn-tower` | Tower stations (profiles) | 3 | 10-min, hourly, daily, monthly, yearly | Same as above |
+| `ch.meteoschweiz.ogd-nime` | Manual precipitation stations | ~240 | Daily, monthly, yearly | Daily |
+| `ch.meteoschweiz.ogd-obs` | Visual meteorological observations | ~20 | 2-8x daily, monthly, yearly | Several times daily |
+| `ch.meteoschweiz.ogd-tot` | Totaliser precipitation stations | ~60 | Monthly, yearly | Monthly |
 | `ch.meteoschweiz.ogd-pollen` | Pollen monitoring | ~15 | Hourly, daily | Daily |
 | `ch.meteoschweiz.ogd-phenology` | Phenological observations (26 plant species) | ~160 | Seasonal, yearly | Seasonal |
 | `ch.meteoschweiz.ogd-smn-soil` | Soil moisture stations | — | — | **Planned for 2026** |
@@ -90,26 +90,26 @@ Full parameter list: download `ogd-smn_meta_parameters.csv` from the collection 
 
 | Collection ID | Description | Products | Update Frequency |
 |---|---|---|---|
-| `ch.meteoschweiz.ogd-radar-precip` | Precipitation radar | PRECIP, CPC (CombiPrecip) | Every 5 minutes |
+| `ch.meteoschweiz.ogd-radar-precip` | Precipitation radar | PRECIP, CPC (CombiPrecip) | Every 5 min (PRECIP) / 10 min (CPC) |
 | `ch.meteoschweiz.ogd-radar-hail` | Hail radar | POH, MESHS | Every 5 minutes |
 
 ### E. Forecast Data (4 collections)
 
 | Collection ID | Description | Resolution | Horizon | Update Freq |
 |---|---|---|---|---|
-| `ch.meteoschweiz.ogd-forecasting-icon-ch1` | ICON-CH1-EPS (high-res NWP) | 1.1 km grid | 33 hours | Every 3 hours |
+| `ch.meteoschweiz.ogd-forecasting-icon-ch1` | ICON-CH1-EPS (high-res NWP) | 1 km grid | 33 hours | Every 3 hours |
 | `ch.meteoschweiz.ogd-forecasting-icon-ch2` | ICON-CH2-EPS (extended NWP) | 2.1 km grid | 120 hours | Every 6 hours |
 | `ch.meteoschweiz.ogd-nowcasting` | Nowcasting | Variable | 0-6 hours | **Planning pending** |
-| `ch.meteoschweiz.ogd-local-forecasting` | Local point forecasts | 5629 points | 9 days | Hourly |
+| `ch.meteoschweiz.ogd-local-forecasting` | Local point forecasts | ~6000 points | 9 days | Hourly |
 
 #### Local forecast data (key details):
 
 The local forecast collection is particularly valuable — it provides the **same forecast data powering the MeteoSwiss app and website**.
 
-- **Coverage**: 927 weather stations + 4071 postal code areas + 631 mountain POIs = **5629 points**
+- **Coverage**: ~6000 points — all Swiss postal codes, SwissMetNet stations, and mountain POIs (peaks, passes, huts)
 - **Horizon**: 9 full days including current day
 - **Update frequency**: New forecasts available every hour
-- **Parameters**: 40 forecast parameters including:
+- **Parameters**: ~35 forecast parameters including:
 
 | Code | Parameter | Granularity | Unit |
 |---|---|---|---|
@@ -240,7 +240,7 @@ The OGC-compliant STAC API provides structured access to all collections and the
 
 ### 4.2 Direct CSV Downloads
 
-**Consolidated real-time measurements** (all 158 stations, 20 parameters, updated every 10 minutes):
+**Consolidated real-time measurements** (all ~160 stations, 20 parameters, updated every 10 minutes):
 ```
 https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv
 ```
@@ -275,8 +275,8 @@ Each STAC collection provides metadata CSV files at the collection level:
 | `ogd-smn_meta_stations.csv` | Station names, codes, cantons, WGS84 + LV95 coordinates, elevation, data-since dates, detail page URLs |
 | `ogd-smn_meta_parameters.csv` | Parameter codes, descriptions (4 languages), units, data types, decimal places |
 | `ogd-smn_meta_datainventory.csv` | Station × parameter availability with start/end dates |
-| `ogd-local-forecasting_meta_point.csv` | All 5629 forecast points with type, postal code, name, coordinates, elevation |
-| `ogd-local-forecasting_meta_parameters.csv` | All 40 forecast parameter definitions |
+| `ogd-local-forecasting_meta_point.csv` | All ~6000 forecast points with type, postal code, name, coordinates, elevation |
+| `ogd-local-forecasting_meta_parameters.csv` | All ~35 forecast parameter definitions |
 
 **Station metadata sample** (CSV, semicolon-delimited):
 ```
@@ -334,21 +334,21 @@ MeteoSwiss is developing query-based APIs (OGC API - Features and Environmental 
 
 | Network | Stations | Coverage |
 |---|---|---|
-| SwissMetNet (automatic weather) | 158 | All of Switzerland, various elevations (200m–3500m+) |
-| Precipitation stations | ~300 | Dense coverage across Swiss territory |
-| Tower stations | ~7 | Vertical profiles at select locations |
-| Manual precipitation | ~300 | Complementary to automatic network |
-| Pollen monitoring | ~15 | Major population centers |
+| SwissMetNet (automatic weather) | ~160 | All of Switzerland, various elevations (200m–3500m+) |
+| Precipitation stations | ~140 | Supplementary to SwissMetNet across Swiss territory |
+| Tower stations | 3 | Vertical profiles at 150–230m above ground |
+| Manual precipitation | ~240 | Complementary to automatic network (190 rain+snow, 50 snow only) |
+| Pollen monitoring | ~15 | Major climatic and vegetation regions |
 | Phenological observations | ~160 | Distributed across climate zones |
-| Totalisers | ~80 | Remote/alpine locations |
+| Totalisers | ~60 | Remote/alpine locations |
 
 ### Forecast Grid
 
 | Product | Resolution | Coverage |
 |---|---|---|
-| ICON-CH1-EPS | 1.1 km | Switzerland + surrounding area |
+| ICON-CH1-EPS | 1 km | Switzerland + surrounding area |
 | ICON-CH2-EPS | 2.1 km | Switzerland + wider region |
-| Local forecasts | 5629 points | All Swiss postal codes, stations, mountain POIs |
+| Local forecasts | ~6000 points | All Swiss postal codes, stations, mountain POIs |
 
 ### Radar Coverage
 
@@ -457,7 +457,7 @@ The weather report tool — our primary value proposition — is non-functional.
 
 #### P1: `getCurrentWeather` — Real-time measurements (HIGH VALUE, easy)
 
-**What**: Current weather conditions from any of 158 automatic stations across Switzerland.
+**What**: Current weather conditions from any of ~160 automatic stations across Switzerland.
 
 **Source**: Consolidated CSV at `https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv` — all stations, 20 parameters, updated every 10 minutes.
 
@@ -481,7 +481,7 @@ The weather report tool — our primary value proposition — is non-functional.
 
 **What**: 9-day weather forecasts for any Swiss location — the **same forecasts powering the MeteoSwiss app and website**.
 
-**Source**: STAC collection `ch.meteoschweiz.ogd-local-forecasting` — 5629 points, 40 parameters, hourly updates.
+**Source**: STAC collection `ch.meteoschweiz.ogd-local-forecasting` — ~6000 points, ~35 parameters, hourly updates.
 
 **Use cases**:
 - "What's the forecast for Bern this week?"
@@ -495,7 +495,7 @@ The weather report tool — our primary value proposition — is non-functional.
 4. Aggregate into a human-readable forecast (daily summary + hourly detail)
 5. Cache full CSVs with 1-hour TTL (matches update frequency)
 
-**Challenge**: Each parameter CSV is ~1.2M lines (all 5629 points × all forecast hours). Smart caching and filtering is essential. Consider downloading only the most-used parameters (temperature, precipitation, wind, pictogram).
+**Challenge**: Each parameter CSV is large (all ~6000 points × all forecast hours). Smart caching and filtering is essential. Consider downloading only the most-used parameters (temperature, precipitation, wind, pictogram).
 
 **Parameters**: `location` (postal code, station name, or station code), `days` (1-9), `language`
 
@@ -578,7 +578,7 @@ The weather report tool — our primary value proposition — is non-functional.
 |---|---|---|
 | Working tools | 2 of 3 | 6+ tools |
 | Data freshness | N/A (broken) | 10-minute real-time, hourly forecasts |
-| Location coverage | 3 regions | 5629 specific locations |
+| Location coverage | 3 regions | ~6000 specific locations |
 | Forecast horizon | N/A (broken) | 9 days, hourly resolution |
 | Data reliability | HTML scraping (fragile) | Structured CSV/STAC API (official OGD) |
-| Parameters available | Weather text only | 40+ measured/forecast parameters |
+| Parameters available | Weather text only | 35+ measured/forecast parameters |

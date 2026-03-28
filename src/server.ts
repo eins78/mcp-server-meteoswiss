@@ -42,7 +42,7 @@ export function createServer(): McpServer {
     name: 'mcp-server-meteoswiss',
     version: getVersion(),
     description:
-      'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, and Italian.',
+      'Access official MeteoSwiss weather data for Switzerland. Provides weather reports, multi-day forecasts, real-time measurements, station listings, climate normals, and pollen data.',
   });
   debugServer('MCP server created with name: mcp-server-meteoswiss');
 
@@ -253,7 +253,7 @@ Forecast horizon: up to 9 days. Updated hourly.`,
   debugServer('Registering tool: getCurrentWeather');
   server.tool(
     'meteoswissCurrentWeather',
-    `Get real-time weather measurements from any of 158 Swiss automatic weather stations. Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes.
+    `Get real-time weather measurements from any of ~160 Swiss automatic weather stations. Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes.
 
 Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplatz 1 Bern"), or WGS84 coordinates. Automatically finds the nearest station.`,
     GetCurrentWeatherParamsSchema.shape,
@@ -286,7 +286,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
   debugServer('Registering tool: listStations');
   server.tool(
     'meteoswissStations',
-    `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of 158 stations across Switzerland.`,
+    `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of ~160 stations across Switzerland.`,
     ListStationsParamsSchema.shape,
     async (params: ListStationsParams) => {
       try {
