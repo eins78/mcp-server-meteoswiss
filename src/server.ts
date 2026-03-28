@@ -15,7 +15,7 @@ import { meteoswissSearchTool } from './tools/meteoswiss-search.js';
 import { meteoswissFetchTool } from './tools/meteoswiss-fetch.js';
 import { GetLocalForecastParamsSchema } from './schemas/ogd-local-forecast.js';
 import type { GetLocalForecastParams } from './schemas/ogd-local-forecast.js';
-import { ogdLocalForecastTool } from './tools/ogd-local-forecast.js';
+import { getLocalForecast } from './data/ogd-local-forecast.js';
 import { debugServer, debugTools } from './support/logging.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
 import { getVersion } from './support/version.js';
@@ -209,7 +209,7 @@ Forecast horizon: up to 9 days. Updated hourly.`,
           `Processing getLocalForecast request for location: ${params.location}, days: ${params.days}`
         );
         debugTools('getLocalForecast called with params: %O', params);
-        const result = await ogdLocalForecastTool(params);
+        const result = await getLocalForecast(params);
         console.error('Successfully retrieved local forecast');
         debugTools('Local forecast retrieved successfully');
         return {

@@ -5,38 +5,44 @@
  */
 
 import { getCollection } from './ogd-stac-client.js';
-import { getRawCsvData } from './ogd-data-store.js';
+import { getCsvData } from './ogd-data-store.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { debugData } from '../support/logging.js';
+import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 import type { ForecastPoint } from '../schemas/ogd-shared.js';
 
-const FORECAST_COLLECTION = 'ch.meteoschweiz.ogd-local-forecasting';
+/** Indexed forecast point data for fast lookups */
+type ForecastIndex = {
+  points: ForecastPoint[];
+  byPostalCode: Map<string, ForecastPoint>;
+  byAbbr: Map<string, ForecastPoint>;
+};
 
-let forecastPointsCache: ForecastPoint[] | null = null;
+let indexCache: ForecastIndex | null = null;
 
 /**
- * Load forecast point metadata from the OGD STAC API.
+ * Load forecast point metadata from the OGD STAC API and build lookup indexes.
  * Cached in memory after first load.
  */
-async function loadForecastPoints(): Promise<ForecastPoint[]> {
-  if (forecastPointsCache) {
-    return forecastPointsCache;
+async function loadForecastIndex(): Promise<ForecastIndex> {
+  if (indexCache) {
+    return indexCache;
   }
 
   debugData('[ogd-resolver] Loading forecast point metadata...');
-  const collection = await getCollection(FORECAST_COLLECTION);
+  const collection = await getCollection(OGD_COLLECTIONS.LOCAL_FORECASTING);
   const metaAsset =
     collection.assets?.['ogd-local-forecasting_meta_point.csv'] ??
-    collection.assets?.['ogd-local-forcasting_meta_point.csv']; // note: typo in official data
+    collection.assets?.['ogd-local-forcasting_meta_point.csv']; // typo in official data
 
   if (!metaAsset) {
     throw new Error('Forecast point metadata asset not found in collection');
   }
 
-  const rows = await getRawCsvData(metaAsset.href, 'metadata/forecast-points.csv', 'metadata');
+  const rows = await getCsvData(metaAsset.href, 'metadata/forecast-points.csv', 'metadata');
   debugData('[ogd-resolver] Loaded %d forecast point rows', rows.length);
 
-  forecastPointsCache = rows.map((row) => ({
+  const points: ForecastPoint[] = rows.map((row) => ({
     point_id: parseNumeric(row.point_id ?? null) ?? 0,
     point_type_id: parseNumeric(row.point_type_id ?? null) ?? 0,
     station_abbr: row.station_abbr ?? null,
@@ -49,8 +55,20 @@ async function loadForecastPoints(): Promise<ForecastPoint[]> {
     },
   }));
 
-  debugData('[ogd-resolver] Parsed %d forecast points', forecastPointsCache.length);
-  return forecastPointsCache;
+  const byPostalCode = new Map<string, ForecastPoint>();
+  const byAbbr = new Map<string, ForecastPoint>();
+  for (const p of points) {
+    if (p.point_type_id === 2 && p.postal_code) {
+      byPostalCode.set(p.postal_code.toLowerCase(), p);
+    }
+    if (p.point_type_id === 1 && p.station_abbr) {
+      byAbbr.set(p.station_abbr.toLowerCase(), p);
+    }
+  }
+
+  debugData('[ogd-resolver] Indexed %d postal codes, %d stations', byPostalCode.size, byAbbr.size);
+  indexCache = { points, byPostalCode, byAbbr };
+  return indexCache;
 }
 
 /** Result of a station/location resolution */
@@ -68,19 +86,17 @@ export type ResolveResult = {
  * @returns Best match and alternatives
  */
 export async function resolveForecastPoint(query: string): Promise<ResolveResult> {
-  const points = await loadForecastPoints();
+  const { points, byPostalCode, byAbbr } = await loadForecastIndex();
   const q = query.trim().toLowerCase();
 
-  // Exact match on postal code
-  const postalMatch = points.find((p) => p.point_type_id === 2 && p.postal_code === q);
+  // O(1) exact match on postal code
+  const postalMatch = byPostalCode.get(q);
   if (postalMatch) {
     return { match: postalMatch, alternatives: [], confidence: 'exact' };
   }
 
-  // Exact match on station abbreviation
-  const abbrMatch = points.find(
-    (p) => p.point_type_id === 1 && p.station_abbr?.toLowerCase() === q
-  );
+  // O(1) exact match on station abbreviation
+  const abbrMatch = byAbbr.get(q);
   if (abbrMatch) {
     return { match: abbrMatch, alternatives: [], confidence: 'exact' };
   }
@@ -88,7 +104,6 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
   // Fuzzy match on name (case-insensitive substring)
   const nameMatches = points.filter((p) => p.name.toLowerCase().includes(q));
   if (nameMatches.length > 0) {
-    // Prefer postal code type for city names (more granular), then station
     const sorted = nameMatches.sort((a, b) => {
       // Exact name match first
       if (a.name.toLowerCase() === q && b.name.toLowerCase() !== q) return -1;
@@ -116,5 +131,5 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
  * Clear the in-memory forecast points cache. Useful for testing.
  */
 export function clearResolverCache(): void {
-  forecastPointsCache = null;
+  indexCache = null;
 }

@@ -15,7 +15,7 @@ export type CsvRow = Record<string, string | null>;
  * @param csvText - Raw CSV text content
  * @returns Array of parsed rows as key-value objects
  */
-export function parseCsv(csvText: string): CsvRow[] {
+export function parseCsv(csvText: string, filter?: (row: CsvRow) => boolean): CsvRow[] {
   const lines = csvText.split('\n').filter((line) => line.trim().length > 0);
   if (lines.length < 2) {
     return [];
@@ -32,19 +32,13 @@ export function parseCsv(csvText: string): CsvRow[] {
       const raw = values[j]?.trim() ?? '';
       row[headers[j]!] = raw === '' || raw === '-' ? null : raw;
     }
-    rows.push(row);
+    if (!filter || filter(row)) {
+      rows.push(row);
+    }
   }
 
-  debugData('[ogd-csv] Parsed %d data rows', rows.length);
+  debugData('[ogd-csv] Parsed %d data rows (from %d lines)', rows.length, lines.length - 1);
   return rows;
-}
-
-/**
- * Decode a Buffer from Latin1/Windows-1252 encoding to a UTF-8 string.
- * MeteoSwiss CSVs use Latin1 (forecast data) or Windows-1252 (station data).
- */
-export function decodeLatinBuffer(buffer: Buffer): string {
-  return new TextDecoder('latin1').decode(buffer);
 }
 
 /**
