@@ -1,0 +1,54 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "group:recommended",
+    "group:linters",
+    "group:test",
+    "group:allNonMajor",
+    "workarounds:typesNodeVersioning",
+    "workarounds:nodeDockerVersioning",
+    ":dependencyDashboard"
+  ],
+  "assignees": [
+    "eins78"
+  ],
+  "reviewers": [
+    "eins78"
+  ],
+  "schedule": ["* 7-18 * * 5"],
+  "timezone": "Europe/Berlin",
+  "rebaseWhen": "conflicted",
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Restrict Node.js updates (currently v24, prevent v25+ until validated)",
+      "matchPackageNames": ["node", "@types/node"],
+      "matchDatasources": ["node-version", "npm", "docker"],
+      "allowedVersions": "<25",
+      "prPriority": 10
+    },
+    {
+      "description": "Require manual approval for major updates via dependency dashboard",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchFileNames": [
+        "package.json"
+      ],
+      "labels": [
+        "dependencies"
+      ]
+    },
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "automerge": true
+    }
+  ]
+}
