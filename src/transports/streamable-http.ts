@@ -268,6 +268,12 @@ export async function createHttpServer(
           res.status(500).json({ error: 'Internal server error' });
         }
       }
+
+      // Clean up new transports that didn't initialize (e.g., non-initialize POST)
+      if (isNewTransport && !transport.sessionId) {
+        debugTransport('New transport did not initialize, cleaning up');
+        await transport.close();
+      }
     })
   );
 
