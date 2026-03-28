@@ -9,7 +9,7 @@ export const GetCurrentWeatherParamsSchema = z.object({
     .string()
     .min(1)
     .describe(
-      'Swiss weather station: name (e.g., "Zurich"), abbreviation (e.g., "SMA"), or postal code (e.g., "8001")'
+      'Swiss weather station: name (e.g., "Zurich") or abbreviation (e.g., "SMA")'
     ),
 });
 export type GetCurrentWeatherParams = z.infer<typeof GetCurrentWeatherParamsSchema>;
