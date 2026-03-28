@@ -70,6 +70,19 @@ export const StacItemCollectionSchema = z.object({
 });
 export type StacItemCollection = z.infer<typeof StacItemCollectionSchema>;
 
+// --- Collection IDs ---
+
+export const OGD_COLLECTIONS = {
+  LOCAL_FORECASTING: 'ch.meteoschweiz.ogd-local-forecasting',
+  SMN: 'ch.meteoschweiz.ogd-smn',
+  SMN_PRECIP: 'ch.meteoschweiz.ogd-smn-precip',
+  SMN_TOWER: 'ch.meteoschweiz.ogd-smn-tower',
+  CLIMATE_NORMALS: 'ch.meteoschweiz.ogd-climate-normals',
+  NBCN: 'ch.meteoschweiz.ogd-nbcn',
+  POLLEN: 'ch.meteoschweiz.ogd-pollen',
+  RADIOSOUNDING: 'ch.meteoschweiz.ogd-radiosounding',
+} as const;
+
 // --- Common output ---
 
 export const SOURCE_ATTRIBUTION = 'MeteoSwiss OGD' as const;
