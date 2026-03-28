@@ -113,13 +113,13 @@ describe('MeteoSwiss Fetch Tool', () => {
     });
 
     it('should handle invalid format parameter', async () => {
-      // MCP SDK 1.28.0 returns validation errors as results with isError: true
-      const result = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
-        format: 'invalid',
-      });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toMatch(/format/i);
+      // MCP SDK validates params and throws protocol-level errors for invalid arguments
+      await expect(
+        client.callTool('fetch', {
+          id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+          format: 'invalid',
+        })
+      ).rejects.toThrow(/invalid/i);
     });
 
     it('should cache content for performance', async () => {

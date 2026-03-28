@@ -219,28 +219,18 @@ describe('meteoswissWeatherReport Tool Integration Tests', () => {
    * (instead of throwing), so we check the result content for error messages.
    */
   test('should handle invalid parameters', async () => {
-    // Test with invalid region
-    const invalidRegionResult = await client.callTool('meteoswissWeatherReport', {
-      region: 'invalid',
-      language: 'de',
-    });
-    expect(invalidRegionResult.isError).toBe(true);
+    // MCP SDK validates params against Zod schema and throws protocol-level errors
+    // for invalid arguments (code -32602) before the tool handler runs
+    await expect(
+      client.callTool('meteoswissWeatherReport', { region: 'invalid', language: 'de' })
+    ).rejects.toThrow(/invalid/i);
 
-    // Test with invalid language
-    const invalidLangResult = await client.callTool('meteoswissWeatherReport', {
-      region: 'north',
-      language: 'invalid',
-    });
-    expect(invalidLangResult.isError).toBe(true);
+    await expect(
+      client.callTool('meteoswissWeatherReport', { region: 'north', language: 'invalid' })
+    ).rejects.toThrow(/invalid/i);
 
-    // Test with English language (should be rejected)
-    const englishResult = await client.callTool('meteoswissWeatherReport', {
-      region: 'north',
-      language: 'en',
-    });
-    expect(englishResult.isError).toBe(true);
-    const errorText = englishResult.content[0].text;
-    expect(errorText).toContain('Invalid arguments');
-    expect(errorText).toContain('English is NOT supported');
+    await expect(
+      client.callTool('meteoswissWeatherReport', { region: 'north', language: 'en' })
+    ).rejects.toThrow(/invalid/i);
   });
 });

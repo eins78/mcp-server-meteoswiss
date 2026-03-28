@@ -26,24 +26,16 @@ export const WeatherReportSchema = z.object({
 export const GetWeatherReportParamsSchema = z.object({
   region: z
     .enum(['north', 'south', 'west'], {
-      error: (issue) => {
-        if (issue.input === undefined) {
-          return `Region is required. Please specify 'north', 'south', or 'west'`;
-        }
-        return `Region must be one of: 'north' (Northern Switzerland including Zurich, Basel, Bern), 'south' (Ticino and southern valleys), or 'west' (Romandy including Geneva, Lausanne). Received: '${String(issue.input)}'`;
-      },
+      message:
+        "Region must be one of: 'north' (Northern Switzerland), 'south' (Ticino), or 'west' (Romandy).",
     })
     .describe(
       'Swiss region: north (Northern Switzerland including Zurich, Basel, Bern), south (Ticino and southern valleys), west (Romandy including Geneva, Lausanne)'
     ),
   language: z
     .enum(['de', 'fr', 'it'], {
-      error: (issue) => {
-        if (issue.input === 'en' || issue.input === 'english') {
-          return `English is NOT supported by MeteoSwiss. Please use one of the Swiss official languages: 'de' (German), 'fr' (French), or 'it' (Italian). For Zurich, use 'de'.`;
-        }
-        return `Language must be one of the Swiss official languages: 'de' (German), 'fr' (French), or 'it' (Italian). Received: '${String(issue.input)}'. English is NOT supported.`;
-      },
+      message:
+        "Language must be one of: 'de' (German), 'fr' (French), or 'it' (Italian). English is NOT supported.",
     })
     .default('de')
     .describe(
