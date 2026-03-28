@@ -48,8 +48,7 @@
         "pin",
         "digest"
       ],
-      "automerge": true,
-      "autoApprove": true
+      "automerge": true
     }
   ]
 }
