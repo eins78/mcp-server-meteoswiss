@@ -3,13 +3,13 @@
  */
 
 import { z } from 'zod';
+import { CoordinatesSchema } from './ogd-shared.js';
 
-export const CoordinatesParamSchema = z
-  .object({
-    lat: z.number().min(45.5).max(48).describe('WGS84 latitude'),
-    lon: z.number().min(5.9).max(10.6).describe('WGS84 longitude'),
-  })
-  .describe('WGS84 coordinates (alternative to station name)');
+/** Coordinates with Swiss bounding-box validation for tool input */
+export const CoordinatesParamSchema = CoordinatesSchema.extend({
+  lat: z.number().min(45.5).max(48).describe('WGS84 latitude'),
+  lon: z.number().min(5.9).max(10.6).describe('WGS84 longitude'),
+}).describe('WGS84 coordinates (alternative to station name)');
 
 export const GetCurrentWeatherParamsSchema = z.object({
   station: z

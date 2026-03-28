@@ -8,7 +8,7 @@ import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
-import { haversineDistance } from '../support/haversine.js';
+import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation } from '../support/geocode.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
@@ -74,24 +74,26 @@ export async function findNearestStation(
   lon: number
 ): Promise<{ station: SmnStation; distance_km: number }> {
   const stations = await loadSmnStations();
+  const result = findNearest(
+    stations,
+    (s) => s.lat,
+    (s) => s.lon,
+    lat,
+    lon
+  );
 
-  let nearest: SmnStation | null = null;
-  let minDist = Infinity;
-
-  for (const s of stations) {
-    const d = haversineDistance(lat, lon, s.lat, s.lon);
-    if (d < minDist) {
-      minDist = d;
-      nearest = s;
-    }
-  }
-
-  if (!nearest) {
+  if (!result) {
     throw new Error('No stations available');
   }
 
-  debugData('[ogd-smn] Nearest station to (%f, %f): %s (%.1f km)', lat, lon, nearest.abbr, minDist);
-  return { station: nearest, distance_km: Math.round(minDist * 10) / 10 };
+  debugData(
+    '[ogd-smn] Nearest station to (%f, %f): %s (%.1f km)',
+    lat,
+    lon,
+    result.item.abbr,
+    result.distance_km
+  );
+  return { station: result.item, distance_km: result.distance_km };
 }
 
 /**

@@ -7,6 +7,7 @@ import { getCsvData } from './ogd-data-store.js';
 import { resolveSmnStation, findNearestStation } from './ogd-smn-stations.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { reverseGeocodeSwiss } from '../support/reverse-geocode.js';
+import type { ReverseGeocodeResult } from '../support/reverse-geocode.js';
 import { debugData } from '../support/logging.js';
 import { SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
 import type {
@@ -18,6 +19,22 @@ import type { CsvRow } from '../support/ogd-csv-parser.js';
 import type { SmnStation } from './ogd-smn-stations.js';
 
 const REALTIME_CSV_URL = 'https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv';
+
+/** Cache reverse geocode results per station (coordinates are static) */
+const reverseGeoCache = new Map<string, ReverseGeocodeResult | null>();
+
+async function getCachedReverseGeocode(
+  lat: number,
+  lon: number,
+  stationAbbr: string
+): Promise<ReverseGeocodeResult | null> {
+  if (reverseGeoCache.has(stationAbbr)) {
+    return reverseGeoCache.get(stationAbbr) ?? null;
+  }
+  const result = await reverseGeocodeSwiss(lat, lon).catch(() => null);
+  reverseGeoCache.set(stationAbbr, result);
+  return result;
+}
 
 /**
  * Create a measurement value if the raw data is present.
@@ -58,7 +75,12 @@ export async function getCurrentWeather(
   }
 
   const filter = (row: CsvRow): boolean => row['Station/Location'] === station.abbr;
-  const rows = await getCsvData(REALTIME_CSV_URL, 'measurements/VQHA80.csv', 'realtime', filter);
+
+  // Fetch weather data and reverse geocode concurrently (independent operations)
+  const [rows, geo] = await Promise.all([
+    getCsvData(REALTIME_CSV_URL, 'measurements/VQHA80.csv', 'realtime', filter),
+    getCachedReverseGeocode(station.lat, station.lon, station.abbr),
+  ]);
 
   if (rows.length === 0) {
     throw new Error(`No current data available for station ${station.abbr} (${station.name})`);
@@ -68,9 +90,6 @@ export async function getCurrentWeather(
   if (!row) {
     throw new Error(`No data row for station ${station.abbr}`);
   }
-
-  // Reverse geocode for municipality enrichment (best-effort)
-  const geo = await reverseGeocodeSwiss(station.lat, station.lon).catch(() => null);
 
   return {
     station: {

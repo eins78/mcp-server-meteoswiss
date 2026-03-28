@@ -22,3 +22,35 @@ export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+/**
+ * Find the item from a collection closest to a given point.
+ *
+ * @param items - Collection to search
+ * @param getLat - Extract latitude from an item
+ * @param getLon - Extract longitude from an item
+ * @param lat - Target latitude
+ * @param lon - Target longitude
+ * @returns Nearest item and distance in km, or null if items is empty
+ */
+export function findNearest<T>(
+  items: T[],
+  getLat: (item: T) => number,
+  getLon: (item: T) => number,
+  lat: number,
+  lon: number
+): { item: T; distance_km: number } | null {
+  let nearest: T | null = null;
+  let minDist = Infinity;
+
+  for (const item of items) {
+    const d = haversineDistance(lat, lon, getLat(item), getLon(item));
+    if (d < minDist) {
+      minDist = d;
+      nearest = item;
+    }
+  }
+
+  if (!nearest) return null;
+  return { item: nearest, distance_km: Math.round(minDist * 10) / 10 };
+}

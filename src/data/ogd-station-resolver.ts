@@ -11,7 +11,7 @@ import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 import type { ForecastPoint } from '../schemas/ogd-shared.js';
 import { normalize } from '../support/normalize.js';
-import { haversineDistance } from '../support/haversine.js';
+import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation } from '../support/geocode.js';
 
 /** Indexed forecast point data for fast lookups */
@@ -132,26 +132,25 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
   debugData('[ogd-resolver] No direct match for "%s", trying geocoding...', query);
   const geocoded = await geocodeSwissLocation(query);
   if (geocoded) {
-    let nearestPoint: ForecastPoint | null = null;
-    let minDist = Infinity;
     // Prefer postal code points for geocoded locations
     const candidates = points.filter((p) => p.point_type_id === 2);
-    for (const p of candidates.length > 0 ? candidates : points) {
-      const d = haversineDistance(geocoded.lat, geocoded.lon, p.coordinates.lat, p.coordinates.lon);
-      if (d < minDist) {
-        minDist = d;
-        nearestPoint = p;
-      }
-    }
-    if (nearestPoint) {
+    const pool = candidates.length > 0 ? candidates : points;
+    const result = findNearest(
+      pool,
+      (p) => p.coordinates.lat,
+      (p) => p.coordinates.lon,
+      geocoded.lat,
+      geocoded.lon
+    );
+    if (result) {
       debugData(
         '[ogd-resolver] Geocoded "%s" → %s, nearest point: %s (%.1f km)',
         query,
         geocoded.name,
-        nearestPoint.name,
-        minDist
+        result.item.name,
+        result.distance_km
       );
-      return { match: nearestPoint, alternatives: [], confidence: 'fuzzy' };
+      return { match: result.item, alternatives: [], confidence: 'fuzzy' };
     }
   }
 

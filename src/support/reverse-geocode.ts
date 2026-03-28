@@ -4,6 +4,7 @@
  * Free, no auth, CORS open.
  */
 
+import { z } from 'zod';
 import { fetchJson } from './http-communication.js';
 import { debugData } from './logging.js';
 
@@ -16,22 +17,31 @@ export type ReverseGeocodeResult = {
   canton: string;
 };
 
-/** Raw API response shape */
-type IdentifyResponse = {
-  results?: Array<{
-    properties?: {
-      gemname?: string;
-      kanton?: string;
-    };
-    attributes?: {
-      gemname?: string;
-      kanton?: string;
-    };
-  }>;
-};
+/** Zod schema for the swisstopo Identify API response */
+const IdentifyResponseSchema = z.object({
+  results: z
+    .array(
+      z.object({
+        properties: z
+          .object({
+            gemname: z.string().optional(),
+            kanton: z.string().optional(),
+          })
+          .optional(),
+        attributes: z
+          .object({
+            gemname: z.string().optional(),
+            kanton: z.string().optional(),
+          })
+          .optional(),
+      })
+    )
+    .optional(),
+});
 
 /**
  * Reverse geocode WGS84 coordinates to municipality and canton.
+ * Network errors propagate to the caller; coordinates outside Switzerland return null.
  *
  * @param lat - WGS84 latitude
  * @param lon - WGS84 longitude
@@ -54,22 +64,20 @@ export async function reverseGeocodeSwiss(
   const url = `${IDENTIFY_URL}?${params.toString()}`;
   debugData('[reverse-geocode] Looking up (%f, %f)', lat, lon);
 
-  try {
-    const data = await fetchJson<IdentifyResponse>(url);
-    const result = data.results?.[0];
-    // API returns properties or attributes depending on format
-    const props = result?.properties ?? result?.attributes;
-    if (!props?.gemname) {
-      debugData('[reverse-geocode] No municipality found for (%f, %f)', lat, lon);
-      return null;
-    }
+  // Let HTTP/network errors propagate — only return null for empty results
+  const raw = await fetchJson(url);
+  const data = IdentifyResponseSchema.parse(raw);
+  const result = data.results?.[0];
+  // API returns properties or attributes depending on format
+  const props = result?.properties ?? result?.attributes;
 
-    return {
-      municipality: props.gemname,
-      canton: props.kanton ?? '',
-    };
-  } catch (error) {
-    debugData('[reverse-geocode] Failed for (%f, %f): %O', lat, lon, error);
+  if (!props?.gemname) {
+    debugData('[reverse-geocode] No municipality found for (%f, %f)', lat, lon);
     return null;
   }
+
+  return {
+    municipality: props.gemname,
+    canton: props.kanton ?? '',
+  };
 }
