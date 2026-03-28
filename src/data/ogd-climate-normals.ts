@@ -41,7 +41,8 @@ export async function getClimateNormals(
   } catch {
     throw new Error(
       `Climate normals not available for station ${station.abbr} (${station.name}). ` +
-        'Climate normals are only published for a subset of long-term stations.'
+        'The MeteoSwiss Open Data climate normals collection does not have data published yet. ' +
+        'Check https://opendatadocs.meteoswiss.ch/c-climate-data for current availability.'
     );
   }
 
