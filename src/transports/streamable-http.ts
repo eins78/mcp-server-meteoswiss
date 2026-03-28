@@ -76,7 +76,13 @@ async function createAndRegisterTransport(
 
   // Each transport gets its own MCP server instance
   const mcpServer = createMcpServer();
-  await mcpServer.connect(transport);
+  try {
+    await mcpServer.connect(transport);
+  } catch (error) {
+    // Clean up if connect fails after onsessioninitialized was called
+    await transport.close();
+    throw error;
+  }
   debugTransport('Transport connected to MCP server');
   return transport;
 }
@@ -222,11 +228,13 @@ export async function createHttpServer(
       }
 
       // For initialization requests (no session ID), create a new transport
+      let isNewTransport = false;
       if (!transport) {
         if (req.method === 'POST') {
           // Could be an initialize request — create a new transport + server pair
           try {
             transport = await createAndRegisterTransport(createMcpServer, sessionManager);
+            isNewTransport = true;
             debugTransport('Created new transport for potential initialization');
           } catch (error) {
             console.error('Failed to create transport:', error);
@@ -251,6 +259,10 @@ export async function createHttpServer(
       } catch (error) {
         console.error('Error handling MCP request:', error);
         debugTransport('Error handling MCP request: %O', error);
+        // Clean up newly created transports that failed during first request
+        if (isNewTransport) {
+          await transport.close();
+        }
         // Only send error if response hasn't started
         if (!res.headersSent) {
           res.status(500).json({ error: 'Internal server error' });
