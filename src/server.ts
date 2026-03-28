@@ -16,6 +16,18 @@ import { meteoswissFetchTool } from './tools/meteoswiss-fetch.js';
 import { GetLocalForecastParamsSchema } from './schemas/ogd-local-forecast.js';
 import type { GetLocalForecastParams } from './schemas/ogd-local-forecast.js';
 import { getLocalForecast } from './data/ogd-local-forecast.js';
+import { GetCurrentWeatherParamsSchema } from './schemas/ogd-current-weather.js';
+import type { GetCurrentWeatherParams } from './schemas/ogd-current-weather.js';
+import { getCurrentWeather } from './data/ogd-current-weather.js';
+import { ListStationsParamsSchema } from './schemas/ogd-station-list.js';
+import type { ListStationsParams } from './schemas/ogd-station-list.js';
+import { listStations } from './data/ogd-station-list.js';
+import { GetClimateNormalsParamsSchema } from './schemas/ogd-climate-normals.js';
+import type { GetClimateNormalsParams } from './schemas/ogd-climate-normals.js';
+import { getClimateNormals } from './data/ogd-climate-normals.js';
+import { GetPollenDataParamsSchema } from './schemas/ogd-pollen-data.js';
+import type { GetPollenDataParams } from './schemas/ogd-pollen-data.js';
+import { getPollenData } from './data/ogd-pollen-data.js';
 import { debugServer, debugTools } from './support/logging.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
 import { getVersion } from './support/version.js';
@@ -229,6 +241,112 @@ Forecast horizon: up to 9 days. Updated hourly.`,
             {
               type: 'text' as const,
               text: `Failed to get local forecast: ${errorMessage}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getCurrentWeather tool (OGD)
+  debugServer('Registering tool: getCurrentWeather');
+  server.tool(
+    'getCurrentWeather',
+    `Get real-time weather measurements from any of 158 Swiss automatic weather stations. Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes.
+
+Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
+    GetCurrentWeatherParamsSchema.shape,
+    async (params: GetCurrentWeatherParams) => {
+      try {
+        debugTools('getCurrentWeather called with params: %O', params);
+        const result = await getCurrentWeather(params);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        debugTools('Error in getCurrentWeather: %O', error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get current weather: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register listStations tool (OGD)
+  debugServer('Registering tool: listStations');
+  server.tool(
+    'listStations',
+    `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of 158 stations across Switzerland.`,
+    ListStationsParamsSchema.shape,
+    async (params: ListStationsParams) => {
+      try {
+        debugTools('listStations called with params: %O', params);
+        const result = await listStations(params);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        debugTools('Error in listStations: %O', error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to list stations: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getClimateNormals tool (OGD)
+  debugServer('Registering tool: getClimateNormals');
+  server.tool(
+    'getClimateNormals',
+    `Get 1991-2020 climate normal values (30-year averages) for a Swiss weather station. Shows average temperature, precipitation, and sunshine by month. Useful for "what's normal for this location?" questions.`,
+    GetClimateNormalsParamsSchema.shape,
+    async (params: GetClimateNormalsParams) => {
+      try {
+        debugTools('getClimateNormals called with params: %O', params);
+        const result = await getClimateNormals(params);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        debugTools('Error in getClimateNormals: %O', error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get climate normals: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getPollenData tool (OGD)
+  debugServer('Registering tool: getPollenData');
+  server.tool(
+    'getPollenData',
+    `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels by type (birch, grass, etc.). Useful for allergy sufferers.`,
+    GetPollenDataParamsSchema.shape,
+    async (params: GetPollenDataParams) => {
+      try {
+        debugTools('getPollenData called with params: %O', params);
+        const result = await getPollenData(params);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        debugTools('Error in getPollenData: %O', error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get pollen data: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,
