@@ -6,6 +6,7 @@
 import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
+import { normalize } from '../support/normalize.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS, SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
 import type {
@@ -14,16 +15,6 @@ import type {
   StationPollenData,
   PollenMeasurement,
 } from '../schemas/ogd-pollen-data.js';
-
-/**
- * Normalize a string for fuzzy matching.
- */
-function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
 
 /**
  * Fetch pollen data from MeteoSwiss OGD.
@@ -47,13 +38,12 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
     'metadata'
   );
 
-  // Get parameter metadata to know pollen type names
+  // Get parameter metadata for pollen type names
   const paramMetaAsset = collection.assets?.['ogd-pollen_meta_parameters.csv'];
   const paramRows = paramMetaAsset
     ? await getLatin1CsvData(paramMetaAsset.href, 'metadata/pollen-parameters.csv', 'metadata')
     : [];
 
-  // Build parameter name lookup
   const paramNames = new Map<string, string>();
   for (const row of paramRows) {
     const code = row.parameter_shortname ?? '';
@@ -72,63 +62,61 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
     if (filteredStations.length === 0) {
       throw new Error(
         `No pollen station found for "${params.station}". ` +
-          `Available stations: ${stationRows.map((r) => `${r.station_abbr} (${r.station_name})`).join(', ')}`
+          `Available: ${stationRows.map((r) => `${r.station_abbr} (${r.station_name})`).join(', ')}`
       );
     }
   }
 
-  // Get latest data for each station
-  const stations: StationPollenData[] = [];
+  // Fetch data for each station concurrently
+  const stationResults = await Promise.all(
+    filteredStations.map(async (stationRow): Promise<StationPollenData | null> => {
+      const abbr = stationRow.station_abbr ?? '';
+      const abbrLower = abbr.toLowerCase();
+      const dataUrl = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/${abbrLower}/ogd-pollen_${abbrLower}_d_now.csv`;
 
-  for (const stationRow of filteredStations) {
-    const abbr = stationRow.station_abbr ?? '';
-    const abbrLower = abbr.toLowerCase();
+      try {
+        const rows = await getLatin1CsvData(
+          dataUrl,
+          `pollen/${abbrLower}-daily-now.csv`,
+          'realtime'
+        );
+        if (rows.length === 0) return null;
 
-    // Fetch the station's current daily pollen CSV
-    const dataUrl = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/${abbrLower}/ogd-pollen_${abbrLower}_d_now.csv`;
+        const latestRow = rows[rows.length - 1];
+        if (!latestRow) return null;
 
-    try {
-      const rows = await getLatin1CsvData(dataUrl, `pollen/${abbrLower}-daily-now.csv`, 'realtime');
+        const pollen: PollenMeasurement[] = [];
+        for (const [key, value] of Object.entries(latestRow)) {
+          if (key === 'station_abbr' || key === 'reference_timestamp' || key === 'Date') continue;
+          const numVal = parseNumeric(value);
+          if (numVal === null) continue;
+          pollen.push({
+            type: paramNames.get(key) ?? key,
+            value: numVal,
+            unit: 'particles/m\u00B3',
+          });
+        }
 
-      if (rows.length === 0) continue;
-
-      // Get the latest row (last entry)
-      const latestRow = rows[rows.length - 1];
-      if (!latestRow) continue;
-
-      // Extract pollen measurements (all columns except station_abbr, reference_timestamp)
-      const pollen: PollenMeasurement[] = [];
-      for (const [key, value] of Object.entries(latestRow)) {
-        if (key === 'station_abbr' || key === 'reference_timestamp' || key === 'Date') continue;
-        const numVal = parseNumeric(value);
-        if (numVal === null) continue;
-        pollen.push({
-          type: paramNames.get(key) ?? key,
-          value: numVal,
-          unit: 'particles/m\u00B3',
-        });
-      }
-
-      stations.push({
-        station: {
-          name: stationRow.station_name ?? abbr,
-          abbreviation: abbr,
-          coordinates: {
-            lat: parseNumeric(stationRow.station_coordinates_wgs84_lat ?? null) ?? 0,
-            lon: parseNumeric(stationRow.station_coordinates_wgs84_lon ?? null) ?? 0,
+        return {
+          station: {
+            name: stationRow.station_name ?? abbr,
+            abbreviation: abbr,
+            coordinates: {
+              lat: parseNumeric(stationRow.station_coordinates_wgs84_lat ?? null) ?? 0,
+              lon: parseNumeric(stationRow.station_coordinates_wgs84_lon ?? null) ?? 0,
+            },
           },
-        },
-        timestamp: latestRow.reference_timestamp ?? latestRow.Date ?? '',
-        pollen,
-      });
-    } catch (error) {
-      debugData('[ogd-pollen] Failed to fetch data for station %s: %O', abbr, error);
-      // Skip stations with no data available
-    }
-  }
+          timestamp: latestRow.reference_timestamp ?? latestRow.Date ?? '',
+          pollen,
+        };
+      } catch (error) {
+        debugData('[ogd-pollen] Failed to fetch data for station %s: %O', abbr, error);
+        return null;
+      }
+    })
+  );
 
-  return {
-    stations,
-    source: SOURCE_ATTRIBUTION,
-  };
+  const stations = stationResults.filter((s): s is StationPollenData => s !== null);
+
+  return { stations, source: SOURCE_ATTRIBUTION };
 }

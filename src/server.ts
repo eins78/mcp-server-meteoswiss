@@ -202,7 +202,7 @@ The reports use standardized probability terms for precipitation forecasts.`,
   // Register getLocalForecast tool (OGD)
   debugServer('Registering tool: getLocalForecast');
   server.tool(
-    'getLocalForecast',
+    'meteoswissLocalForecast',
     `Get a multi-day weather forecast for any Swiss location. Returns daily summaries with temperature, precipitation, and weather icons.
 
 This uses official MeteoSwiss Open Government Data — the same forecasts powering the MeteoSwiss app and website.
@@ -252,7 +252,7 @@ Forecast horizon: up to 9 days. Updated hourly.`,
   // Register getCurrentWeather tool (OGD)
   debugServer('Registering tool: getCurrentWeather');
   server.tool(
-    'getCurrentWeather',
+    'meteoswissCurrentWeather',
     `Get real-time weather measurements from any of 158 Swiss automatic weather stations. Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes.
 
 Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
@@ -280,7 +280,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
   // Register listStations tool (OGD)
   debugServer('Registering tool: listStations');
   server.tool(
-    'listStations',
+    'meteoswissStations',
     `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of 158 stations across Switzerland.`,
     ListStationsParamsSchema.shape,
     async (params: ListStationsParams) => {
@@ -306,7 +306,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
   // Register getClimateNormals tool (OGD)
   debugServer('Registering tool: getClimateNormals');
   server.tool(
-    'getClimateNormals',
+    'meteoswissClimateNormals',
     `Get 1991-2020 climate normal values (30-year averages) for a Swiss weather station. Shows average temperature, precipitation, and sunshine by month. Useful for "what's normal for this location?" questions.`,
     GetClimateNormalsParamsSchema.shape,
     async (params: GetClimateNormalsParams) => {
@@ -332,7 +332,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), or searches by name.`,
   // Register getPollenData tool (OGD)
   debugServer('Registering tool: getPollenData');
   server.tool(
-    'getPollenData',
+    'meteoswissPollenData',
     `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels by type (birch, grass, etc.). Useful for allergy sufferers.`,
     GetPollenDataParamsSchema.shape,
     async (params: GetPollenDataParams) => {

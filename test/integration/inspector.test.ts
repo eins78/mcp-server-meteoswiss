@@ -154,11 +154,11 @@ describe('MCP Server Integration Tests', () => {
       expect(toolNames).toContain('meteoswissWeatherReport');
       expect(toolNames).toContain('search');
       expect(toolNames).toContain('fetch');
-      expect(toolNames).toContain('getLocalForecast');
-      expect(toolNames).toContain('getCurrentWeather');
-      expect(toolNames).toContain('listStations');
-      expect(toolNames).toContain('getClimateNormals');
-      expect(toolNames).toContain('getPollenData');
+      expect(toolNames).toContain('meteoswissLocalForecast');
+      expect(toolNames).toContain('meteoswissCurrentWeather');
+      expect(toolNames).toContain('meteoswissStations');
+      expect(toolNames).toContain('meteoswissClimateNormals');
+      expect(toolNames).toContain('meteoswissPollenData');
     });
 
     test('should call meteoswissWeatherReport tool via HTTP', async () => {

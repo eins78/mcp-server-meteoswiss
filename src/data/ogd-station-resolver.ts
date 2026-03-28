@@ -10,17 +10,7 @@ import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 import type { ForecastPoint } from '../schemas/ogd-shared.js';
-
-/**
- * Normalize a string for fuzzy matching: lowercase, strip diacritics.
- * Handles Swiss place names like Zürich→zurich, Genève→geneve, Château-d'Oex→chateau-d'oex.
- */
-function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
+import { normalize } from '../support/normalize.js';
 
 /** Indexed forecast point data for fast lookups */
 type ForecastIndex = {
