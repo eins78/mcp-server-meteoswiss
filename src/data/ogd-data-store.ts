@@ -10,8 +10,36 @@ import * as os from 'node:os';
 import { fetchWithRetry, fetchBinary } from '../support/http-communication.js';
 import { parseCsv, type CsvRow } from '../support/ogd-csv-parser.js';
 import { debugData } from '../support/logging.js';
+import { USE_TEST_FIXTURES, OGD_FIXTURES_ROOT } from '../support/test-fixtures.js';
 
 const LATIN1_DECODER = new TextDecoder('latin1');
+
+/**
+ * Map known URLs to fixture files for test mode.
+ * Only the filename portion of the URL is matched against fixtures.
+ */
+function resolveFixturePath(url: string): string | null {
+  if (!USE_TEST_FIXTURES) return null;
+
+  // Map known URL patterns to fixture directories
+  if (url.includes('VQHA80.csv')) return path.join(OGD_FIXTURES_ROOT, 'measurements', 'VQHA80.csv');
+  if (url.includes('meta_stations.csv'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn_meta_stations.csv');
+  if (url.includes('meta_point.csv'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-local-forecasting_meta_point.csv');
+  if (url.includes('meta_parameters.csv') && url.includes('forecasting'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-local-forecasting_meta_parameters.csv');
+  if (url.includes('meta_parameters.csv') && url.includes('smn'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn_meta_parameters.csv');
+
+  // Forecast CSVs: match by parameter name
+  for (const param of ['tre200dx', 'tre200dn', 'rka150d0', 'jp2000d0', 'tre200h0']) {
+    if (url.includes(`.${param}.csv`))
+      return path.join(OGD_FIXTURES_ROOT, 'forecasts', `${param}.csv`);
+  }
+
+  return null;
+}
 
 /**
  * Parse an env var as a number, returning the default if unset.
@@ -78,6 +106,14 @@ export async function getCsvData(
   tier: CacheTier,
   filter?: (row: CsvRow) => boolean
 ): Promise<CsvRow[]> {
+  // Test fixture support
+  const fixturePath = resolveFixturePath(url);
+  if (fixturePath) {
+    debugData('[ogd-store] Using fixture: %s', fixturePath);
+    const text = await fs.readFile(fixturePath, 'utf-8');
+    return parseCsv(text, filter);
+  }
+
   const cachePath = path.join(CACHE_DIR, cacheKey);
   const ttl = CACHE_TTL[tier];
 
@@ -109,6 +145,14 @@ export async function getLatin1CsvData(
   tier: CacheTier,
   filter?: (row: CsvRow) => boolean
 ): Promise<CsvRow[]> {
+  // Test fixture support (fixtures are already UTF-8)
+  const fixturePath = resolveFixturePath(url);
+  if (fixturePath) {
+    debugData('[ogd-store] Using fixture: %s', fixturePath);
+    const text = await fs.readFile(fixturePath, 'utf-8');
+    return parseCsv(text, filter);
+  }
+
   const cachePath = path.join(CACHE_DIR, cacheKey);
   const ttl = CACHE_TTL[tier];
 

@@ -1,0 +1,31 @@
+{
+  "id": "ch.meteoschweiz.ogd-pollen",
+  "title": "Pollen stations - Measured values",
+  "description": "MeteoSwiss operates the national pollen monitoring network. This consists of 16 automatic monitoring stations which cover Switzerland's most important climatic and vegetation regions. The measurements recorded by the respective pollen stations provide valuable information for those who suffer from allergies. The data set contains current pollen concentration for each station in hourly ('h'), daily ('d') and yearly ('y') resolutions. There are updated data sets from the current year up to yesterday ('recent') and since the beginning of the measurement in ten-year increments ('historical'). If you need daily or yearly values, we strongly recommend that you download the corresponding resolution.",
+  "assets": {
+    "ogd-pollen_meta_datainventory.csv": {
+      "type": "text/csv",
+      "href": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/ogd-pollen_meta_datainventory.csv",
+      "description": "This a collection asset for ogd-pollen_meta_datainventory.csv",
+      "created": "2025-03-28T12:13:39.003807Z",
+      "updated": "2026-03-19T04:29:32.199674Z",
+      "file:checksum": "122023874b3c1452099878969720b02a1b79976627b374953363a2450ecf079468b4"
+    },
+    "ogd-pollen_meta_stations.csv": {
+      "type": "text/csv",
+      "href": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/ogd-pollen_meta_stations.csv",
+      "description": "This a collection asset for ogd-pollen_meta_stations.csv",
+      "created": "2025-03-28T12:13:44.829550Z",
+      "updated": "2026-02-06T10:02:57.916868Z",
+      "file:checksum": "12207253ab62e128b6045049d9c3a26b59ba75f6a7cbc9f3d5e27ebc70ff66d1a35b"
+    },
+    "ogd-pollen_meta_parameters.csv": {
+      "type": "text/csv",
+      "href": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/ogd-pollen_meta_parameters.csv",
+      "description": "This a collection asset for ogd-pollen_meta_parameters.csv",
+      "created": "2025-03-28T12:13:53.941984Z",
+      "updated": "2026-02-24T09:20:31.260634Z",
+      "file:checksum": "1220dd6e62fa949bd662d2b6eb08d1691ec4d9229346ec0f17ffd6322b7c25257c7f"
+    }
+  }
+}

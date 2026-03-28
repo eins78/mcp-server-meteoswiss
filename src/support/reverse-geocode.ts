@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { fetchJson } from './http-communication.js';
 import { debugData } from './logging.js';
+import { USE_TEST_FIXTURES } from './test-fixtures.js';
 
 const IDENTIFY_URL = 'https://api3.geo.admin.ch/rest/services/ech/MapServer/identify';
 const MUNICIPALITY_LAYER = 'ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill';
@@ -63,6 +64,12 @@ export async function reverseGeocodeSwiss(
 
   const url = `${IDENTIFY_URL}?${params.toString()}`;
   debugData('[reverse-geocode] Looking up (%f, %f)', lat, lon);
+
+  // In test mode, return null (reverse geocoding requires live API)
+  if (USE_TEST_FIXTURES) {
+    debugData('[reverse-geocode] Test mode — skipping for (%f, %f)', lat, lon);
+    return null;
+  }
 
   // Let HTTP/network errors propagate — only return null for empty results
   const raw = await fetchJson(url);

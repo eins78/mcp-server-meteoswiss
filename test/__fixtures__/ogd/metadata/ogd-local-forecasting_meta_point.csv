@@ -28,3 +28,5 @@ point_id;point_type_id;station_abbr;postal_code;point_name;point_type_de;point_t
 31;1;DOL;;La Dôle;Station;Station;Stazione;Station;1670.0;2497059.0;1142373.0;46.424794;6.099453
 32;1;PAY;;Payerne;Station;Station;Stazione;Station;490.0;2562131.0;1184612.0;46.811581;6.942469
 33;1;JUN;;Jungfraujoch;Station;Station;Stazione;Station;3571.0;2641939.0;1155287.0;46.547556;7.985444
+800100;2;;8001;ZÃ¼rich;Zentrum Postleitzahl;Centre code postal;Centro codice postale;Postal code center;409.0;2683348.0;1247414.0;47.372289;8.542189
+48;1;NAP;;Napf;Station;Station;Stazione;Station;1404.0;2638137.0;1206079.0;47.004667;7.940117

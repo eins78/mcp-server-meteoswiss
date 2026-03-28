@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { fetchJson } from './http-communication.js';
 import { debugData } from './logging.js';
+import { USE_TEST_FIXTURES } from './test-fixtures.js';
 
 const SEARCH_URL = 'https://api3.geo.admin.ch/rest/services/ech/SearchServer';
 
@@ -70,6 +71,13 @@ export async function geocodeSwissLocation(query: string): Promise<GeocodeResult
 
   const url = `${SEARCH_URL}?${params.toString()}`;
   debugData('[geocode] Geocoding: %s', query);
+
+  // In test mode, return null (geocoding requires live API)
+  if (USE_TEST_FIXTURES) {
+    debugData('[geocode] Test mode — skipping geocode for: %s', query);
+    geocodeCache.set(cacheKey, null);
+    return null;
+  }
 
   // Let HTTP/network errors propagate — only return null for empty results
   const raw = await fetchJson(url);
