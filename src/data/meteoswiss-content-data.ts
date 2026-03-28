@@ -113,7 +113,7 @@ async function fetchFromWeb(
     }
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error(`Invalid URL: ${url}`);
+      throw new Error(`Invalid URL: ${url}`, { cause: error });
     }
     throw error;
   }
@@ -134,10 +134,11 @@ async function fetchFromWeb(
   } catch (error) {
     debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
-      throw new Error(`Content not found: ${id}`);
+      throw new Error(`Content not found: ${id}`, { cause: error });
     }
     throw new Error(
-      `Failed to fetch content: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to fetch content: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     );
   }
 }

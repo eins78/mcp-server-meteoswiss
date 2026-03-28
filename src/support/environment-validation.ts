@@ -128,7 +128,8 @@ export function validateEnv(): EnvConfig {
           `  RATE_LIMIT_WINDOW_MS=60000\n` +
           `  RATE_LIMIT_MAX_REQUESTS=100\n` +
           `  CORS_ORIGIN=https://example.com\n` +
-          `  REQUEST_SIZE_LIMIT=10mb`
+          `  REQUEST_SIZE_LIMIT=10mb`,
+        { cause: error }
       );
     }
     throw error;

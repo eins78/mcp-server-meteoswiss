@@ -41,6 +41,6 @@ export async function meteoswissWeatherReport(
       errorMessage += `: ${error.message}`;
     }
 
-    throw new Error(errorMessage);
+    throw new Error(errorMessage, { cause: error });
   }
 }
