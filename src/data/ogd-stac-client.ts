@@ -44,13 +44,17 @@ export async function getLatestItem(collectionId: string): Promise<StacItem> {
     throw new Error(`No items with assets found in collection ${collectionId}`);
   }
   const sorted = withAssets.sort((a, b) => b.id.localeCompare(a.id));
+  const latest = sorted[0];
+  if (!latest) {
+    throw new Error(`No items with assets found in collection ${collectionId}`);
+  }
   debugData(
     '[ogd-stac] Latest item: %s (from %d items, %d with assets)',
-    sorted[0]!.id,
+    latest.id,
     parsed.features.length,
     withAssets.length
   );
-  return sorted[0]!;
+  return latest;
 }
 
 /**

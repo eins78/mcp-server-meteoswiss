@@ -125,10 +125,14 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
       return 0;
     });
 
+    const best = sorted[0];
+    if (!best) {
+      throw new Error(`Unexpected empty match array for "${query}"`);
+    }
     return {
-      match: sorted[0]!,
+      match: best,
       alternatives: sorted.slice(1, 4),
-      confidence: normalize(sorted[0]!.name) === q ? 'exact' : 'fuzzy',
+      confidence: normalize(best.name) === q ? 'exact' : 'fuzzy',
     };
   }
 

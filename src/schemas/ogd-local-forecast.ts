@@ -3,7 +3,6 @@
  */
 
 import { z } from 'zod';
-import { OgdLanguageSchema } from './ogd-shared.js';
 
 export const GetLocalForecastParamsSchema = z.object({
   location: z
@@ -20,7 +19,6 @@ export const GetLocalForecastParamsSchema = z.object({
     .optional()
     .default(5)
     .describe('Number of forecast days (1-9, default 5)'),
-  language: OgdLanguageSchema.optional().default('de').describe('Language for location names'),
 });
 export type GetLocalForecastParams = z.infer<typeof GetLocalForecastParamsSchema>;
 

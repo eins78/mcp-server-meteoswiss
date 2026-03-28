@@ -43,13 +43,18 @@ export class HttpRequestError extends Error {
 /**
  * Default options for HTTP requests
  */
+const USER_AGENT = `MeteoSwiss-MCP-Server/${getVersion()}`;
+
+/**
+ * Default options for HTTP requests
+ */
 const DEFAULT_OPTIONS: HttpRequestOptions = {
   retries: 3,
   retryDelay: 1000,
   timeout: 30000, // Increased from 5s to 30s for complex pages
   headers: {
     Accept: 'application/json, text/html',
-    'User-Agent': `MeteoSwiss-MCP-Server/${getVersion()}`,
+    'User-Agent': USER_AGENT,
   },
 };
 
@@ -245,7 +250,7 @@ export async function fetchBinary(url: string, options: HttpRequestOptions = {})
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': DEFAULT_OPTIONS.headers!['User-Agent']!,
+          'User-Agent': USER_AGENT,
           ...options.headers,
         },
         signal: timeout ? AbortSignal.timeout(timeout) : undefined,

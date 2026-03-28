@@ -24,8 +24,17 @@ export type Coordinates = z.infer<typeof CoordinatesSchema>;
 export const POINT_TYPES = { 1: 'station', 2: 'postal_code', 3: 'mountain' } as const;
 export type PointType = (typeof POINT_TYPES)[keyof typeof POINT_TYPES];
 
+/**
+ * Map a numeric point_type_id to its human-readable point type name.
+ *
+ * @param id - The numeric point type identifier from MeteoSwiss data
+ * @returns The corresponding point type name, defaulting to 'station'
+ */
 export function pointTypeFromId(id: number): PointType {
-  return POINT_TYPES[id as keyof typeof POINT_TYPES] ?? 'station';
+  if (id === 1 || id === 2 || id === 3) {
+    return POINT_TYPES[id];
+  }
+  return 'station';
 }
 
 export const ForecastPointSchema = z.object({

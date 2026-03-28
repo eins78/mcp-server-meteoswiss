@@ -13,12 +13,23 @@ import { debugData } from '../support/logging.js';
 
 const LATIN1_DECODER = new TextDecoder('latin1');
 
+/**
+ * Parse an env var as a number, returning the default if unset.
+ * Respects explicit zero (unlike `Number(x) || default` which treats 0 as falsy).
+ */
+function envNumber(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw == null) return fallback;
+  const parsed = Number(raw);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
 /** Cache TTLs in milliseconds */
 export const CACHE_TTL = {
-  realtime: Number(process.env.OGD_CACHE_TTL_REALTIME) || 60_000,
-  forecast: Number(process.env.OGD_CACHE_TTL_FORECAST) || 3_600_000,
-  metadata: Number(process.env.OGD_CACHE_TTL_METADATA) || 86_400_000,
-  climate: Number(process.env.OGD_CACHE_TTL_CLIMATE) || 604_800_000,
+  realtime: envNumber('OGD_CACHE_TTL_REALTIME', 60_000),
+  forecast: envNumber('OGD_CACHE_TTL_FORECAST', 3_600_000),
+  metadata: envNumber('OGD_CACHE_TTL_METADATA', 86_400_000),
+  climate: envNumber('OGD_CACHE_TTL_CLIMATE', 604_800_000),
 } as const;
 
 export type CacheTier = keyof typeof CACHE_TTL;

@@ -13,6 +13,7 @@ export type CsvRow = Record<string, string | null>;
  * MeteoSwiss uses semicolon delimiters with missing values as '-' or empty.
  *
  * @param csvText - Raw CSV text content
+ * @param filter - Optional predicate to filter rows during parsing (avoids allocating unneeded rows)
  * @returns Array of parsed rows as key-value objects
  */
 export function parseCsv(csvText: string, filter?: (row: CsvRow) => boolean): CsvRow[] {
@@ -21,16 +22,24 @@ export function parseCsv(csvText: string, filter?: (row: CsvRow) => boolean): Cs
     return [];
   }
 
-  const headers = lines[0]!.split(';').map((h) => h.trim());
+  const headerLine = lines[0];
+  if (!headerLine) {
+    return [];
+  }
+  const headers = headerLine.split(';').map((h) => h.trim());
   debugData('[ogd-csv] Parsed %d headers: %s', headers.length, headers.join(', '));
 
   const rows: CsvRow[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i]!.split(';');
+    const line = lines[i];
+    if (!line) continue;
+    const values = line.split(';');
     const row: CsvRow = {};
     for (let j = 0; j < headers.length; j++) {
+      const header = headers[j];
+      if (!header) continue;
       const raw = values[j]?.trim() ?? '';
-      row[headers[j]!] = raw === '' || raw === '-' ? null : raw;
+      row[header] = raw === '' || raw === '-' ? null : raw;
     }
     if (!filter || filter(row)) {
       rows.push(row);
@@ -43,6 +52,9 @@ export function parseCsv(csvText: string, filter?: (row: CsvRow) => boolean): Cs
 
 /**
  * Parse a numeric value from a CSV cell, returning null for missing data.
+ *
+ * @param value - Raw string value from a CSV cell, or null
+ * @returns Parsed number, or null if the value is missing or not numeric
  */
 export function parseNumeric(value: string | null): number | null {
   if (value === null) return null;
