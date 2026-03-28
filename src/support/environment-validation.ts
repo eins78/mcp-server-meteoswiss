@@ -115,7 +115,7 @@ export function validateEnv(): EnvConfig {
     return config;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const issues = error.errors.map((e) => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
+      const issues = error.issues.map((e) => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
       throw new Error(
         `Environment variable validation failed:\n${issues}\n\nExample configuration:\n` +
           `  PORT=3000\n` +
