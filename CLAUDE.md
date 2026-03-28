@@ -246,6 +246,13 @@ docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
 - **Running commands**: Use `npx` for one-off commands in shell, or define scripts in `package.json`
 - **Example**: Instead of `npm install -g typescript`, use `pnpm add -D typescript` and run with `npx tsc` or via package.json scripts
 
+## Plot Config
+
+- **Branch prefixes:** idea/, feature/, bug/, docs/, infra/
+- **Plan directory:** docs/plans/
+- **Active index:** docs/plans/active/
+- **Delivered index:** docs/plans/delivered/
+
 ## Open Tasks and Issues
 <!-- Document outstanding tasks, bugs, or technical debt here -->
 
