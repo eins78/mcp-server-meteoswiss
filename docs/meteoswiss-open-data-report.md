@@ -479,7 +479,7 @@ The weather report tool — our primary value proposition — is non-functional.
 
 #### P2: `getLocalForecast` — Point forecasts (HIGH VALUE, replaces broken tool)
 
-**What**: 9-day weather forecasts for any Swiss location — the **same forecasts powering the MeteoSwiss app**.
+**What**: 9-day weather forecasts for any Swiss location — the **same forecasts powering the MeteoSwiss app and website**.
 
 **Source**: STAC collection `ch.meteoschweiz.ogd-local-forecasting` — 5629 points, 40 parameters, hourly updates.
 
