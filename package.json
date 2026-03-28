@@ -32,7 +32,7 @@
     "start:docker": "docker run mcp-server-meteoswiss:dev",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "changeset publish"
+    "release": "./scripts/release.sh"
   },
   "repository": {
     "type": "git",

@@ -4,10 +4,9 @@ This project uses [changesets](https://github.com/changesets/changesets) to trac
 
 ## Overview
 
-1. Contributors add changesets during development
+1. Contributors add changesets during development (`pnpm changeset`)
 2. Changesets accumulate on `main`
-3. `pnpm version` consumes changesets, bumps `package.json`, and updates `CHANGELOG.md`
-4. `scripts/publish.sh` builds and pushes the Docker image
+3. `pnpm release` does the rest: version bump → commit → tag → Docker publish
 
 ## Adding a Changeset
 
@@ -36,36 +35,36 @@ A markdown file is created in `.changeset/`. Commit it alongside your code.
 | **minor** | New tools, new parameters, new features |
 | **major** | Breaking changes to tool interfaces, removed tools, config changes that require migration |
 
-## Versioning
+## Releasing
 
-When ready to release, consume accumulated changesets:
-
-```bash
-pnpm version
-```
-
-This:
-- Deletes consumed `.changeset/*.md` files
-- Bumps the version in `package.json`
-- Updates `CHANGELOG.md` with entries linked to GitHub PRs
-
-Commit the result:
+When ready to release, run:
 
 ```bash
-git add -A && git commit -m "Version Packages"
-git tag v<new-version>
-git push && git push --tags
+pnpm release
 ```
 
-## Publishing
+This single command (`scripts/release.sh`) does:
+1. Consumes pending `.changeset/*.md` files
+2. Bumps the version in `package.json`
+3. Updates `CHANGELOG.md` with entries linked to GitHub PRs
+4. Commits the version bump
+5. Creates a git tag (`v<version>`)
+6. Pushes commit and tag to origin
+7. Builds and publishes the Docker image to Docker Hub
 
-Build and push the Docker image:
+### Prerequisites
+
+- Clean working tree (no uncommitted changes)
+- At least one pending changeset
+- Docker Hub login (`docker login`)
+
+### Dry Run
+
+Preview what would happen without pushing anything:
 
 ```bash
-./scripts/publish.sh v<new-version>
+pnpm release -- --dry-run
 ```
-
-This builds the image, tags it (and `latest` for non-prerelease versions), and pushes to Docker Hub (`eins78/meteoswiss-mcp-server`).
 
 ## Quick Reference
 
@@ -73,9 +72,6 @@ This builds the image, tags it (and `latest` for non-prerelease versions), and p
 # During development — add a changeset
 pnpm changeset
 
-# At release time — bump version and update changelog
-pnpm version
-
-# Publish Docker image
-./scripts/publish.sh v1.2.0
+# Release — version bump, tag, and Docker publish
+pnpm release
 ```
