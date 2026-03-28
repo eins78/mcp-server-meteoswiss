@@ -35,7 +35,8 @@ jobs:
           dependency-threshold: 10
           # Alert if total size grows >100KB (default, appropriate for this project)
           size-threshold: 100000
-          # Flag packages installed in multiple versions
-          duplicate-threshold: 1
+          # Flag packages installed in multiple versions (most dupes are unavoidable
+          # transitive deps from express@4 via mcp-remote, changesets, jest, etc.)
+          duplicate-threshold: 20
           # Suggest better package alternatives
           detect-replacements: true

@@ -50,8 +50,6 @@
   "dependencies": {
     "@eins78/styles": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.28.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
     "cors": "^2.8.6",
     "debug": "^4.4.3",
     "express": "^5.2.1",
@@ -69,7 +67,9 @@
     "@changesets/cli": "^2.30.0",
     "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/inspector": "^0.21.1",
+    "@types/cors": "^2.8.19",
     "@types/debug": "^4.1.13",
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^25.5.0",
@@ -103,7 +103,8 @@
       "qs@<6.14.2": "6.14.2",
       "diff@>=4.0.0 <4.0.4": "4.0.4",
       "js-yaml@<3.14.2": "3.14.2",
-      "mcp-remote>path-to-regexp": "8.4.0"
+      "mcp-remote>path-to-regexp": "8.4.0",
+      "eslint-plugin-tsdoc>@typescript-eslint/utils": "8.57.2"
     }
   },
   "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
