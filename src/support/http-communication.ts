@@ -43,13 +43,18 @@ export class HttpRequestError extends Error {
 /**
  * Default options for HTTP requests
  */
+const USER_AGENT = `MeteoSwiss-MCP-Server/${getVersion()}`;
+
+/**
+ * Default options for HTTP requests
+ */
 const DEFAULT_OPTIONS: HttpRequestOptions = {
   retries: 3,
   retryDelay: 1000,
   timeout: 30000, // Increased from 5s to 30s for complex pages
   headers: {
     Accept: 'application/json, text/html',
-    'User-Agent': `MeteoSwiss-MCP-Server/${getVersion()}`,
+    'User-Agent': USER_AGENT,
   },
 };
 
@@ -225,4 +230,52 @@ export async function fetchHtml(url: string, options: HttpRequestOptions = {}): 
 
   debugHttp('Successfully fetched HTML from %s (%d bytes)', url, html.length);
   return html;
+}
+
+/**
+ * Fetches binary data from a URL with retry logic.
+ * Used for CSVs served without charset (defaults to Latin1/Windows-1252).
+ *
+ * @param url - The URL to fetch from
+ * @param options - Request options
+ * @returns The raw response as a Buffer
+ * @throws {HttpRequestError} If the request fails after all retries
+ */
+export async function fetchBinary(url: string, options: HttpRequestOptions = {}): Promise<Buffer> {
+  const { retries = 3, retryDelay = 1000, timeout = 30000 } = options;
+  debugHttp('Fetching binary from URL: %s', url);
+
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': USER_AGENT,
+          ...options.headers,
+        },
+        signal: timeout ? AbortSignal.timeout(timeout) : undefined,
+      });
+
+      if (!response.ok) {
+        throw new HttpRequestError(
+          `HTTP error ${response.status}: ${response.statusText}`,
+          url,
+          response.status
+        );
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      debugHttp('Successfully fetched %d bytes (binary) from %s', buffer.length, url);
+      return buffer;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt === retries) break;
+      const jitteredDelay = retryDelay + Math.random() * 200;
+      await new Promise((resolve) => setTimeout(resolve, jitteredDelay));
+    }
+  }
+
+  throw lastError instanceof HttpRequestError
+    ? lastError
+    : new HttpRequestError(`Failed to fetch binary from ${url}: ${lastError?.message}`, url);
 }

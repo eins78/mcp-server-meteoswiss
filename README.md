@@ -50,7 +50,7 @@ This project uses `tsx` for TypeScript execution, providing a smooth development
 
 ### Prerequisites
 
-- Node.js v18.0.0 or later (we recommend using [nvm](https://github.com/nvm-sh/nvm) for Node.js version management)
+- Node.js v22.0.0 or later (we recommend using [nvm](https://github.com/nvm-sh/nvm) for Node.js version management)
 - [pnpm](https://pnpm.io/) for package management
 
 ### Setting up the development environment
@@ -88,10 +88,11 @@ pnpm start
 PORT=8080 pnpm start
 ```
 
-The HTTP server provides:
+The HTTP server provides (MCP Streamable HTTP transport):
 - GET `/` - Server information
-- GET `/mcp` - MCP SSE endpoint for client connections
-- POST `/messages?sessionId=...` - Message handling endpoint
+- POST `/mcp` - MCP JSON-RPC requests (server responds, possibly as SSE stream)
+- GET `/mcp` - SSE stream for server-to-client notifications
+- DELETE `/mcp` - Session termination
 - GET `/health` - Health check endpoint
 
 #### Development Mode

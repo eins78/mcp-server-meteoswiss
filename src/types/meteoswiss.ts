@@ -9,7 +9,7 @@ export type Language = z.infer<typeof LanguageSchema>;
 export function validateRegion(region: string): Region {
   const result = RegionSchema.safeParse(region);
   if (!result.success) {
-    throw new Error(`Invalid region: ${region}. ${z.prettifyError(result.error)}`);
+    throw new Error(`Invalid region: ${region}. ${result.error.message}`);
   }
   return result.data;
 }
@@ -17,7 +17,7 @@ export function validateRegion(region: string): Region {
 export function validateLanguage(language: string): Language {
   const result = LanguageSchema.safeParse(language);
   if (!result.success) {
-    throw new Error(`Invalid language: ${language}. ${z.prettifyError(result.error)}`);
+    throw new Error(`Invalid language: ${language}. ${result.error.message}`);
   }
   return result.data;
 }

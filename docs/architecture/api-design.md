@@ -4,15 +4,16 @@ This document outlines the API design for the MeteoSwiss MCP (Model Context Prot
 
 ## Overview
 
-The MCP server provides weather report data from MeteoSwiss through an HTTP server with Server-Sent Events (SSE) for real-time communication. The server is designed to be accessed via `mcp-remote` for integration with Claude Desktop and other MCP-compatible clients.
+The MCP server provides weather data from MeteoSwiss through an HTTP server using the MCP Streamable HTTP transport. The server is designed to be accessed via `mcp-remote` for integration with Claude Desktop and other MCP-compatible clients.
 
 ## Transport Protocol
 
-The server uses HTTP with SSE (Server-Sent Events) for bidirectional communication:
+The server uses MCP Streamable HTTP transport (spec 2025-11-25):
 
 - **GET `/`** - Server information endpoint
-- **GET `/mcp`** - SSE endpoint for MCP protocol communication
-- **POST `/messages?sessionId=...`** - Message handling endpoint
+- **POST `/mcp`** - Client sends JSON-RPC requests, server responds (possibly as SSE stream)
+- **GET `/mcp`** - Client opens SSE stream for server-to-client notifications
+- **DELETE `/mcp`** - Client terminates session
 - **GET `/health`** - Health check endpoint
 
 ## Available Tools
@@ -26,7 +27,7 @@ Retrieves the latest weather report for a specified region of Switzerland.
 ```typescript
 {
   region: "north" | "south" | "west"; // Required: Swiss region
-  language?: "de" | "fr" | "it" | "en"; // Optional: Report language (default: "en")
+  language?: "de" | "fr" | "it"; // Optional: Report language (default: "de"). English is NOT supported.
 }
 ```
 
@@ -54,7 +55,7 @@ Retrieves the latest weather report for a specified region of Switzerland.
   "name": "meteoswissWeatherReport",
   "parameters": {
     "region": "north",
-    "language": "en"
+    "language": "de"
   }
 }
 ```
@@ -115,12 +116,13 @@ X-RateLimit-Reset: 1619766913
 
 ## Language Support
 
-All text responses can be localized by specifying the `language` parameter:
+Weather report responses can be localized by specifying the `language` parameter:
 
-- `de`: German (Deutsch)
-- `fr`: French (Français) 
+- `de`: German (Deutsch) — **default**
+- `fr`: French (Français)
 - `it`: Italian (Italiano)
-- `en`: English (default)
+
+Note: English is **not supported** for weather reports. The search and fetch tools support English (`en`).
 
 ## Data Sources
 
@@ -153,12 +155,16 @@ The server fully implements the Model Context Protocol specification:
 - Proper tool registration and discovery
 - Schema validation for tool parameters
 - Standard error response format
-- SSE transport for real-time communication
+- Streamable HTTP transport for real-time communication
 
-## Future Enhancements
+## Additional Tools
 
-While the current implementation focuses on weather reports, the architecture supports future additions:
-- Current weather conditions
-- Detailed forecasts with hourly data
-- Weather alerts and warnings
-- Historical weather data
+Beyond `meteoswissWeatherReport`, the server provides these OGD-based tools:
+
+- **meteoswissLocalForecast** — Multi-day weather forecast for ~6000 Swiss locations (postal codes, stations, mountain POIs)
+- **meteoswissCurrentWeather** — Real-time measurements from ~160 automatic weather stations
+- **meteoswissStations** — List and search MeteoSwiss automatic weather stations
+- **meteoswissClimateNormals** — 1991-2020 climate normal values (30-year averages)
+- **meteoswissPollenData** — Current pollen concentration data from ~15 monitoring stations
+- **search** — Search MeteoSwiss website content (DE, FR, IT, EN)
+- **fetch** — Fetch full content from MeteoSwiss webpages

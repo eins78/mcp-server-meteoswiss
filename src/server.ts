@@ -13,6 +13,18 @@ import type { FetchMeteoSwissContentInput } from './schemas/meteoswiss-fetch.js'
 import { meteoswissWeatherReport } from './tools/meteoswiss-weather-report.js';
 import { meteoswissSearchTool } from './tools/meteoswiss-search.js';
 import { meteoswissFetchTool } from './tools/meteoswiss-fetch.js';
+import { GetLocalForecastParamsSchema } from './schemas/ogd-local-forecast.js';
+import type { GetLocalForecastParams } from './schemas/ogd-local-forecast.js';
+import { getLocalForecast } from './data/ogd-local-forecast.js';
+import { GetCurrentWeatherParamsSchema } from './schemas/ogd-current-weather.js';
+import type { GetCurrentWeatherParams } from './schemas/ogd-current-weather.js';
+import { getCurrentWeather } from './data/ogd-current-weather.js';
+import { ListStationsParamsSchema } from './schemas/ogd-station-list.js';
+import type { ListStationsParams } from './schemas/ogd-station-list.js';
+import { listStations } from './data/ogd-station-list.js';
+import { GetPollenDataParamsSchema } from './schemas/ogd-pollen-data.js';
+import type { GetPollenDataParams } from './schemas/ogd-pollen-data.js';
+import { getPollenData } from './data/ogd-pollen-data.js';
 import { debugServer, debugTools } from './support/logging.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
 import { getVersion } from './support/version.js';
@@ -27,7 +39,7 @@ export function createServer(): McpServer {
     name: 'mcp-server-meteoswiss',
     version: getVersion(),
     description:
-      'Access official MeteoSwiss weather reports and forecasts for Switzerland. Provides daily weather reports for Northern, Southern, and Western regions in German, French, and Italian.',
+      'Access official MeteoSwiss weather data for Switzerland. Provides weather reports, multi-day forecasts, real-time measurements, station listings, climate normals, and pollen data.',
   });
   debugServer('MCP server created with name: mcp-server-meteoswiss');
 
@@ -176,6 +188,151 @@ The reports use standardized probability terms for precipitation forecasts.`,
             {
               type: 'text' as const,
               text: `Fetch failed: ${errorMessage}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getLocalForecast tool (OGD)
+  debugServer('Registering tool: getLocalForecast');
+  server.tool(
+    'meteoswissLocalForecast',
+    `Get a multi-day weather forecast for any Swiss location. Returns daily summaries with temperature, precipitation, and weather icons.
+
+This uses official MeteoSwiss Open Data — the same forecasts powering the MeteoSwiss app and website.
+
+Accepts:
+- Postal codes: "8001" (Zurich), "3000" (Bern), "1200" (Geneva)
+- Station abbreviations: "ZUE" (Zurich Fluntern), "BER" (Bern)
+- Place names: "Zurich", "Basel", "Lugano"
+
+Coverage: ~6000 Swiss locations (all postal codes + weather stations + mountain points).
+Forecast horizon: up to 9 days. Updated hourly.`,
+    GetLocalForecastParamsSchema.shape,
+    async (params: GetLocalForecastParams) => {
+      try {
+        console.error(
+          `Processing getLocalForecast request for location: ${params.location}, days: ${params.days}`
+        );
+        debugTools('getLocalForecast called with params: %O', params);
+        const result = await getLocalForecast(params);
+        console.error('Successfully retrieved local forecast');
+        debugTools('Local forecast retrieved successfully');
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        console.error('Error in getLocalForecast tool:', error);
+        debugTools('Error in getLocalForecast: %O', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get local forecast: ${errorMessage}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getCurrentWeather tool (OGD)
+  debugServer('Registering tool: getCurrentWeather');
+  server.tool(
+    'meteoswissCurrentWeather',
+    `Get real-time weather measurements from any of ~160 Swiss automatic weather stations. Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes.
+
+Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplatz 1 Bern"), or WGS84 coordinates. Automatically finds the nearest station.`,
+    GetCurrentWeatherParamsSchema.shape,
+    async (params: GetCurrentWeatherParams) => {
+      try {
+        console.error(
+          `Processing meteoswissCurrentWeather request: station=${params.station ?? ''}, coords=${params.coordinates ? `${params.coordinates.lat},${params.coordinates.lon}` : ''}`
+        );
+        debugTools('getCurrentWeather called with params: %O', params);
+        const result = await getCurrentWeather(params);
+        console.error('Successfully retrieved current weather');
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        console.error('Error in meteoswissCurrentWeather tool:', error);
+        debugTools('Error in getCurrentWeather: %O', error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get current weather: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register listStations tool (OGD)
+  debugServer('Registering tool: listStations');
+  server.tool(
+    'meteoswissStations',
+    `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of ~160 stations across Switzerland.`,
+    ListStationsParamsSchema.shape,
+    async (params: ListStationsParams) => {
+      try {
+        console.error(
+          `Processing meteoswissStations request: search=${params.search ?? ''}, canton=${params.canton ?? ''}`
+        );
+        debugTools('listStations called with params: %O', params);
+        const result = await listStations(params);
+        console.error(`Successfully listed ${result.total} stations`);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        console.error('Error in meteoswissStations tool:', error);
+        debugTools('Error in listStations: %O', error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to list stations: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getPollenData tool (OGD)
+  debugServer('Registering tool: getPollenData');
+  server.tool(
+    'meteoswissPollenData',
+    `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels by type (birch, grass, etc.). Useful for allergy sufferers.`,
+    GetPollenDataParamsSchema.shape,
+    async (params: GetPollenDataParams) => {
+      try {
+        console.error(
+          `Processing meteoswissPollenData request: station=${params.station ?? 'all'}`
+        );
+        debugTools('getPollenData called with params: %O', params);
+        const result = await getPollenData(params);
+        console.error(`Successfully retrieved pollen data for ${result.stations.length} stations`);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        console.error('Error in meteoswissPollenData tool:', error);
+        debugTools('Error in getPollenData: %O', error);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get pollen data: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,

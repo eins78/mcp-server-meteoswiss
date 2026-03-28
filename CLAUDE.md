@@ -252,6 +252,10 @@ docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
 - **Active index:** docs/plans/active/
 - **Delivered index:** docs/plans/delivered/
 
+## Content Guidelines
+
+- When referring to MeteoSwiss products, always say **"MeteoSwiss app and website"** (not just "app"). The data powers both.
+
 ## Open Tasks and Issues
 <!-- Document outstanding tasks, bugs, or technical debt here -->
 

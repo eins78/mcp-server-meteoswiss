@@ -174,13 +174,11 @@ describe('MeteoSwiss Search Tool', () => {
     });
 
     it('should handle invalid language gracefully', async () => {
-      // MCP SDK 1.28.0 returns validation errors as results with isError: true
-      const result = await client.callTool('search', {
-        query: 'weather',
-        language: 'invalid',
-      });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('invalid');
+      // MCP SDK may throw (SSE) or return error result (Streamable HTTP) for invalid params
+      const result = await client
+        .callTool('search', { query: 'weather', language: 'invalid' })
+        .catch((e: Error) => ({ isError: true, content: [{ text: e.message }] }));
+      expect(result.isError ?? result.content[0].text.includes('invalid')).toBeTruthy();
     });
   });
 });

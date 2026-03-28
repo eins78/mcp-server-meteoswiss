@@ -10,15 +10,14 @@ export const fetchMeteoSwissContentSchema = z.object({
     .describe('The content ID or path to fetch'),
   format: z
     .enum(['markdown', 'text'], {
-      error: (issue) =>
-        `Format must be either 'markdown' or 'text'. Received: '${String(issue.input)}'`,
+      message: "Format must be either 'markdown' or 'text'.",
     })
     .optional()
     .default('markdown')
     .describe('The output format for the content'),
   includeMetadata: z
     .boolean({
-      error: 'includeMetadata must be a boolean (true or false)',
+      message: 'includeMetadata must be a boolean (true or false)',
     })
     .optional()
     .default(true)
