@@ -11,6 +11,17 @@ import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 import type { ForecastPoint } from '../schemas/ogd-shared.js';
 
+/**
+ * Normalize a string for fuzzy matching: lowercase, strip diacritics.
+ * Handles Swiss place names like Zürich→zurich, Genève→geneve, Château-d'Oex→chateau-d'oex.
+ */
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 /** Indexed forecast point data for fast lookups */
 type ForecastIndex = {
   points: ForecastPoint[];
@@ -87,7 +98,7 @@ export type ResolveResult = {
  */
 export async function resolveForecastPoint(query: string): Promise<ResolveResult> {
   const { points, byPostalCode, byAbbr } = await loadForecastIndex();
-  const q = query.trim().toLowerCase();
+  const q = normalize(query.trim());
 
   // O(1) exact match on postal code
   const postalMatch = byPostalCode.get(q);
@@ -101,13 +112,13 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
     return { match: abbrMatch, alternatives: [], confidence: 'exact' };
   }
 
-  // Fuzzy match on name (case-insensitive substring)
-  const nameMatches = points.filter((p) => p.name.toLowerCase().includes(q));
+  // Fuzzy match on name (case-insensitive, diacritic-insensitive substring)
+  const nameMatches = points.filter((p) => normalize(p.name).includes(q));
   if (nameMatches.length > 0) {
     const sorted = nameMatches.sort((a, b) => {
       // Exact name match first
-      if (a.name.toLowerCase() === q && b.name.toLowerCase() !== q) return -1;
-      if (b.name.toLowerCase() === q && a.name.toLowerCase() !== q) return 1;
+      if (normalize(a.name) === q && normalize(b.name) !== q) return -1;
+      if (normalize(b.name) === q && normalize(a.name) !== q) return 1;
       // Postal codes before stations for city names
       if (a.point_type_id === 2 && b.point_type_id !== 2) return -1;
       if (b.point_type_id === 2 && a.point_type_id !== 2) return 1;
@@ -117,7 +128,7 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
     return {
       match: sorted[0]!,
       alternatives: sorted.slice(1, 4),
-      confidence: sorted[0]!.name.toLowerCase() === q ? 'exact' : 'fuzzy',
+      confidence: normalize(sorted[0]!.name) === q ? 'exact' : 'fuzzy',
     };
   }
 
