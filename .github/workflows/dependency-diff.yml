@@ -1,0 +1,38 @@
+name: Dependency Diff Analysis
+
+# This workflow analyzes dependency changes in PRs using action-dependency-diff.
+# It detects security/maintenance issues: trust degradation, dependency bloat,
+# size growth, version duplication, and suggests alternatives.
+# Runs on all PRs to catch both Renovate and human-introduced changes.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  dependency-diff:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need history to compare against base
+
+      - name: Run Dependency Diff Analysis
+        uses: e18e/action-dependency-diff@c2dce8aa8ec8d0a365a42c04f5c79e5c223f46c2 # Latest as of 2025-11-02
+        with:
+          github-token: ${{ github.token }}
+          pr-number: ${{ github.event.pull_request.number }}
+          # Alert if >10 dependencies added (reasonable for most updates)
+          dependency-threshold: 10
+          # Alert if total size grows >100KB (default, appropriate for this project)
+          size-threshold: 100000
+          # Flag packages installed in multiple versions
+          duplicate-threshold: 1
+          # Suggest better package alternatives
+          detect-replacements: true
