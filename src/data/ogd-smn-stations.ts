@@ -1,13 +1,15 @@
 /**
  * Shared station metadata loader for MeteoSwiss SMN (SwissMetNet) stations.
  * Loads and caches station metadata from the OGD STAC API.
- * Used by getCurrentWeather, listStations, and getClimateNormals.
+ * Supports resolution by name, abbreviation, geocoding fallback, and coordinates.
  */
 
 import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
+import { haversineDistance } from '../support/haversine.js';
+import { geocodeSwissLocation } from '../support/geocode.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 
@@ -61,11 +63,44 @@ export async function loadSmnStations(): Promise<SmnStation[]> {
 }
 
 /**
- * Resolve a query to an SMN station by abbreviation or fuzzy name match.
+ * Find the nearest station to a given WGS84 coordinate.
  *
- * @param query - Station name, abbreviation, or search term
+ * @param lat - WGS84 latitude
+ * @param lon - WGS84 longitude
+ * @returns Nearest station and distance in km
+ */
+export async function findNearestStation(
+  lat: number,
+  lon: number
+): Promise<{ station: SmnStation; distance_km: number }> {
+  const stations = await loadSmnStations();
+
+  let nearest: SmnStation | null = null;
+  let minDist = Infinity;
+
+  for (const s of stations) {
+    const d = haversineDistance(lat, lon, s.lat, s.lon);
+    if (d < minDist) {
+      minDist = d;
+      nearest = s;
+    }
+  }
+
+  if (!nearest) {
+    throw new Error('No stations available');
+  }
+
+  debugData('[ogd-smn] Nearest station to (%f, %f): %s (%.1f km)', lat, lon, nearest.abbr, minDist);
+  return { station: nearest, distance_km: Math.round(minDist * 10) / 10 };
+}
+
+/**
+ * Resolve a query to an SMN station.
+ * Tries: exact abbreviation → fuzzy name → geocoding fallback (nearest to geocoded point).
+ *
+ * @param query - Station name, abbreviation, address, or place name
  * @returns Matching station
- * @throws Error if no station matches
+ * @throws Error if no station matches even after geocoding
  */
 export async function resolveSmnStation(query: string): Promise<SmnStation> {
   const stations = await loadSmnStations();
@@ -82,6 +117,21 @@ export async function resolveSmnStation(query: string): Promise<SmnStation> {
   // Fuzzy match on name
   const nameMatch = stations.find((s) => normalize(s.name).includes(q));
   if (nameMatch) return nameMatch;
+
+  // Geocoding fallback: resolve query to coordinates, find nearest station
+  debugData('[ogd-smn] No direct match for "%s", trying geocoding...', query);
+  const geocoded = await geocodeSwissLocation(query);
+  if (geocoded) {
+    const { station } = await findNearestStation(geocoded.lat, geocoded.lon);
+    debugData(
+      '[ogd-smn] Geocoded "%s" → %s, nearest station: %s (%s)',
+      query,
+      geocoded.name,
+      station.abbr,
+      station.name
+    );
+    return station;
+  }
 
   const examples = stations
     .slice(0, 5)

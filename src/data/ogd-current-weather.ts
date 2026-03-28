@@ -4,8 +4,9 @@
  */
 
 import { getCsvData } from './ogd-data-store.js';
-import { resolveSmnStation } from './ogd-smn-stations.js';
+import { resolveSmnStation, findNearestStation } from './ogd-smn-stations.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
+import { reverseGeocodeSwiss } from '../support/reverse-geocode.js';
 import { debugData } from '../support/logging.js';
 import { SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
 import type {
@@ -14,6 +15,7 @@ import type {
   MeasurementValue,
 } from '../schemas/ogd-current-weather.js';
 import type { CsvRow } from '../support/ogd-csv-parser.js';
+import type { SmnStation } from './ogd-smn-stations.js';
 
 const REALTIME_CSV_URL = 'https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv';
 
@@ -28,15 +30,32 @@ function measurement(row: CsvRow, key: string, unit: string): MeasurementValue |
 
 /**
  * Fetch current weather measurements for a station.
+ * Accepts either a station query (name/abbreviation/address) or coordinates.
  *
- * @param params - Tool parameters with station query
+ * @param params - Tool parameters
  * @returns Structured current weather response
  */
 export async function getCurrentWeather(
   params: GetCurrentWeatherParams
 ): Promise<CurrentWeatherResponse> {
-  const station = await resolveSmnStation(params.station);
-  debugData('[ogd-weather] Resolved station: %s (%s)', station.abbr, station.name);
+  let station: SmnStation;
+  let distance_km: number | undefined;
+
+  if (params.coordinates) {
+    const result = await findNearestStation(params.coordinates.lat, params.coordinates.lon);
+    station = result.station;
+    distance_km = result.distance_km;
+    debugData(
+      '[ogd-weather] Nearest station to coordinates: %s (%.1f km)',
+      station.abbr,
+      distance_km
+    );
+  } else if (params.station) {
+    station = await resolveSmnStation(params.station);
+    debugData('[ogd-weather] Resolved station: %s (%s)', station.abbr, station.name);
+  } else {
+    throw new Error('Either "station" or "coordinates" must be provided');
+  }
 
   const filter = (row: CsvRow): boolean => row['Station/Location'] === station.abbr;
   const rows = await getCsvData(REALTIME_CSV_URL, 'measurements/VQHA80.csv', 'realtime', filter);
@@ -50,12 +69,18 @@ export async function getCurrentWeather(
     throw new Error(`No data row for station ${station.abbr}`);
   }
 
+  // Reverse geocode for municipality enrichment (best-effort)
+  const geo = await reverseGeocodeSwiss(station.lat, station.lon).catch(() => null);
+
   return {
     station: {
       name: station.name,
       abbreviation: station.abbr,
       elevation: station.elevation,
       coordinates: { lat: station.lat, lon: station.lon },
+      municipality: geo?.municipality,
+      canton: geo?.canton ?? station.canton,
+      distance_km,
     },
     timestamp: row.Date ?? '',
     measurements: {

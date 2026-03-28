@@ -4,13 +4,22 @@
 
 import { z } from 'zod';
 
+export const CoordinatesParamSchema = z
+  .object({
+    lat: z.number().min(45.5).max(48).describe('WGS84 latitude'),
+    lon: z.number().min(5.9).max(10.6).describe('WGS84 longitude'),
+  })
+  .describe('WGS84 coordinates (alternative to station name)');
+
 export const GetCurrentWeatherParamsSchema = z.object({
   station: z
     .string()
     .min(1)
+    .optional()
     .describe(
-      'Swiss weather station: name (e.g., "Zurich") or abbreviation (e.g., "SMA")'
+      'Swiss weather station or location: name (e.g., "Zurich"), abbreviation (e.g., "SMA"), or address (e.g., "Bahnhofplatz 1 Bern")'
     ),
+  coordinates: CoordinatesParamSchema.optional(),
 });
 export type GetCurrentWeatherParams = z.infer<typeof GetCurrentWeatherParamsSchema>;
 
@@ -27,6 +36,9 @@ export type CurrentWeatherResponse = {
     abbreviation: string;
     elevation: number;
     coordinates: { lat: number; lon: number };
+    municipality?: string;
+    canton?: string;
+    distance_km?: number;
   };
   timestamp: string;
   measurements: {
