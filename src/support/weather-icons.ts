@@ -76,6 +76,20 @@ const NIGHT_ICONS: Record<number, string> = {
   126: 'high cloud',
   127: 'stratus',
   128: 'fog',
+  129: 'slightly overcast, scattered showers',
+  130: 'slightly overcast, scattered snowfall',
+  131: 'slightly overcast, rain and snow showers',
+  132: 'slightly overcast, some showers',
+  133: 'overcast, frequent rain showers',
+  134: 'overcast, frequent snow showers',
+  135: 'overcast and dry',
+  136: 'slightly overcast, slightly stormy',
+  137: 'slightly overcast, stormy snow showers',
+  138: 'overcast, thundery showers',
+  139: 'overcast, thundery snow showers',
+  140: 'very cloudy, slightly stormy',
+  141: 'overcast, slightly stormy',
+  142: 'very cloudy, thundery snow showers',
 };
 
 /**
