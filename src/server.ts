@@ -205,7 +205,7 @@ The reports use standardized probability terms for precipitation forecasts.`,
     'meteoswissLocalForecast',
     `Get a multi-day weather forecast for any Swiss location. Returns daily summaries with temperature, precipitation, and weather icons.
 
-This uses official MeteoSwiss Open Government Data — the same forecasts powering the MeteoSwiss app and website.
+This uses official MeteoSwiss Open Data — the same forecasts powering the MeteoSwiss app and website.
 
 Accepts:
 - Postal codes: "8001" (Zurich), "3000" (Bern), "1200" (Geneva)

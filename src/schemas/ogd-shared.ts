@@ -94,7 +94,7 @@ export const OGD_COLLECTIONS = {
 
 // --- Common output ---
 
-export const SOURCE_ATTRIBUTION = 'MeteoSwiss OGD' as const;
+export const SOURCE_ATTRIBUTION = 'MeteoSwiss Open Data' as const;
 
 export const StationInfoSchema = z.object({
   name: z.string(),

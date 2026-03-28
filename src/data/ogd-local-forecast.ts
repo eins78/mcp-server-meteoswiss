@@ -12,6 +12,7 @@ import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { resolveForecastPoint } from './ogd-station-resolver.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS, pointTypeFromId, SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
+import { weatherIconDescription } from '../support/weather-icons.js';
 import type {
   GetLocalForecastParams,
   LocalForecastResponse,
@@ -60,19 +61,22 @@ function buildStationForecast(
     ])
   );
 
-  return dates.map((date) => ({
-    date,
-    temperature: {
-      min: dateKeyed.get('tre200dn')?.get(date) ?? null,
-      max: dateKeyed.get('tre200dx')?.get(date) ?? null,
-      unit: '\u00B0C',
-    },
-    precipitation: {
-      total: dateKeyed.get('rka150d0')?.get(date) ?? null,
-      unit: 'mm',
-    },
-    weather_icon: dateKeyed.get('jp2000d0')?.get(date) ?? null,
-  }));
+  return dates.map((date) => {
+    const iconCode = dateKeyed.get('jp2000d0')?.get(date) ?? null;
+    return {
+      date,
+      weather: iconCode !== null ? weatherIconDescription(iconCode) : null,
+      temperature: {
+        min: dateKeyed.get('tre200dn')?.get(date) ?? null,
+        max: dateKeyed.get('tre200dx')?.get(date) ?? null,
+        unit: '\u00B0C',
+      },
+      precipitation: {
+        total: dateKeyed.get('rka150d0')?.get(date) ?? null,
+        unit: 'mm',
+      },
+    };
+  });
 }
 
 /**
@@ -103,7 +107,7 @@ function buildHourlyAggregatedForecast(
         unit: '\u00B0C',
       },
       precipitation: { total: null, unit: 'mm' },
-      weather_icon: null,
+      weather: null,
     };
   });
 }
