@@ -115,7 +115,7 @@ export function validateEnv(): EnvConfig {
     return config;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const issues = error.errors.map((e) => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
+      const issues = error.issues.map((e) => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
       throw new Error(
         `Environment variable validation failed:\n${issues}\n\nExample configuration:\n` +
           `  PORT=3000\n` +
@@ -128,7 +128,8 @@ export function validateEnv(): EnvConfig {
           `  RATE_LIMIT_WINDOW_MS=60000\n` +
           `  RATE_LIMIT_MAX_REQUESTS=100\n` +
           `  CORS_ORIGIN=https://example.com\n` +
-          `  REQUEST_SIZE_LIMIT=10mb`
+          `  REQUEST_SIZE_LIMIT=10mb`,
+        { cause: error }
       );
     }
     throw error;

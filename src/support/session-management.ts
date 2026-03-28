@@ -76,13 +76,14 @@ export class SessionManager {
     debugSession('Removing session: %s', sessionId);
     const session = this.sessions.get(sessionId);
     if (session) {
+      // Delete from map first to prevent recursion: close() triggers onclose → remove()
+      this.sessions.delete(sessionId);
+      debugSession('Session removed: %s (remaining: %d)', sessionId, this.sessions.size);
       // Close the transport if it has a close method
       if ('close' in session.transport && typeof session.transport.close === 'function') {
         debugSession('Closing transport for session: %s', sessionId);
         session.transport.close();
       }
-      this.sessions.delete(sessionId);
-      debugSession('Session removed: %s (remaining: %d)', sessionId, this.sessions.size);
     } else {
       debugSession('Session not found for removal: %s', sessionId);
     }

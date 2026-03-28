@@ -31,20 +31,19 @@ When running in a devcontainer, use the following for git commits:
 ## Architecture Overview
 
 This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, implemented using:
-- **Node.js 18+**: Using `tsx` for TypeScript execution
-- **MCP TypeScript SDK**: Using `McpServer` class with HTTP/SSE transport
-- **Zod**: For runtime validation and schema definitions
-- **Express + SSE**: For HTTP transport with Server-Sent Events
+- **Node.js 22+**: Using `tsx` for TypeScript execution
+- **MCP TypeScript SDK 1.28+**: Using `McpServer` class with Streamable HTTP transport (spec 2025-11-25)
+- **Zod 4**: For runtime validation and schema definitions
+- **Express + Streamable HTTP**: For HTTP transport with MCP Streamable HTTP protocol
 - **mcp-remote**: For Claude Desktop integration
 
 ### Key Components
 
-1. **Entry Point** (`src/index.ts`): HTTP server with SSE endpoint
-2. **Core Server** (`src/server.ts`): MCP server implementation
-3. **Transport** (`src/transports/streamable-http.ts`): HTTP server with SSE
+1. **Entry Point** (`src/index.ts`): HTTP server with Streamable HTTP transport
+2. **Core Server** (`src/server.ts`): MCP server implementation (factory pattern — one instance per session)
+3. **Transport** (`src/transports/streamable-http.ts`): HTTP server with Streamable HTTP
    - `/` - Information endpoint
-   - `/mcp` - MCP SSE endpoint
-   - `/messages` - Message handling endpoint
+   - `/mcp` - MCP Streamable HTTP endpoint (POST: requests, GET: SSE notifications, DELETE: session termination)
    - `/health` - Health check endpoint
 4. **Tools** (`src/tools/`): MCP tools for weather data queries
    - `meteoswissWeatherReport`: Weather reports for Swiss regions (north/south/west) in multiple languages
@@ -161,7 +160,7 @@ When implementing MCP tools:
 5. Document tool behavior and parameters
 
 ### Transport Support
-- **HTTP/SSE**: Server runs on configurable port (default: 3000)
+- **Streamable HTTP**: Server runs on configurable port (default: 3000)
 - **mcp-remote**: Used for Claude Desktop integration
 - Supports multiple concurrent sessions
 
@@ -189,7 +188,7 @@ The application uses the `debug` npm module for comprehensive production debuggi
 #### Debug Namespaces
 - `mcp:main` - Application lifecycle, startup/shutdown, configuration
 - `mcp:server` - MCP server events, tool registration, protocol operations
-- `mcp:transport` - HTTP/SSE transport layer, connections, sessions, rate limiting
+- `mcp:transport` - Streamable HTTP transport layer, connections, sessions, rate limiting
 - `mcp:tools` - Tool execution, parameters, results, errors
 - `mcp:data` - Data fetching, caching, transformation, API calls
 - `mcp:http` - HTTP client operations, retries, errors

@@ -1,19 +1,30 @@
 /**
  * Streamable HTTP transport for MCP server
- * Implements Server-Sent Events (SSE) for real-time communication
+ *
+ * Implements the MCP Streamable HTTP transport specification using
+ * {@link StreamableHTTPServerTransport} from the MCP SDK.
+ *
+ * Endpoint structure:
+ * - `POST /mcp` - Client sends JSON-RPC requests, server responds (possibly as SSE stream)
+ * - `GET /mcp` - Client opens SSE stream for server-to-client notifications
+ * - `DELETE /mcp` - Client terminates session
+ *
+ * Each session gets its own transport instance and its own McpServer instance,
+ * because the MCP SDK's Protocol class only allows one transport per server.
+ * The {@link SessionManager} tracks transports for cleanup.
  */
 
+import { randomUUID } from 'node:crypto';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import rateLimit from 'express-rate-limit';
 import { SessionManager } from '../support/session-management.js';
 import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
 import { getMcpEndpointUrl } from '../support/url-generation.js';
-import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { getVersion } from '../support/version.js';
 
 interface StreamableHttpOptions {
@@ -22,7 +33,7 @@ interface StreamableHttpOptions {
   config: EnvConfig;
 }
 
-// Type for the HTTP server interface returned by createHttpServer
+/** HTTP server interface returned by {@link createHttpServer} */
 export interface HttpServerInterface {
   app: express.Application;
   start: () => Promise<void>;
@@ -30,10 +41,61 @@ export interface HttpServerInterface {
 }
 
 /**
- * Create HTTP server with SSE transport
+ * Create a new {@link StreamableHTTPServerTransport}, pair it with a fresh
+ * MCP server (from the factory), and register the session in the manager.
+ *
+ * The MCP SDK's Protocol class supports only one transport at a time, so each
+ * concurrent session needs its own McpServer + transport pair.
+ *
+ * @returns The newly created transport (already connected to its own McpServer)
+ */
+async function createAndRegisterTransport(
+  createMcpServer: () => McpServer,
+  sessionManager: SessionManager
+): Promise<StreamableHTTPServerTransport> {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    onsessioninitialized: (sessionId: string) => {
+      debugTransport('Session initialized: %s', sessionId);
+      sessionManager.add(sessionId, transport);
+      console.error(`New session initialized: ${sessionId}`);
+    },
+  });
+
+  transport.onclose = () => {
+    const sid = transport.sessionId;
+    if (sid) {
+      debugTransport('Transport closed, removing session: %s', sid);
+      sessionManager.remove(sid);
+    }
+  };
+
+  transport.onerror = (error: Error) => {
+    debugTransport('Transport error: %O', error);
+  };
+
+  // Each transport gets its own MCP server instance
+  const mcpServer = createMcpServer();
+  try {
+    await mcpServer.connect(transport);
+  } catch (error) {
+    // Clean up if connect fails after onsessioninitialized was called
+    await transport.close();
+    throw error;
+  }
+  debugTransport('Transport connected to MCP server');
+  return transport;
+}
+
+/**
+ * Create HTTP server with Streamable HTTP transport.
+ *
+ * @param createMcpServer - Factory function that creates a configured McpServer instance.
+ *   Called once per session because the SDK only allows one transport per server.
+ * @param options - Server configuration
  */
 export async function createHttpServer(
-  mcpServer: McpServer,
+  createMcpServer: () => McpServer,
   options: StreamableHttpOptions
 ): Promise<HttpServerInterface> {
   const { port = 3000, host = 'localhost', config } = options;
@@ -133,138 +195,84 @@ export async function createHttpServer(
     })
   );
 
-  // MCP SSE endpoint - establishes the event stream
-  app.get(
+  // MCP Streamable HTTP endpoint — handles POST, GET, and DELETE
+  // POST: client sends JSON-RPC request, server responds (possibly as SSE stream)
+  // GET: client opens SSE stream for server-to-client notifications
+  // DELETE: client terminates session
+  app.all(
     '/mcp',
     asyncHandler(async (req: Request, res: Response) => {
       debugTransport(
-        'SSE connection requested from %s, User-Agent: %s',
+        'MCP request: %s /mcp from %s, Session: %s',
+        req.method,
         req.ip,
-        req.get('User-Agent')
+        req.headers['mcp-session-id'] ?? '(none)'
       );
 
-      // Set SSE headers
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+      // Look up existing transport by session ID header
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      let transport: StreamableHTTPServerTransport | undefined;
 
-      // Create transport with the POST endpoint URL
-      const transport = new SSEServerTransport('/messages', res);
-      debugTransport('Created SSE transport with session ID: %s', transport.sessionId);
-
-      // Store transport in session manager
-      try {
-        sessionManager.add(transport.sessionId, transport);
-        console.error(`New SSE connection established: ${transport.sessionId}`);
-        debugTransport('Session added successfully, current sessions: %d', sessionManager.size);
-      } catch (error) {
-        console.error(`Failed to add session: ${error}`);
-        debugTransport('Failed to add session: %O', error);
-        res.status(503).end('Server capacity reached');
-        return;
+      if (sessionId) {
+        transport = sessionManager.get(sessionId) as StreamableHTTPServerTransport | undefined;
+        if (!transport) {
+          debugTransport('Session not found: %s', sessionId);
+          // Session ID was provided but not found — return 404
+          res.status(404).json({
+            jsonrpc: '2.0',
+            error: { code: -32001, message: 'Session not found' },
+            id: null,
+          });
+          return;
+        }
       }
 
-      // Set up cleanup on close
-      transport.onclose = () => {
-        console.error(`SSE connection closed: ${transport.sessionId}`);
-        debugTransport('Transport closed, removing session: %s', transport.sessionId);
-        sessionManager.remove(transport.sessionId);
-        debugTransport('Active sessions after removal: %d', sessionManager.size);
-      };
-
-      // Set connection timeout
-      const timeout = setTimeout(() => {
-        console.error(`SSE connection timeout: ${transport.sessionId}`);
-        debugTransport('Session timeout triggered for: %s', transport.sessionId);
-        transport.close();
-      }, config.SESSION_TIMEOUT_MS);
-
-      // Clear timeout on activity
-      const originalSend = transport.send.bind(transport);
-      transport.send = (message: JSONRPCMessage) => {
-        clearTimeout(timeout);
-        debugTransport('Activity detected on session %s, timeout cleared', transport.sessionId);
-        return originalSend(message);
-      };
-
-      // Handle errors
-      req.on('close', () => {
-        debugTransport('Client disconnected for session: %s', transport.sessionId);
-        transport.close();
-      });
-
-      req.on('error', (error: unknown) => {
-        // Log error safely - strip all newlines and just log the error type
-        const errorType =
-          (error &&
-            typeof error === 'object' &&
-            ('code' in error
-              ? error.code
-              : typeof error === 'object' && 'name' in error
-                ? error.name
-                : 0)) ||
-          'Unknown';
-        console.error(`SSE connection error: ${errorType}`);
-        debugTransport('SSE connection error for session %s: %O', transport.sessionId, error);
-        transport.close();
-      });
-
-      // Connect transport to MCP server
-      // Note: connect() automatically calls start() on the transport
-      try {
-        debugTransport('Connecting transport to MCP server for session: %s', transport.sessionId);
-        await mcpServer.connect(transport);
-        debugTransport('Transport connected successfully for session: %s', transport.sessionId);
-      } catch (error) {
-        console.error(`Failed to connect transport: ${error}`);
-        debugTransport(
-          'Failed to connect transport for session %s: %O',
-          transport.sessionId,
-          error
-        );
-        sessionManager.remove(transport.sessionId);
-        clearTimeout(timeout);
-        throw error;
-      }
-    })
-  );
-
-  // Message endpoint - receives client messages
-  app.post(
-    '/messages',
-    asyncHandler(async (req: Request, res: Response) => {
-      const sessionId = req.query.sessionId as string;
-      debugTransport('Message received for session: %s', sessionId);
-
-      if (!sessionId || typeof sessionId !== 'string') {
-        debugTransport('Invalid session ID in message request');
-        res.status(400).json({ error: 'Valid sessionId required' });
-        return;
-      }
-
-      // Validate request body
-      if (!req.body || typeof req.body !== 'object') {
-        res.status(400).json({ error: 'Invalid request body' });
-        return;
-      }
-
-      const transport = sessionManager.get(sessionId) as SSEServerTransport;
+      // For initialization requests (no session ID), create a new transport
+      let isNewTransport = false;
       if (!transport) {
-        debugTransport('Session not found: %s', sessionId);
-        res.status(404).json({ error: 'Session not found' });
-        return;
+        if (req.method === 'POST') {
+          // Could be an initialize request — create a new transport + server pair
+          try {
+            transport = await createAndRegisterTransport(createMcpServer, sessionManager);
+            isNewTransport = true;
+            debugTransport('Created new transport for potential initialization');
+          } catch (error) {
+            console.error('Failed to create transport:', error);
+            debugTransport('Failed to create transport: %O', error);
+            res.status(503).json({ error: 'Server capacity reached' });
+            return;
+          }
+        } else {
+          // GET or DELETE without a valid session ID
+          res.status(400).json({
+            jsonrpc: '2.0',
+            error: { code: -32000, message: 'Bad Request: Mcp-Session-Id header is required' },
+            id: null,
+          });
+          return;
+        }
       }
 
+      // Delegate to the transport — it handles all protocol details
       try {
-        // Let the transport handle the message
-        debugTransport('Processing message for session %s: %O', sessionId, req.body);
-        await transport.handlePostMessage(req, res, req.body);
-        debugTransport('Message processed successfully for session: %s', sessionId);
+        await transport.handleRequest(req, res, req.body);
       } catch (error) {
-        console.error('Error handling message:', error);
-        debugTransport('Error handling message for session %s: %O', sessionId, error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error handling MCP request:', error);
+        debugTransport('Error handling MCP request: %O', error);
+        // Clean up newly created transports that failed during first request
+        if (isNewTransport) {
+          await transport.close();
+        }
+        // Only send error if response hasn't started
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Internal server error' });
+        }
+      }
+
+      // Clean up new transports that didn't initialize (e.g., non-initialize POST)
+      if (isNewTransport && !transport.sessionId) {
+        debugTransport('New transport did not initialize, cleaning up');
+        await transport.close();
       }
     })
   );
@@ -291,7 +299,9 @@ export async function createHttpServer(
         const actualHost = typeof address === 'object' && address ? address.address : 'unknown';
         // Log server startup info to debug namespace only
         debugTransport('MCP server listening on %s:%d', actualHost, actualPort);
-        debugTransport('Endpoints: /mcp (SSE), /messages (POST), /health (GET)');
+        debugTransport(
+          'Endpoints: POST /mcp (requests), GET /mcp (SSE notifications), DELETE /mcp (terminate), GET /health'
+        );
         debugTransport('Server started successfully on %s:%d', actualHost, actualPort);
         resolve();
       });

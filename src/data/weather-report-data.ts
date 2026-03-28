@@ -93,11 +93,13 @@ async function fetchWeatherReportFromHttp(
   } catch (error) {
     if (error instanceof HttpRequestError) {
       throw new Error(
-        `Failed to fetch weather report for ${region} in ${language}: HTTP error ${error.statusCode || 'unknown'}`
+        `Failed to fetch weather report for ${region} in ${language}: HTTP error ${error.statusCode || 'unknown'}`,
+        { cause: error }
       );
     }
     throw new Error(
-      `Failed to fetch weather report for ${region} in ${language}: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to fetch weather report for ${region} in ${language}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     );
   }
 }
@@ -124,7 +126,8 @@ async function fetchWeatherReportFromTestFixtures(
     } catch (error) {
       throw new Error(
         `Test fixture directory not found: ${reportPath}. Please ensure test fixtures are properly installed.
-        ${error instanceof Error ? error.message : String(error)}`
+        ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
       );
     }
 
@@ -136,7 +139,8 @@ async function fetchWeatherReportFromTestFixtures(
     } catch (error) {
       throw new Error(
         `versions.json not found in ${reportPath}. Full path tried: ${versionsFilePath}.
-        ${error instanceof Error ? error.message : String(error)}`
+        ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
       );
     }
 
@@ -160,7 +164,8 @@ async function fetchWeatherReportFromTestFixtures(
     } catch (error) {
       throw new Error(
         `Report file not found: ${reportFilePath}. Please ensure all test fixtures are properly installed.
-        ${error instanceof Error ? error.message : String(error)}`
+        ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
       );
     }
 
@@ -168,7 +173,8 @@ async function fetchWeatherReportFromTestFixtures(
   } catch (error) {
     console.error(`Error reading test fixture for ${region} in ${language}:`, error);
     throw new Error(
-      `Failed to get test fixture for ${region} in ${language}: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to get test fixture for ${region} in ${language}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     );
   }
 }

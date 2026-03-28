@@ -10,7 +10,7 @@ import type { z } from 'zod';
  * @returns A formatted error message string
  */
 export function formatZodError(error: z.ZodError): string {
-  const messages = error.errors.map((err) => {
+  const messages = error.issues.map((err) => {
     if (err.path.length > 0) {
       return `${err.path.join('.')}: ${err.message}`;
     }

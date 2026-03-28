@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     /* Base Options: */
-    "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "es2022",
     "allowJs": true,
@@ -25,7 +24,8 @@
     ],
     /* Additional options */
     "sourceMap": true,
-    "declaration": false
+    "declaration": false,
+    "rootDir": "./src"
   },
   "include": [
     "src/**/*"

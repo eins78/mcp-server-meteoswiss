@@ -164,7 +164,7 @@ export class MCPClient {
       id: this.getNextId(),
       method: 'initialize',
       params: {
-        protocolVersion: '2024-11-05',
+        protocolVersion: '2025-11-25',
         clientInfo: {
           name: 'mcp-integration-tests',
           version: '1.0.0',

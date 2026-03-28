@@ -189,11 +189,13 @@ async function searchFromApi(
     debugData('Search API error: %o', error);
     if (error instanceof HttpRequestError) {
       throw new Error(
-        `Failed to search MeteoSwiss content: HTTP error ${error.statusCode || 'unknown'}`
+        `Failed to search MeteoSwiss content: HTTP error ${error.statusCode || 'unknown'}`,
+        { cause: error }
       );
     }
     throw new Error(
-      `Failed to search MeteoSwiss content: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to search MeteoSwiss content: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     );
   }
 }
