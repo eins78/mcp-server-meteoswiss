@@ -51,6 +51,7 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(day.temperature.max).toEqual(expect.any(Number));
     expect(day.precipitation.total).toEqual(expect.any(Number));
     expect(day.weather).toEqual(expect.any(String));
+    expect(day.weather_icon_url).toMatch(/^https:\/\/www\.meteoschweiz\.admin\.ch\/static\/resources\/weather-symbols\/\d+\.svg$/);
   });
 
   it('should return error for empty location', async () => {
