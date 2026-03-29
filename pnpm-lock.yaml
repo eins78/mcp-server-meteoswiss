@@ -144,7 +144,7 @@ importers:
         specifier: ^6.0.2
         version: 6.0.2
 
-  packages/meteoswiss-skill:
+  packages/meteoswiss-skills:
     devDependencies:
       skills:
         specifier: ^1.1.6

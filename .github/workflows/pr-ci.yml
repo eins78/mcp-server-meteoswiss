@@ -103,7 +103,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate skills
-        run: pnpm --filter meteoswiss-skill test
+        run: pnpm --filter meteoswiss-skills test
 
   security-audit:
     name: Security & Dependency Check

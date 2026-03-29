@@ -33,7 +33,7 @@ This plan promotes the project to a production service with proper naming, user-
 |-------|------|
 | GitHub repo | `eins78/meteoswiss-llm-tools` |
 | npm package (MCP server) | `meteoswiss-mcp` |
-| npm package (skill, future) | `meteoswiss-skill` |
+| npm package (skill, future) | `meteoswiss-skills` |
 | Docker image | `ghcr.io/eins78/meteoswiss-mcp` |
 | Prod URL | `https://meteoswiss-mcp.ars.is` |
 
@@ -47,7 +47,7 @@ meteoswiss-llm-tools/
       src/
       test/
       ...
-    meteoswiss-skill/      # (future) Claude Code skill
+    meteoswiss-skills/      # (future) Claude Code skill
   pnpm-workspace.yaml
   package.json             # root workspace config
   README.md                # umbrella README
@@ -329,7 +329,7 @@ Search for `mcp-server-meteoswiss` on Google and GitHub. Update or notify mainta
 - Breaking API changes
 - Infrastructure provisioning details (deployment steps documented but executed manually)
 - Changing the MCP tool names (they keep the `meteoswiss` prefix)
-- The `meteoswiss-skill` package (noted in monorepo structure as a future addition)
+- The `meteoswiss-skills` package (noted in monorepo structure as a future addition)
 
 ## Branches
 

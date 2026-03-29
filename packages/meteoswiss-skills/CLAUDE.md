@@ -1,4 +1,4 @@
-# MeteoSwiss Skill
+# MeteoSwiss Skills
 
 Agent skill package following the [agentskills.io](https://agentskills.io/specification) spec. Uses the [`skills`](https://www.npmjs.com/package/skills) CLI for validation.
 
