@@ -106,10 +106,14 @@ export function weatherIconDescription(code: number): string {
 
 /**
  * Get the SVG icon URL for a MeteoSwiss weather pictogram code.
+ * Returns null for codes not in the known icon maps.
  *
  * @param code - Numeric pictogram code (1-35 for day, 101-142 for night)
- * @returns URL to the SVG weather symbol on meteoschweiz.admin.ch
+ * @returns URL to the SVG weather symbol, or null for unknown codes
  */
-export function weatherIconUrl(code: number): string {
+export function weatherIconUrl(code: number): string | null {
+  if (DAY_ICONS[code] === undefined && NIGHT_ICONS[code] === undefined) {
+    return null;
+  }
   return `${ICON_BASE_URL}/${code}.svg`;
 }
