@@ -28,19 +28,19 @@ jobs:
         run: pnpm install --frozen-lockfile
         
       - name: Run lint (TypeScript + ESLint)
-        run: pnpm run lint
-        
+        run: pnpm --filter meteoswiss-mcp run lint
+
       - name: Run build (TypeScript compilation)
-        run: pnpm run build
-        
+        run: pnpm --filter meteoswiss-mcp run build
+
       - name: Run tests
-        run: pnpm test
+        run: pnpm --filter meteoswiss-mcp test
         env:
           USE_TEST_FIXTURES: true
           NODE_OPTIONS: '--experimental-vm-modules'
-          
+
       - name: Run integration tests
-        run: pnpm run test:integration
+        run: pnpm --filter meteoswiss-mcp run test:integration
         env:
           USE_TEST_FIXTURES: true
           NODE_OPTIONS: '--experimental-vm-modules'
