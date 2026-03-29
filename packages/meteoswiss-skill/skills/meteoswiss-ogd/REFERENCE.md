@@ -1,3 +1,6 @@
+<!-- Canonical source: packages/meteoswiss-mcp/src/support/weather-icons.ts and src/schemas/ogd-shared.ts -->
+<!-- If MeteoSwiss updates parameters or icons, update both this file and the MCP server source. -->
+
 # MeteoSwiss OGD — Parameter Reference
 
 Full reference tables for MeteoSwiss Open Government Data parameters, weather icons, and STAC collections.

@@ -44,4 +44,4 @@ compatibility: claude-code, cursor
 
 ## Versioning
 
-Every skill has `metadata.version` in frontmatter (semver). When a skill version is bumped, bump version in `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.cursor-plugin/plugin.json`.
+Every skill has `metadata.version` in frontmatter (semver). When a skill version is bumped, bump version in all 5 locations: `SKILL.md` frontmatter, `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.cursor-plugin/plugin.json`.
