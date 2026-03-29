@@ -40,8 +40,8 @@ console.log(`Health: ${health.status} (v${health.version})\n`);
 const tools = await client.listTools();
 console.log(`Tools: ${tools.tools.map(t => t.name).join(', ')}\n`);
 
-await test('Tool count is 7', () => {
-  assert(tools.tools.length === 7, `Expected 7 tools, got ${tools.tools.length}`);
+await test('Tool count is 6', () => {
+  assert(tools.tools.length === 6, `Expected 6 tools, got ${tools.tools.length}`);
 });
 
 // --- OGD Tools ---

@@ -8,17 +8,21 @@ This server provides weather data from MeteoSwiss using the [Model Context Proto
 
 ## Features
 
-- Weather reports for regions in Switzerland (North, South, West)
+- Multi-day forecasts for ~6000 Swiss locations (postal codes, stations, place names)
+- Real-time measurements from ~160 automatic weather stations (updated every 10 minutes)
+- Station discovery and search by name, canton, or coordinates
+- Pollen concentration monitoring from ~15 stations
 - Search MeteoSwiss website content across multiple topics
 - Fetch full content from MeteoSwiss pages with format conversion
-- Multi-language support (German, French, Italian, English)
-- Weather forecasts with daily breakdowns
-- Intelligent HTTP caching with ETag support
+- Disk-based CSV caching with configurable TTL
+- Fuzzy station name matching with diacritics support and geocoding fallback
 - Test fixtures for development
+
+Data sourced from [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/) — the same data powering the MeteoSwiss app and website.
 
 ## Architecture
 
-This MCP server runs as an HTTP service with Server-Sent Events (SSE) for real-time communication. It's designed to be accessed remotely using `mcp-remote` for Claude Desktop integration.
+This MCP server runs as an HTTP service using the MCP Streamable HTTP transport. It's designed to be accessed remotely using `mcp-remote` for Claude Desktop integration.
 
 ## Quick Start
 
@@ -78,7 +82,7 @@ This project uses `tsx` for TypeScript execution, providing a smooth development
 
 #### Running the Server
 
-The server runs as an HTTP service with Server-Sent Events (SSE):
+The server runs as an HTTP service with Streamable HTTP transport:
 
 ```bash
 # Start the server (default port 3000)
@@ -134,18 +138,37 @@ pnpm run lint
 
 ## Available Tools
 
-### meteoswissWeatherReport
-Get official MeteoSwiss weather reports for Swiss regions.
+### meteoswissLocalForecast
+Get a multi-day weather forecast for any Swiss location.
 
 **Parameters:**
-- `region`: Swiss region (`north`, `south`, or `west`)
-  - `north`: Northern Switzerland (Zurich, Basel, Bern, Swiss Plateau)
-  - `south`: Southern Switzerland (Ticino and southern valleys)
-  - `west`: Western Switzerland/Romandy (Geneva, Lausanne, western Alps)
-- `language`: Report language (`de`, `fr`, or `it` - English not available)
-  - Default: `de`
+- `location` (required): Postal code ("8001"), station abbreviation ("ZUE"), or place name ("Zurich")
+- `days` (optional): Number of forecast days, 1-9 (default: 5)
 
-**Returns:** Detailed weather report with daily forecasts, temperatures, and regional conditions.
+**Returns:** Daily forecasts with temperature, precipitation, and weather descriptions.
+
+### meteoswissCurrentWeather
+Get real-time weather measurements from Swiss automatic weather stations.
+
+**Parameters:**
+- `station` (optional): Station name ("Zurich"), abbreviation ("SMA"), or address ("Bahnhofplatz 1 Bern")
+- `coordinates` (optional): `{ lat, lon }` — finds nearest station
+
+**Returns:** Temperature, precipitation, wind, humidity, pressure, sunshine, and more. Updated every 10 minutes.
+
+### meteoswissStations
+List and search MeteoSwiss automatic weather stations.
+
+**Parameters:**
+- `search` (optional): Search by station name
+- `canton` (optional): Filter by 2-letter canton code (e.g., "ZH", "BE")
+- `limit` (optional): Max results, 1-200 (default: 20)
+
+### meteoswissPollenData
+Get current pollen concentration data from MeteoSwiss monitoring stations.
+
+**Parameters:**
+- `station` (optional): Filter by station name or abbreviation
 
 ### search
 Search MeteoSwiss website content with pagination and multi-language support.
@@ -153,21 +176,19 @@ Search MeteoSwiss website content with pagination and multi-language support.
 ### fetch
 Retrieve full content from MeteoSwiss pages in various formats (markdown, text, HTML).
 
-See the [API documentation](docs/architecture/api-design.md) for detailed tool specifications.
-
 ## Available Prompts
 
-Pre-configured prompts for common weather queries:
+Pre-configured prompts for common weather queries using MeteoSwiss Open Data:
 
 ### German
-- `wetterNordschweiz`: Current weather report for Northern Switzerland
-- `wetterSchweiz`: Interactive prompt for any Swiss region
+- `wetterNordschweiz`: Forecast and current weather for Northern Switzerland
+- `wetterSchweiz`: Weather for any Swiss location (by city, postal code, or station)
 
 ### French
-- `meteoSuisseRomande`: Current weather report for Western Switzerland (Romandy)
+- `meteoSuisseRomande`: Forecast and current weather for Western Switzerland (Romandy)
 
 ### Italian
-- `meteoTicino`: Current weather report for Southern Switzerland (Ticino)
+- `meteoTicino`: Forecast and current weather for Southern Switzerland (Ticino)
 
 ## Debugging
 

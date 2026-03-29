@@ -45,9 +45,14 @@ This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, imple
    - `/` - Information endpoint
    - `/mcp` - MCP Streamable HTTP endpoint (POST: requests, GET: SSE notifications, DELETE: session termination)
    - `/health` - Health check endpoint
-4. **Tools** (`src/tools/`): MCP tools for weather data queries
-   - `meteoswissWeatherReport`: Weather reports for Swiss regions (north/south/west) in multiple languages
-5. **Data Layer** (`src/data/`): Handles fetching from MeteoSwiss HTTP endpoints
+4. **Tools** (`src/tools/`, `src/data/`): MCP tools for weather data
+   - `meteoswissLocalForecast`: Multi-day forecasts for ~6000 Swiss locations (postal codes, stations, place names)
+   - `meteoswissCurrentWeather`: Real-time measurements from ~160 automatic weather stations
+   - `meteoswissStations`: Station discovery and search by name, canton, or coordinates
+   - `meteoswissPollenData`: Pollen concentration monitoring from ~15 stations
+   - `search`: Search MeteoSwiss website content
+   - `fetch`: Fetch full content from MeteoSwiss pages
+5. **Data Layer** (`src/data/`): STAC API client, disk-based CSV cache, station resolver, geocoding
 6. **Schemas** (`src/schemas/`): Zod schemas for input validation
 7. **Support** (`src/support/`): Supporting infrastructure - logging, validation, HTTP communication, session management
 
@@ -131,6 +136,14 @@ import { someFunction, type AnotherType } from './module.ts';
 - JSDoc comments for all exported functions
 - Follow existing patterns in codebase
 - Never reference `./vendor` files directly in code
+- Keep files focused and under 300 lines when possible
+
+### Naming Conventions
+- **Variables, parameters, functions**: camelCase
+- **Classes, interfaces, types**: PascalCase
+- **Constants**: UPPER_CASE
+- **Files**: kebab-case for utilities, PascalCase for classes/types
+- **Folders**: kebab-case
 
 ### Node.js Built-in Imports
 Always import Node.js built-in modules with the `node:` prefix for clarity and future compatibility:
@@ -139,7 +152,7 @@ Always import Node.js built-in modules with the `node:` prefix for clarity and f
 
 ### File Naming Convention
 Follow consistent naming schemes:
-- **Functions/utilities**: `kebab-case` (e.g., `get-weather-report.ts`, `http-client.ts`)
+- **Functions/utilities**: `kebab-case` (e.g., `ogd-local-forecast.ts`, `http-client.ts`)
 - **Classes**: `PascalCase` (e.g., `WeatherService.ts`, `DataLoader.ts`)
 - **Tests**: Match the file they test with `.test.ts` suffix
 
@@ -257,12 +270,22 @@ docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
 - When referring to MeteoSwiss products, always say **"MeteoSwiss app and website"** (not just "app"). The data powers both.
 
 ## Open Tasks and Issues
-<!-- Document outstanding tasks, bugs, or technical debt here -->
+
+- Re-add climate normals tool when MeteoSwiss publishes `ch.meteoschweiz.ogd-climate-normals` data
+- Add more forecast parameters to meteoswissLocalForecast (wind, sunshine, cloud cover)
+- Add precipitation data to postal code forecasts (hourly aggregation)
+- Consider Open-Meteo proxy for NWP model data (ICON-CH1/CH2)
 
 ## Design Decisions
-<!-- Document major design or implementation decisions, along with their rationale -->
+
+- **OGD over HTML scraping**: MeteoSwiss launched Open Government Data in May 2025. All structured data now comes from the STAC API + CSV downloads, not HTML scraping.
+- **Disk-based CSV cache**: TTL-tiered (60s realtime, 1h forecast, 24h metadata). Low memory, fast after initial download.
+- **Fuzzy station resolution**: Map-indexed exact match (O(1)), then substring with diacritic normalization, then swisstopo geocoding fallback.
+- **`meteoswiss` prefix on tools**: LLM tool selection reliability — helps models distinguish weather tools from other MCP servers.
 
 ## References
-<!-- Include links to relevant documentation, tickets, or external resources -->
+
 - [MCP Protocol Documentation](https://spec.modelcontextprotocol.io/)
-- [MeteoSwiss API Documentation](https://www.meteoswiss.admin.ch/)
+- [MeteoSwiss Open Data Docs](https://opendatadocs.meteoswiss.ch/)
+- [MeteoSwiss STAC API](https://data.geo.admin.ch/api/stac/v1/collections)
+- [swisstopo API](https://api3.geo.admin.ch/)

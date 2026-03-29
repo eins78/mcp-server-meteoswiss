@@ -147,11 +147,10 @@ describe('MCP Server Integration Tests', () => {
 
       // List tools
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(7);
+      expect(tools.tools).toHaveLength(6);
 
       // Check that we have all tools
       const toolNames = tools.tools.map(t => t.name);
-      expect(toolNames).toContain('meteoswissWeatherReport');
       expect(toolNames).toContain('search');
       expect(toolNames).toContain('fetch');
       expect(toolNames).toContain('meteoswissLocalForecast');
@@ -160,40 +159,6 @@ describe('MCP Server Integration Tests', () => {
       expect(toolNames).toContain('meteoswissPollenData');
     });
 
-    test('should call meteoswissWeatherReport tool via HTTP', async () => {
-      const transport = new StreamableHTTPClientTransport(new URL(`${serverUrl}/mcp`));
-
-      client = new Client(
-        {
-          name: 'test-client',
-          version: '1.0.0',
-        },
-        {
-          capabilities: {},
-        }
-      );
-
-      await client.connect(transport);
-
-      // Call the tool
-      const result = await client.callTool({
-        name: 'meteoswissWeatherReport',
-        arguments: {
-          region: 'south',
-          language: 'de',
-        },
-      });
-
-      expect(result.content).toHaveLength(1);
-      expect((result as any).content[0]!.type).toBe('text');
-
-      const weatherData = JSON.parse((result as any).content[0].text);
-      expect(weatherData).toMatchObject({
-        region: 'south',
-        language: 'de',
-        source: 'meteoswiss',
-      });
-    });
   });
 });
 
@@ -242,7 +207,7 @@ describe('MCP Inspector CLI Tests', () => {
 
     // Run inspector CLI command
     const { stdout, stderr } = await execAsync(
-      `npx @modelcontextprotocol/inspector --cli http://localhost:13457/mcp --method tools/call --tool-name meteoswissWeatherReport --tool-arg region=north --tool-arg language=de`,
+      `npx @modelcontextprotocol/inspector --cli http://localhost:13457/mcp --method tools/call --tool-name meteoswissLocalForecast --tool-arg location=Zurich --tool-arg days=2`,
       {
         env: { ...process.env },
         timeout: 10000,
@@ -254,7 +219,7 @@ describe('MCP Inspector CLI Tests', () => {
 
     // Check for successful response
     const output = stdout || stderr;
-    expect(output).toContain('north'); // Should contain the region
-    expect(output).toContain('de'); // Should contain the language
+    expect(output).toContain('Zurich'); // Should contain the location
+    expect(output).toContain('forecast'); // Should contain forecast data
   });
 });
