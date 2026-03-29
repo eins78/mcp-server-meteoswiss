@@ -1,22 +1,62 @@
 # MeteoSwiss LLM Tools
 
-Swiss weather data for AI assistants — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/).
+Swiss weather data for AI assistants — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website.
 
-## Packages
+- **Multi-day forecasts** for ~6000 Swiss locations (postal codes, stations, place names)
+- **Real-time measurements** from ~160 automatic weather stations, updated every 10 minutes
+- **Station discovery** by name, canton, or GPS coordinates
+- **Pollen monitoring** from ~15 stations across Switzerland
+- **MeteoSwiss website** search and content retrieval
 
-| Package | Description |
-|---------|-------------|
-| [`meteoswiss-mcp`](packages/meteoswiss-mcp/) | MCP server for MeteoSwiss weather data — forecasts, real-time measurements, stations, pollen |
+## Use the Hosted Service
 
-## Quick Start
+No installation required — the MCP server is hosted at `https://meteoswiss-mcp.ars.is`.
 
-The MCP server is hosted and ready to use — no installation required:
+### Claude Code
 
-```
+```bash
 claude mcp add meteoswiss https://meteoswiss-mcp.ars.is/mcp
 ```
 
-See the [meteoswiss-mcp README](packages/meteoswiss-mcp/README.md) for Claude Desktop, Claude.ai, and self-hosting instructions.
+### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "meteoswiss": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://meteoswiss-mcp.ars.is/mcp"]
+    }
+  }
+}
+```
+
+### Docker
+
+```bash
+docker run -p 3000:3000 ghcr.io/eins78/meteoswiss-mcp:latest
+```
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `meteoswissLocalForecast` | Multi-day forecasts by postal code, station, or place name |
+| `meteoswissCurrentWeather` | Real-time measurements (temperature, wind, humidity, pressure) |
+| `meteoswissStations` | Search station network by name, canton, or coordinates |
+| `meteoswissPollenData` | Pollen concentration data from monitoring stations |
+| `search` | Search MeteoSwiss website content (DE, FR, IT, EN) |
+| `fetch` | Fetch full content from MeteoSwiss pages |
+
+## Packages
+
+| Package | npm | Description |
+|---------|-----|-------------|
+| [`meteoswiss-mcp`](packages/meteoswiss-mcp/) | [![npm](https://img.shields.io/npm/v/meteoswiss-mcp)](https://www.npmjs.com/package/meteoswiss-mcp) | MCP server for MeteoSwiss weather data |
+
+See the [meteoswiss-mcp README](packages/meteoswiss-mcp/README.md) for full documentation, self-hosting, environment variables, and development setup.
 
 ## License
 
