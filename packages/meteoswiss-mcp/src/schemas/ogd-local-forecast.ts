@@ -26,6 +26,7 @@ export type GetLocalForecastParams = z.infer<typeof GetLocalForecastParamsSchema
 export type DailyForecast = {
   date: string;
   weather: string | null;
+  weather_icon_url: string | null;
   temperature: { min: number | null; max: number | null; unit: string };
   precipitation: { total: number | null; unit: string };
 };

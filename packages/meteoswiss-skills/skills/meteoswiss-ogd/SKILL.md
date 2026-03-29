@@ -79,6 +79,8 @@ curl -s "$ASSET_URL" | awk -F';' 'NR==1 || $1=="48"'
 
 **Station forecasts** (point_type_id=1) have daily params: `tre200dx` (max temp), `tre200dn` (min temp), `rka150d0` (precip), `jp2000d0` (weather icon). **Postal codes/mountains** (type 2,3) have hourly params: `tre200h0`, `rre150h0`, `jww003i0` — aggregate to daily by grouping on first 8 timestamp chars. Common point_ids: Zurich=48, Bern=29, Geneva=53.
 
+**Weather icon SVGs**: `https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/{CODE}.svg` — replace `{CODE}` with the numeric icon code (e.g., `1.svg` for sunny, `101.svg` for clear night). See `${CLAUDE_SKILL_DIR}/REFERENCE.md` for all codes.
+
 ## 4. Get Pollen Data
 
 ```bash

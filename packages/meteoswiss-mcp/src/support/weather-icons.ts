@@ -92,6 +92,8 @@ const NIGHT_ICONS: Record<number, string> = {
   142: 'very cloudy, thundery snow showers',
 };
 
+const ICON_BASE_URL = 'https://www.meteoschweiz.admin.ch/static/resources/weather-symbols';
+
 /**
  * Map a MeteoSwiss weather pictogram code to a human-readable description.
  *
@@ -100,4 +102,14 @@ const NIGHT_ICONS: Record<number, string> = {
  */
 export function weatherIconDescription(code: number): string {
   return DAY_ICONS[code] ?? NIGHT_ICONS[code] ?? `unknown (${code})`;
+}
+
+/**
+ * Get the SVG icon URL for a MeteoSwiss weather pictogram code.
+ *
+ * @param code - Numeric pictogram code (1-42 for day, 101-142 for night)
+ * @returns URL to the SVG weather symbol on meteoschweiz.admin.ch
+ */
+export function weatherIconUrl(code: number): string {
+  return `${ICON_BASE_URL}/${code}.svg`;
 }
