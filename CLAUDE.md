@@ -277,6 +277,36 @@ docker run -e DEBUG_MCHMCP=true meteoswiss-mcp
 - **Running commands**: Use `npx` for one-off commands in shell, or define scripts in `package.json`
 - **Example**: Instead of `npm install -g typescript`, use `pnpm add -D typescript` and run with `npx tsc` or via package.json scripts
 
+### Changesets & Release Process
+
+This monorepo uses [changesets](https://github.com/changesets/changesets) for versioning and changelog generation.
+
+**When making a user-facing change**, add a changeset:
+```bash
+pnpm changeset
+# Follow prompts: select affected packages, bump type (patch/minor/major), description
+```
+
+Or create manually in `.changeset/`:
+```markdown
+---
+"meteoswiss-mcp": minor
+"meteoswiss-skills": patch
+---
+
+Description of the change.
+```
+
+**Automated flow:**
+1. PRs with changesets merge to `main`
+2. The "Version Packages" workflow creates/updates a PR that bumps `package.json` versions and generates `CHANGELOG.md`
+3. Merging the "Version Packages" PR finalizes the version bump
+4. Create a GitHub Release with tag `meteoswiss-mcp-vX.Y.Z` or `meteoswiss-skills-vX.Y.Z` to trigger publishing (npm, Docker)
+
+**Tag format:** `{package-name}-v{version}` (e.g., `meteoswiss-mcp-v2.1.0`, `meteoswiss-skills-v1.0.0`)
+
+**Not every PR needs a changeset.** Skip for: docs-only changes, CI config, dev tooling, test-only changes.
+
 ## Plot Config
 
 - **Branch prefixes:** idea/, feature/, bug/, docs/, infra/
