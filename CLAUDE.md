@@ -131,6 +131,12 @@ import { someFunction, type AnotherType } from './module.ts';
 - **Test fixtures** in `test/__fixtures__/` to avoid external dependencies
 - Environment variable `USE_TEST_FIXTURES=true` automatically set for Claude Desktop
 
+### Testing Anti-Patterns
+- **Never use conditional assertions** (`if (value) expect(value)...`) — these silently pass on the exact failure they should catch. Assert the value must exist, or use `expect.any(Type)`.
+- **Assert content, not just structure** — checking `Array.isArray(result)` passes for an array of nulls. Verify at least one entry has the expected non-null fields.
+- **Fixture resolver must fail-fast** — when `USE_TEST_FIXTURES=true`, any URL not mapped in `resolveFixturePath` throws. Never fall through to live network in tests.
+- **When adding a new data parameter**, always add: (1) the param to `resolveFixturePath`'s allowlist in `ogd-data-store.ts`, (2) a fixture CSV in `test/__fixtures__/ogd/`, (3) test assertions for the new field.
+
 ### Code Standards
 - Use explicit return types for functions
 - JSDoc comments for all exported functions

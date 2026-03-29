@@ -33,7 +33,15 @@ function resolveFixturePath(url: string): string | null {
     return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn_meta_parameters.csv');
 
   // Forecast CSVs: match by parameter name
-  for (const param of ['tre200dx', 'tre200dn', 'rka150d0', 'jp2000d0', 'tre200h0']) {
+  for (const param of [
+    'tre200dx',
+    'tre200dn',
+    'rka150d0',
+    'jp2000d0',
+    'tre200h0',
+    'rre150h0',
+    'jww003i0',
+  ]) {
     if (url.includes(`.${param}.csv`))
       return path.join(OGD_FIXTURES_ROOT, 'forecasts', `${param}.csv`);
   }
@@ -106,12 +114,15 @@ export async function getCsvData(
   tier: CacheTier,
   filter?: (row: CsvRow) => boolean
 ): Promise<CsvRow[]> {
-  // Test fixture support
+  // Test fixture support — fail-fast if no fixture matches
   const fixturePath = resolveFixturePath(url);
   if (fixturePath) {
     debugData('[ogd-store] Using fixture: %s', fixturePath);
     const text = await fs.readFile(fixturePath, 'utf-8');
     return parseCsv(text, filter);
+  }
+  if (USE_TEST_FIXTURES) {
+    throw new Error(`No test fixture for URL: ${url}. Add a mapping in resolveFixturePath.`);
   }
 
   const cachePath = path.join(CACHE_DIR, cacheKey);
@@ -145,12 +156,15 @@ export async function getLatin1CsvData(
   tier: CacheTier,
   filter?: (row: CsvRow) => boolean
 ): Promise<CsvRow[]> {
-  // Test fixture support (fixtures are already UTF-8)
+  // Test fixture support — fail-fast if no fixture matches
   const fixturePath = resolveFixturePath(url);
   if (fixturePath) {
     debugData('[ogd-store] Using fixture: %s', fixturePath);
     const text = await fs.readFile(fixturePath, 'utf-8');
     return parseCsv(text, filter);
+  }
+  if (USE_TEST_FIXTURES) {
+    throw new Error(`No test fixture for URL: ${url}. Add a mapping in resolveFixturePath.`);
   }
 
   const cachePath = path.join(CACHE_DIR, cacheKey);

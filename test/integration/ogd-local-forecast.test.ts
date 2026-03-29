@@ -29,9 +29,7 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(tool?.inputSchema?.properties).toHaveProperty('days');
   });
 
-  it('should return forecast for a station abbreviation', async () => {
-    // BER is point_id=78 in the forecast point metadata fixture
-    // but the fixture only has point 48 (type 1) — use that
+  it('should return forecast with content for a postal code', async () => {
     const result = await client.callTool('meteoswissLocalForecast', {
       location: '8001',
       days: 2,
@@ -45,6 +43,14 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(data.forecast).toBeDefined();
     expect(Array.isArray(data.forecast)).toBe(true);
     expect(data.source).toBe('MeteoSwiss Open Data');
+
+    // Assert content, not just structure — postal code path must populate all fields
+    const day = data.forecast[0];
+    expect(day).toHaveProperty('date');
+    expect(day.temperature.min).toEqual(expect.any(Number));
+    expect(day.temperature.max).toEqual(expect.any(Number));
+    expect(day.precipitation.total).toEqual(expect.any(Number));
+    expect(day.weather).toEqual(expect.any(String));
   });
 
   it('should return error for empty location', async () => {
