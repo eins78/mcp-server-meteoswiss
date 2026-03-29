@@ -15,7 +15,7 @@ export async function renderHomepage(): Promise<string> {
   const config = validateEnv();
 
   // Files to include in order
-  const files = ['overview.md', 'installation.md', 'tools.md'];
+  const files = ['overview.md', 'usage.md', 'tools.md'];
 
   // Read all markdown files
   const contents = await Promise.all(

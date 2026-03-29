@@ -2,27 +2,20 @@
 
 ## meteoswissLocalForecast
 
-Get a multi-day weather forecast for any Swiss location. Uses official MeteoSwiss Open Data — the same forecasts powering the MeteoSwiss app and website.
-
-### Parameters
+Get a multi-day weather forecast for any Swiss location.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `location` | string | Yes | Postal code ("8001"), station abbreviation ("ZUE"), or place name ("Zurich") |
 | `days` | number | No | Number of forecast days, 1-9 (default: 5) |
 
-### Example Usage
+**Returns:** Daily forecasts with temperature (min/max), precipitation, weather description, and weather icons.
 
-Simply ask questions like:
-- "What's the weather forecast for Zurich this week?"
-- "Will it rain in Bern tomorrow?"
-- "Show me the 3-day forecast for postal code 6900"
+**Try:** "What's the weather forecast for Zurich this week?" or "Will it rain in Bern tomorrow?"
 
 ## meteoswissCurrentWeather
 
-Get real-time weather measurements from any of ~160 Swiss automatic weather stations. Data updates every 10 minutes.
-
-### Parameters
+Get real-time measurements from any of ~160 Swiss automatic weather stations. Updated every 10 minutes.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -31,17 +24,13 @@ Get real-time weather measurements from any of ~160 Swiss automatic weather stat
 
 Provide either `station` or `coordinates` (not both).
 
-### Example Usage
+**Returns:** Temperature, precipitation, wind speed/direction, humidity, pressure, sunshine duration, and more.
 
-- "What's the temperature in Zurich right now?"
-- "Current weather near coordinates 47.37, 8.54"
-- "How windy is it at the Jungfraujoch station?"
+**Try:** "What's the temperature in Zurich right now?" or "How windy is it at Jungfraujoch?"
 
 ## meteoswissStations
 
-List and search MeteoSwiss automatic weather stations across Switzerland.
-
-### Parameters
+Search and browse the MeteoSwiss automatic weather station network.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -49,20 +38,26 @@ List and search MeteoSwiss automatic weather stations across Switzerland.
 | `canton` | string | No | Filter by 2-letter canton code (e.g., "ZH", "BE") |
 | `limit` | number | No | Maximum results, 1-200 (default: 20) |
 
+**Returns:** Station name, abbreviation, coordinates, elevation, and canton.
+
 ## meteoswissPollenData
 
-Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland).
-
-### Parameters
+Get current pollen concentration data from ~15 MeteoSwiss monitoring stations.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `station` | string | No | Filter by station name or abbreviation |
 
+**Returns:** Pollen types and concentration levels per station.
+
 ## search
 
-Search MeteoSwiss website content with pagination and multi-language support (DE, FR, IT, EN).
+Search MeteoSwiss website content across topics and languages (DE, FR, IT, EN).
+
+**Returns:** Search results with titles, descriptions, and URLs.
 
 ## fetch
 
-Fetch full content from a MeteoSwiss webpage. Can convert HTML to markdown or plain text.
+Fetch full content from a MeteoSwiss webpage. Converts HTML to markdown or plain text.
+
+**Returns:** Page content in the requested format.
