@@ -98,7 +98,13 @@ jobs:
 
       - name: Set package version
         working-directory: ${{ env.PACKAGE_DIR }}
-        run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          if [ "$CURRENT" != "${{ steps.version.outputs.version }}" ]; then
+            npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+          else
+            echo "Version already set to $CURRENT"
+          fi
 
       - name: Publish to npm
         working-directory: ${{ env.PACKAGE_DIR }}
