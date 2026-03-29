@@ -1,0 +1,20 @@
+{
+  "name": "meteoswiss-marketplace",
+  "description": "Marketplace for MeteoSwiss agent skills",
+  "owner": {
+    "name": "Max Albrecht",
+    "email": "1@178.is"
+  },
+  "plugins": [
+    {
+      "name": "meteoswiss-skills",
+      "description": "MeteoSwiss Open Data skill — teaches AI agents to access Swiss weather data directly via HTTP",
+      "version": "1.0.0-rc.1",
+      "source": "./",
+      "author": {
+        "name": "Max Albrecht",
+        "email": "1@178.is"
+      }
+    }
+  ]
+}

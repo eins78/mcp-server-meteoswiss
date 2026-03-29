@@ -1,0 +1,13 @@
+{
+  "name": "meteoswiss-skills",
+  "description": "MeteoSwiss Open Data skill — teaches AI agents to access Swiss weather data directly via HTTP",
+  "version": "1.0.0-rc.1",
+  "author": {
+    "name": "Max Albrecht",
+    "email": "1@178.is"
+  },
+  "homepage": "https://github.com/eins78/meteoswiss-llm-tools",
+  "repository": "https://github.com/eins78/meteoswiss-llm-tools",
+  "license": "CC0-1.0",
+  "keywords": ["skills", "weather", "meteoswiss", "switzerland", "open-data"]
+}
