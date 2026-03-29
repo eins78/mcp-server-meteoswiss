@@ -55,9 +55,15 @@ await test('meteoswissLocalForecast: city name "Zurich"', async () => {
 });
 
 await test('meteoswissLocalForecast: postal code "8001"', async () => {
-  const r = await client.callTool({ name: 'meteoswissLocalForecast', arguments: { location: '8001', days: 1 } });
+  const r = await client.callTool({ name: 'meteoswissLocalForecast', arguments: { location: '8001', days: 3 } });
   const data = JSON.parse(r.content[0].text);
   assert(data.location.name.includes('rich'), `Expected Zurich, got ${data.location.name}`);
+  assert(data.forecast.length > 0, 'Expected forecast data');
+  // Postal code forecasts must have precipitation and weather (skip past dates where weather may be null)
+  const day = data.forecast.find(d => d.weather !== null);
+  assert(day, 'Expected at least one forecast day with weather data');
+  assert(typeof day.weather === 'string', `weather should be a string, got ${typeof day.weather}`);
+  assert(day.precipitation.total !== null && day.precipitation.total !== undefined, 'Expected precipitation data');
 });
 
 await test('meteoswissLocalForecast: station "BER"', async () => {
@@ -65,10 +71,11 @@ await test('meteoswissLocalForecast: station "BER"', async () => {
   const data = JSON.parse(r.content[0].text);
   assert(data.location.name.includes('Bern'), `Expected Bern, got ${data.location.name}`);
   assert(data.location.type === 'station', `Expected station, got ${data.location.type}`);
-  // Station path should have weather descriptions
-  if (data.forecast[0]?.weather) {
-    assert(typeof data.forecast[0].weather === 'string', 'weather should be a string description');
-  }
+  // Station forecasts must have weather and precipitation
+  const futureDay = data.forecast.find(d => d.weather !== null);
+  assert(futureDay, 'Expected at least one forecast day with weather');
+  assert(typeof futureDay.weather === 'string', 'weather should be a string description');
+  assert(futureDay.precipitation.total !== null, 'Expected precipitation data');
 });
 
 await test('meteoswissLocalForecast: geocoding "Matterhorn"', async () => {
@@ -116,7 +123,8 @@ await test('meteoswissPollenData: all stations', async () => {
   const r = await client.callTool({ name: 'meteoswissPollenData', arguments: {} });
   const data = JSON.parse(r.content[0].text);
   assert(data.source === 'MeteoSwiss Open Data', `Wrong source: ${data.source}`);
-  // Pollen data may be empty outside season
+  assert(Array.isArray(data.stations), 'Expected stations array');
+  // Pollen data may be empty outside season, but structure must be valid
 });
 
 // --- Original Tools ---
