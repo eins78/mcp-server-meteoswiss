@@ -192,7 +192,7 @@ See [docs/debugging-guide.md](docs/debugging-guide.md) for more.
 
 Contributions are welcome! Run `pnpm run fix && pnpm run ci` before committing.
 
-When making user-facing changes, add a changeset (`pnpm changeset`). See [docs/releasing.md](docs/releasing.md) for the release process.
+See [docs/releasing.md](docs/releasing.md) for the release process.
 
 ## License
 
