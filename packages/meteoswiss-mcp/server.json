@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.eins78/meteoswiss-mcp",
+  "title": "MeteoSwiss MCP Server",
+  "description": "Swiss weather data for AI assistants — forecasts, measurements, stations, pollen.",
+  "repository": {
+    "url": "https://github.com/eins78/meteoswiss-llm-tools",
+    "source": "github",
+    "subfolder": "packages/meteoswiss-mcp"
+  },
+  "version": "2.0.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "meteoswiss-mcp",
+      "version": "2.0.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://meteoswiss-mcp.ars.is/mcp"
+    }
+  ]
+}
