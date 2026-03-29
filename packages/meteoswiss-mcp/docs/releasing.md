@@ -1,77 +1,85 @@
 # Releasing
 
-This project uses [changesets](https://github.com/changesets/changesets) to track changes, manage version bumps, and generate changelogs. Releases are published as Docker images to Docker Hub.
+Releases are triggered by creating a GitHub Release. The tag name determines the version.
 
-## Overview
+## How to Release
 
-1. Contributors add changesets during development (`pnpm changeset`)
-2. Changesets accumulate on `main`
-3. `pnpm release` does the rest: version bump → commit → tag → Docker publish
+1. Ensure `main` is in a releasable state (CI green)
+2. Create a GitHub Release:
+   - Via CLI: `gh release create v2.0.1 --title "v2.0.1" --generate-notes`
+   - Via GitHub UI: Releases → Draft a new release → Choose tag (create new: `v2.0.1`) → Write release notes → Publish
+3. The [release workflow](../../.github/workflows/release.yml) automatically:
+   - Runs full CI validation (lint, build, test)
+   - Publishes `meteoswiss-mcp` to npm
+   - Builds and pushes `ghcr.io/eins78/meteoswiss-mcp` to GHCR (linux/amd64 + linux/arm64)
+4. Deploy manually by pulling the new image
 
-## Adding a Changeset
+## Version Convention
 
-After making a meaningful change, run:
+The tag name must start with `v` followed by a valid semver version:
 
-```bash
-pnpm changeset
-```
+| Tag | npm version | Docker tags | npm dist-tag |
+|-----|-------------|-------------|--------------|
+| `v2.0.1` | `2.0.1` | `2.0.1`, `latest` | `latest` |
+| `v2.1.0-rc.1` | `2.1.0-rc.1` | `2.1.0-rc.1` | `next` |
 
-This prompts you to:
-- Select the semver bump type (patch / minor / major)
-- Write a short summary of the change
+Pre-release versions (containing a hyphen) do **not** update the `latest` tag on npm or Docker.
 
-A markdown file is created in `.changeset/`. Commit it alongside your code.
+## Security
 
-### When to Add a Changeset
+The release workflow follows [npm security best practices](https://www.zachleat.com/web/npm-security/):
 
-- **Yes**: New features, bug fixes, breaking changes, dependency updates that affect behavior
-- **No**: CI changes, docs-only changes, refactors with no user-facing effect, test-only changes
+- **No npm tokens** — uses OIDC Trusted Publishers instead of long-lived `NPM_TOKEN`
+- **npm provenance** — packages include signed attestation linking to the source commit
+- **Pinned action SHAs** — all `uses:` references are pinned to full commit SHA, not mutable tags
+- **Minimal permissions** — each job requests only the permissions it needs
+- **Separate publish jobs** — npm and Docker publish run in isolated jobs with different permission sets
+- **GitHub environment** — npm publish runs in an `npm` environment (can add required reviewers)
 
-### Semver Guidelines
+### Setup: npm Trusted Publishers (OIDC)
 
-| Type | When |
-|-------|------|
-| **patch** | Bug fixes, minor improvements, dependency bumps |
-| **minor** | New tools, new parameters, new features |
-| **major** | Breaking changes to tool interfaces, removed tools, config changes that require migration |
+npm Trusted Publishers require the package to exist first. One-time bootstrap:
 
-## Releasing
+1. **First publish (manual, one-time only):**
+   ```bash
+   npm adduser  # or: npm login
+   cd packages/meteoswiss-mcp
+   npm publish --access public --provenance
+   ```
+2. **Configure Trusted Publishers** on npmjs.com:
+   - Go to https://www.npmjs.com/package/meteoswiss-mcp → **Settings** tab
+   - Under **Trusted Publishers**, add:
+     - **Repository owner:** `eins78`
+     - **Repository name:** `meteoswiss-llm-tools`
+     - **Workflow filename:** `release.yml`
+     - **Environment:** `npm`
+3. **Create GitHub environment** named `npm`:
+   - Repo Settings → Environments → New environment → `npm`
+   - Optionally add required reviewers for an approval gate
+4. **Lock down the package** on npmjs.com:
+   - Settings → Publishing access → "Require two-factor authentication and disallow tokens"
+5. **Delete any npm tokens** you created for the bootstrap
 
-When ready to release, run:
+After this, all future publishes use OIDC — no tokens stored anywhere.
 
-```bash
-pnpm release
-```
+GHCR push uses the built-in `GITHUB_TOKEN` — no configuration needed.
 
-This single command (`scripts/release.sh`) does:
-1. Consumes pending `.changeset/*.md` files
-2. Bumps the version in `package.json`
-3. Updates `CHANGELOG.md` with entries linked to GitHub PRs
-4. Commits the version bump
-5. Creates a git tag (`v<version>`)
-6. Pushes commit and tag to origin
-7. Builds and publishes the Docker image to Docker Hub
+## Version in package.json
 
-### Prerequisites
-
-- Clean working tree (no uncommitted changes)
-- At least one pending changeset
-- Docker Hub login (`docker login`)
-
-### Dry Run
-
-Preview what would happen without pushing anything:
-
-```bash
-pnpm release -- --dry-run
-```
+The `version` field in `package.json` is updated automatically during CI from the release tag. You do not need to bump it manually before releasing.
 
 ## Quick Reference
 
 ```bash
-# During development — add a changeset
-pnpm changeset
+# Create a release (triggers workflow)
+gh release create v2.0.1 --title "v2.0.1" --generate-notes
 
-# Release — version bump, tag, and Docker publish
-pnpm release
+# Create a pre-release
+gh release create v2.1.0-rc.1 --title "v2.1.0-rc.1" --prerelease --generate-notes
+
+# Check workflow status
+gh run list --workflow=release.yml
+
+# Pull the published image
+docker pull ghcr.io/eins78/meteoswiss-mcp:2.0.1
 ```

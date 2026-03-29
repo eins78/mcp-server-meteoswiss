@@ -57,9 +57,10 @@ jobs:
         uses: docker/setup-buildx-action@v3
         
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
-          context: .
+          context: packages/meteoswiss-mcp
+          file: packages/meteoswiss-mcp/Dockerfile
           push: false
           load: true
           tags: meteoswiss-mcp:test
