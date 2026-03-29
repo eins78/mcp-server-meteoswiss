@@ -1,6 +1,6 @@
 [submodule "vendor/meteoswiss-data"]
-	path = vendor/meteoswiss-data
+	path = packages/meteoswiss-mcp/vendor/meteoswiss-data
 	url = https://github.com/eins78/meteoswiss-data.git
 [submodule "vendor/meteoswiss-product-output"]
-	path = vendor/meteoswiss-product-output
+	path = packages/meteoswiss-mcp/vendor/meteoswiss-product-output
 	url = https://github.com/eins78/meteoswiss-testdata.git
