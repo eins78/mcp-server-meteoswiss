@@ -13,7 +13,7 @@ RUN npm i -g corepack && pnpm -v
 COPY .npmrc pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm fetch --no-optional --frozen-lockfile
+    pnpm fetch --no-optional --no-frozen-lockfile
 
 # Copy source code and configuration
 COPY package.json tsconfig.json ./
@@ -24,7 +24,7 @@ COPY test/__fixtures__ ./test/__fixtures__
 # Install dependencies
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm install --offline --frozen-lockfile --no-optional --ignore-scripts
+    pnpm install --no-frozen-lockfile --no-optional --ignore-scripts
 
 # Build the application
 RUN pnpm run build
@@ -54,7 +54,7 @@ WORKDIR /app
 COPY --from=builder /app/.npmrc /app/pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm fetch --production --no-optional --frozen-lockfile 
+    pnpm fetch --production --no-optional --no-frozen-lockfile 
 
 # Copy package files and built application from builder
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
@@ -63,7 +63,7 @@ COPY --from=builder /app/dist ./dist
 # Install production dependencies
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm install --production  --no-optional --offline --frozen-lockfile --ignore-scripts
+    pnpm install --production  --no-optional --offline --no-frozen-lockfile --ignore-scripts
 
 # Copy test fixtures for runtime (if USE_TEST_FIXTURES is enabled)
 COPY --from=builder /app/test/__fixtures__ ./test/__fixtures__
