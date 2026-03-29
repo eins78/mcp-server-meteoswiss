@@ -32,7 +32,14 @@ When running in a devcontainer, use the following for git commits:
 
 ## Architecture Overview
 
-This is a monorepo (`meteoswiss-llm-tools`) for MeteoSwiss LLM tooling. The primary package is the MCP server at `packages/meteoswiss-mcp/`.
+This is a monorepo (`meteoswiss-llm-tools`) for MeteoSwiss LLM tooling:
+
+| Package | Description | Validation |
+|---------|-------------|------------|
+| `packages/meteoswiss-mcp/` | MCP server (TypeScript) | `pnpm --filter meteoswiss-mcp run ci` |
+| `packages/meteoswiss-skill/` | Agent skill for direct OGD access | `pnpm --filter meteoswiss-skill test` |
+
+Git tags use package prefixes: `meteoswiss-mcp-v2.0.0`, `meteoswiss-skill-v1.0.0-rc.1`.
 
 All source paths below are relative to `packages/meteoswiss-mcp/`.
 

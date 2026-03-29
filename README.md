@@ -52,9 +52,10 @@ docker run -p 3000:3000 ghcr.io/eins78/meteoswiss-mcp:latest
 
 ## Packages
 
-| Package | npm | Description |
-|---------|-----|-------------|
+| Package | Version | Description |
+|---------|---------|-------------|
 | [`meteoswiss-mcp`](packages/meteoswiss-mcp/) | [![npm](https://img.shields.io/npm/v/meteoswiss-mcp)](https://www.npmjs.com/package/meteoswiss-mcp) | MCP server for MeteoSwiss weather data |
+| [`meteoswiss-skill`](packages/meteoswiss-skill/) | 1.0.0-rc.1 | Agent skill for direct MeteoSwiss Open Data access (no MCP server needed) |
 
 See the [meteoswiss-mcp README](packages/meteoswiss-mcp/README.md) for full documentation, self-hosting, environment variables, and development setup.
 
