@@ -1,11 +1,5 @@
 # Multi-stage build for MeteoSwiss MCP Server
 
-LABEL org.opencontainers.image.title="meteoswiss-mcp"
-LABEL org.opencontainers.image.description="MCP server for MeteoSwiss weather data"
-LABEL org.opencontainers.image.source="https://github.com/eins78/meteoswiss-llm-tools"
-LABEL org.opencontainers.image.url="https://meteoswiss-mcp.ars.is"
-LABEL org.opencontainers.image.licenses="CC0-1.0"
-
 # Stage 1: Build stage
 FROM node:24-alpine AS builder
 
@@ -39,6 +33,12 @@ RUN pnpm run build
 
 # Stage 2: Runtime stage
 FROM node:24-alpine AS runtime
+
+LABEL org.opencontainers.image.title="meteoswiss-mcp"
+LABEL org.opencontainers.image.description="MCP server for MeteoSwiss weather data"
+LABEL org.opencontainers.image.source="https://github.com/eins78/meteoswiss-llm-tools"
+LABEL org.opencontainers.image.url="https://meteoswiss-mcp.ars.is"
+LABEL org.opencontainers.image.licenses="CC0-1.0"
 
 # Install pnpm using npm and corepack (needed for pnpm run start)
 RUN npm i -g corepack && pnpm -v
