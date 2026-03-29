@@ -55,7 +55,7 @@ Columns: `station_abbr`, `station_name`, `station_canton`, `station_height_masl`
 # Search forecast locations (~6000 points: stations, postal codes, mountains)
 # NOTE: Asset key has a known typo "forcasting" — always get URL from STAC
 META_URL=$(curl -s 'https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting' \
-  | jq -r '.assets | to_entries[] | select(.key | contains("meta_point")) | .value.href')
+  | jq -r '[.assets | to_entries[] | select(.key | contains("meta_point")) | .value.href] | first')
 curl -s "$META_URL" | iconv -f latin1 -t utf-8 \
   | awk -F';' 'NR==1 || $3 ~ /8001/'  # search by postal code
 ```
@@ -97,6 +97,20 @@ Columns: `station_abbr`, `Date`, then pollen types (`BIR`=birch, `GRA`=grass, et
 - **Empty data**: Station may be offline — try a nearby station
 - **403/404 on pollen**: Verify abbreviation is lowercase and is a pollen station (~13 total)
 - **Garbled text**: You're reading Latin1 as UTF-8 — add `iconv -f latin1 -t utf-8`
+
+## Bundled Scripts
+
+Token-efficient CLI tools that output structured key=value pairs. Use these instead of raw curl when available — they handle encoding, error checking, and output parsing.
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/current-weather.sh SMA          # current weather for Zurich
+${CLAUDE_SKILL_DIR}/scripts/search-stations.sh zurich        # find weather stations
+${CLAUDE_SKILL_DIR}/scripts/search-forecast-points.sh 8001   # find forecast point_id by postal code
+${CLAUDE_SKILL_DIR}/scripts/forecast.sh 48                   # forecast for Zurich (point_id=48)
+${CLAUDE_SKILL_DIR}/scripts/pollen.sh ZUE                    # pollen data for Zurich
+```
+
+All scripts accept `--help` for usage details. Requires: `curl`, `awk`, `iconv`. Forecast also needs `jq`.
 
 ## MCP Server Alternative
 
