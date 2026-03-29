@@ -2,5 +2,19 @@
   "private": true,
   "name": "meteoswiss-llm-tools",
   "description": "Swiss weather data for AI assistants — powered by MeteoSwiss Open Data",
-  "license": "CC0-1.0"
+  "license": "CC0-1.0",
+  "pnpm": {
+    "overrides": {
+      "minimatch@<3.1.4": "3.1.4",
+      "flatted@<3.4.2": "3.4.2",
+      "picomatch@<2.3.2": "2.3.2",
+      "path-to-regexp@<0.1.13": "0.1.13",
+      "path-to-regexp@>=8.0.0 <8.4.0": "8.4.0",
+      "qs@<6.14.2": "6.14.2",
+      "diff@>=4.0.0 <4.0.4": "4.0.4",
+      "js-yaml@<3.14.2": "3.14.2",
+      "mcp-remote>path-to-regexp": "8.4.0",
+      "eslint-plugin-tsdoc>@typescript-eslint/utils": "8.57.2"
+    }
+  }
 }

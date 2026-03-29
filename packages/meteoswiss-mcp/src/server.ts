@@ -33,12 +33,12 @@ import { getVersion } from './support/version.js';
 export function createServer(): McpServer {
   debugServer('Creating MCP server instance');
   const server = new McpServer({
-    name: 'mcp-server-meteoswiss',
+    name: 'meteoswiss-mcp',
     version: getVersion(),
     description:
       'Access official MeteoSwiss weather data for Switzerland. Provides multi-day forecasts, real-time measurements, station listings, and pollen data from the MeteoSwiss app and website.',
   });
-  debugServer('MCP server created with name: mcp-server-meteoswiss');
+  debugServer('MCP server created with name: meteoswiss-mcp');
 
   // Register error handler
   server.server.onerror = (error: Error) => {

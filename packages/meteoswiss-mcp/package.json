@@ -1,7 +1,7 @@
 {
-  "name": "mcp-server-meteoswiss",
+  "name": "meteoswiss-mcp",
   "version": "2.0.0",
-  "description": "A Model Context Protocol (MCP) server for MeteoSwiss weather data.",
+  "description": "MCP server for MeteoSwiss weather data — forecasts, real-time measurements, stations, pollen.",
   "license": "CC0-1.0",
   "author": "Max F. Albrecht <1@178.is>",
   "main": "src/index.ts",
@@ -28,25 +28,28 @@
     "test:integration": "NODE_OPTIONS='--experimental-vm-modules' jest test/integration",
     "build": "tsc",
     "dev:docker": "pnpm run build:docker && pnpm run start:docker",
-    "build:docker": "docker build -t mcp-server-meteoswiss:dev .",
-    "start:docker": "docker run mcp-server-meteoswiss:dev",
+    "build:docker": "docker build -t meteoswiss-mcp:dev .",
+    "start:docker": "docker run meteoswiss-mcp:dev",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "./scripts/release.sh"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eins78/mcp-server-meteoswiss-data.git"
+    "url": "git+https://github.com/eins78/meteoswiss-llm-tools.git",
+    "directory": "packages/meteoswiss-mcp"
   },
   "keywords": [
     "mcp",
     "weather",
-    "meteoswiss"
+    "meteoswiss",
+    "switzerland",
+    "open-data"
   ],
   "bugs": {
-    "url": "https://github.com/eins78/mcp-server-meteoswiss-data/issues"
+    "url": "https://github.com/eins78/meteoswiss-llm-tools/issues"
   },
-  "homepage": "https://github.com/eins78/mcp-server-meteoswiss-data#readme",
+  "homepage": "https://meteoswiss-mcp.ars.is",
   "dependencies": {
     "@eins78/styles": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.28.0",
@@ -92,20 +95,6 @@
     "prettier": "^3.8.1",
     "ts-jest": "^29.4.6",
     "typescript": "^6.0.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "minimatch@<3.1.4": "3.1.4",
-      "flatted@<3.4.2": "3.4.2",
-      "picomatch@<2.3.2": "2.3.2",
-      "path-to-regexp@<0.1.13": "0.1.13",
-      "path-to-regexp@>=8.0.0 <8.4.0": "8.4.0",
-      "qs@<6.14.2": "6.14.2",
-      "diff@>=4.0.0 <4.0.4": "4.0.4",
-      "js-yaml@<3.14.2": "3.14.2",
-      "mcp-remote>path-to-regexp": "8.4.0",
-      "eslint-plugin-tsdoc>@typescript-eslint/utils": "8.57.2"
-    }
   },
   "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
 }

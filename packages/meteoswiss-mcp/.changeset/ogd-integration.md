@@ -1,5 +1,5 @@
 ---
-"mcp-server-meteoswiss": major
+"meteoswiss-mcp": major
 ---
 
 Add MeteoSwiss Open Data integration with 4 new tools
