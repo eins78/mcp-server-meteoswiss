@@ -3,6 +3,10 @@
   "name": "meteoswiss-llm-tools",
   "description": "Swiss weather data for AI assistants — powered by MeteoSwiss Open Data",
   "license": "CC0-1.0",
+  "scripts": {
+    "changeset": "changeset",
+    "version": "changeset version"
+  },
   "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac",
   "pnpm": {
     "overrides": {
@@ -17,5 +21,8 @@
       "mcp-remote>path-to-regexp": "8.4.0",
       "eslint-plugin-tsdoc>@typescript-eslint/utils": "8.57.2"
     }
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.30.0"
   }
 }

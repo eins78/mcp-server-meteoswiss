@@ -51,6 +51,23 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(day.temperature.max).toEqual(expect.any(Number));
     expect(day.precipitation.total).toEqual(expect.any(Number));
     expect(day.weather).toEqual(expect.any(String));
+    expect(day.weather_icon_url).toMatch(/^https:\/\/www\.meteoschweiz\.admin\.ch\/static\/resources\/weather-symbols\/\d+\.svg$/);
+  });
+
+  it('should return forecast with weather_icon_url for a station', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'Napf',
+      days: 2,
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.location.type).toBe('station');
+    const day = data.forecast[0];
+    expect(day.weather).toEqual(expect.any(String));
+    expect(day.weather_icon_url).toMatch(
+      /^https:\/\/www\.meteoschweiz\.admin\.ch\/static\/resources\/weather-symbols\/\d+\.svg$/
+    );
   });
 
   it('should return error for empty location', async () => {

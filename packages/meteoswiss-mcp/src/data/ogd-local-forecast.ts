@@ -12,7 +12,7 @@ import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { resolveForecastPoint } from './ogd-station-resolver.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS, pointTypeFromId, SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
-import { weatherIconDescription } from '../support/weather-icons.js';
+import { weatherIconDescription, weatherIconUrl } from '../support/weather-icons.js';
 import type {
   GetLocalForecastParams,
   LocalForecastResponse,
@@ -66,6 +66,7 @@ function buildStationForecast(
     return {
       date,
       weather: iconCode !== null ? weatherIconDescription(iconCode) : null,
+      weather_icon_url: iconCode !== null ? weatherIconUrl(iconCode) : null,
       temperature: {
         min: dateKeyed.get('tre200dn')?.get(date) ?? null,
         max: dateKeyed.get('tre200dx')?.get(date) ?? null,
@@ -164,6 +165,7 @@ function buildHourlyAggregatedForecast(
       },
       precipitation: { total: precipTotal, unit: 'mm' },
       weather: iconCode !== null ? weatherIconDescription(iconCode) : null,
+      weather_icon_url: iconCode !== null ? weatherIconUrl(iconCode) : null,
     };
   });
 }

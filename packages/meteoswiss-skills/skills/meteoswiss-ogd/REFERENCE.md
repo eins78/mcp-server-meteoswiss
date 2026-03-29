@@ -60,6 +60,8 @@ Available for all point types (stations, postal codes, mountains). One value per
 
 Codes used in `jp2000d0` (daily) and `jww003i0` (3-hourly) parameters.
 
+SVG icon URL: `https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/{CODE}.svg`
+
 | Code | Description |
 |------|------------|
 | 1 | Sunny |
@@ -97,8 +99,6 @@ Codes used in `jp2000d0` (daily) and `jww003i0` (3-hourly) parameters.
 | 33 | Short sunny intervals, frequent rain |
 | 34 | Short sunny intervals, frequent snowfall |
 | 35 | Overcast and dry |
-
-SVG icons: `https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/{CODE}.svg`
 
 ## Weather Icon Codes — Night
 
