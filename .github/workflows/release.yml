@@ -35,19 +35,19 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm run lint
+        run: pnpm --filter meteoswiss-mcp run lint
 
       - name: Build
-        run: pnpm run build
+        run: pnpm --filter meteoswiss-mcp run build
 
       - name: Test
-        run: pnpm test
+        run: pnpm --filter meteoswiss-mcp test
         env:
           USE_TEST_FIXTURES: 'true'
           NODE_OPTIONS: '--experimental-vm-modules'
 
       - name: Integration tests
-        run: pnpm run test:integration
+        run: pnpm --filter meteoswiss-mcp run test:integration
         env:
           USE_TEST_FIXTURES: 'true'
           NODE_OPTIONS: '--experimental-vm-modules'
@@ -92,7 +92,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm run build
+        run: pnpm --filter meteoswiss-mcp run build
 
       - name: Set package version
         working-directory: ${{ env.PACKAGE_DIR }}
