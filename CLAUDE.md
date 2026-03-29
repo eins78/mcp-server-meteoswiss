@@ -301,7 +301,7 @@ Description of the change.
 1. PRs with changesets merge to `main`
 2. The "Version Packages" workflow creates/updates a PR that bumps `package.json` versions and generates `CHANGELOG.md`
 3. Merging the "Version Packages" PR finalizes the version bump
-4. Create a GitHub Release with tag `meteoswiss-mcp-vX.Y.Z` or `meteoswiss-skills-vX.Y.Z` to trigger publishing (npm, Docker)
+4. Create a GitHub Release: `meteoswiss-mcp-vX.Y.Z` triggers npm + Docker publishing; `meteoswiss-skills-vX.Y.Z` triggers skill validation
 
 **Tag format:** `{package-name}-v{version}` (e.g., `meteoswiss-mcp-v2.1.0`, `meteoswiss-skills-v1.0.0`)
 

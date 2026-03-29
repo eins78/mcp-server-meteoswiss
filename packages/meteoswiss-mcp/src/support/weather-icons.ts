@@ -7,7 +7,7 @@
  * SVG icons: https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/{code}.svg
  */
 
-/** Daytime weather descriptions (codes 1-42) */
+/** Daytime weather descriptions (codes 1-35) */
 const DAY_ICONS: Record<number, string> = {
   1: 'sunny',
   2: 'mostly sunny, some clouds',
@@ -97,7 +97,7 @@ const ICON_BASE_URL = 'https://www.meteoschweiz.admin.ch/static/resources/weathe
 /**
  * Map a MeteoSwiss weather pictogram code to a human-readable description.
  *
- * @param code - Numeric pictogram code (1-42 for day, 101-142 for night)
+ * @param code - Numeric pictogram code (1-35 for day, 101-142 for night)
  * @returns Human-readable weather description, or "unknown ({code})" for unmapped codes
  */
 export function weatherIconDescription(code: number): string {
@@ -107,7 +107,7 @@ export function weatherIconDescription(code: number): string {
 /**
  * Get the SVG icon URL for a MeteoSwiss weather pictogram code.
  *
- * @param code - Numeric pictogram code (1-42 for day, 101-142 for night)
+ * @param code - Numeric pictogram code (1-35 for day, 101-142 for night)
  * @returns URL to the SVG weather symbol on meteoschweiz.admin.ch
  */
 export function weatherIconUrl(code: number): string {

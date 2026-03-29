@@ -46,4 +46,4 @@ compatibility: claude-code, cursor
 
 Uses [changesets](https://github.com/changesets/changesets) — run `pnpm changeset` from the repo root to add a changeset. The "Version Packages" CI workflow bumps `package.json` automatically.
 
-Additionally, bump version in all 5 locations: `SKILL.md` frontmatter `metadata.version`, `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.cursor-plugin/plugin.json`.
+Changesets bumps `package.json` automatically. The remaining 4 locations need manual updates: `SKILL.md` frontmatter `metadata.version`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.cursor-plugin/plugin.json`.
