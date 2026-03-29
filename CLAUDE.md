@@ -12,6 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Essential Commands
 
+All commands run from `packages/meteoswiss-mcp/` or via `pnpm --filter meteoswiss-mcp` from the root.
+
 ### Development
 - **Run development server with hot reloading**: `pnpm run dev`
 - **Start server**: `pnpm run start`
@@ -30,7 +32,11 @@ When running in a devcontainer, use the following for git commits:
 
 ## Architecture Overview
 
-This is a Model Context Protocol (MCP) server for MeteoSwiss weather data, implemented using:
+This is a monorepo (`meteoswiss-llm-tools`) for MeteoSwiss LLM tooling. The primary package is the MCP server at `packages/meteoswiss-mcp/`.
+
+All source paths below are relative to `packages/meteoswiss-mcp/`.
+
+The MCP server is implemented using:
 - **Node.js 22+**: Using `tsx` for TypeScript execution
 - **MCP TypeScript SDK 1.28+**: Using `McpServer` class with Streamable HTTP transport (spec 2025-11-25)
 - **Zod 4**: For runtime validation and schema definitions
