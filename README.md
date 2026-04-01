@@ -1,8 +1,9 @@
 # MeteoSwiss LLM Tools
 
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](LICENSE)
-[![MCP Server](https://img.shields.io/npm/v/meteoswiss-mcp?label=MCP%20server)](https://www.npmjs.com/package/meteoswiss-mcp)
+[![npm](https://img.shields.io/npm/v/meteoswiss-mcp?label=npm)](https://www.npmjs.com/package/meteoswiss-mcp)
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io-blue)](https://ghcr.io/eins78/meteoswiss-mcp)
+[![Hosted](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmeteoswiss-mcp.ars.is%2Fhealth&query=%24.version&label=hosted&color=brightgreen)](https://meteoswiss-mcp.ars.is/)
 
 Swiss weather data for AI assistants — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website. Free, no API key required.
 
