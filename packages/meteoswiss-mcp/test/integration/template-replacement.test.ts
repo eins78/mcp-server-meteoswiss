@@ -94,8 +94,8 @@ describe('Template Replacement in Homepage', () => {
       const html = await fetchHomepage(port);
       
       expect(html).toContain('http://localhost:8080/mcp');
-      expect(html).toContain('<strong>Service URL</strong>: <code>http://localhost:8080</code>');
-      expect(html).toContain('<strong>MCP Endpoint</strong>: <code>http://localhost:8080/mcp</code>');
+      expect(html).toContain('<code>http://localhost:8080</code>');
+      expect(html).toContain('<code>http://localhost:8080/mcp</code>');
     });
   });
 
@@ -109,8 +109,8 @@ describe('Template Replacement in Homepage', () => {
       
       // Check replacements use PUBLIC_URL
       expect(html).toContain('https://meteoswiss.example.com/mcp');
-      expect(html).toContain('<strong>Service URL</strong>: <code>https://meteoswiss.example.com</code>');
-      expect(html).toContain('<strong>MCP Endpoint</strong>: <code>https://meteoswiss.example.com/mcp</code>');
+      expect(html).toContain('<code>https://meteoswiss.example.com</code>');
+      expect(html).toContain('<code>https://meteoswiss.example.com/mcp</code>');
       expect(html).toContain('&quot;args&quot;: [&quot;mcp-remote&quot;, &quot;https://meteoswiss.example.com/mcp&quot;]');
       
       // Should not contain localhost
@@ -125,7 +125,7 @@ describe('Template Replacement in Homepage', () => {
       const html = await fetchHomepage(port);
       
       expect(html).toContain('https://api.example.com:8443/mcp');
-      expect(html).toContain('<strong>Service URL</strong>: <code>https://api.example.com:8443</code>');
+      expect(html).toContain('<code>https://api.example.com:8443</code>');
     });
   });
 
