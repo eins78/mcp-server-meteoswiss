@@ -1,4 +1,4 @@
-# MeteoSwiss MCP Server
+# 🌦️ MeteoSwiss MCP Server
 
 [![npm version](https://img.shields.io/npm/v/meteoswiss-mcp)](https://www.npmjs.com/package/meteoswiss-mcp)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](../../LICENSE)

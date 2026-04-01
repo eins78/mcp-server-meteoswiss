@@ -1,4 +1,4 @@
-# MeteoSwiss Skills
+# 🌦️ MeteoSwiss Skills
 
 Agent skill that teaches AI agents to access [MeteoSwiss Open Government Data](https://opendatadocs.meteoswiss.ch/) directly via HTTP — no MCP server or API key required.
 
