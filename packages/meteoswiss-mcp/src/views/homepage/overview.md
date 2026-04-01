@@ -1,4 +1,4 @@
-# MeteoSwiss MCP Server
+# 🌦️ MeteoSwiss MCP Server
 
 Swiss weather data for AI assistants — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/).
 
