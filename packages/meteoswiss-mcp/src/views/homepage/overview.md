@@ -2,8 +2,10 @@
 
 Swiss weather data for AI assistants — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/).
 
-**Service URL**: `$$$___TEMPLATE_BASE_URL___$$$`
-**MCP Endpoint**: `$$$___TEMPLATE_MCP_URL___$$$`
+| | |
+|---|---|
+| **Service URL** | `$$$___TEMPLATE_BASE_URL___$$$` |
+| **MCP Endpoint** | `$$$___TEMPLATE_MCP_URL___$$$` |
 
 ## What You Get
 

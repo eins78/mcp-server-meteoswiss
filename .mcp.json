@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "meteoswiss": {
+      "type": "http",
+      "url": "https://meteoswiss-mcp.ars.is/mcp"
+    }
+  }
+}

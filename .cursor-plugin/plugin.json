@@ -1,0 +1,16 @@
+{
+  "name": "meteoswiss-llm-tools",
+  "displayName": "MeteoSwiss LLM Tools",
+  "description": "Swiss weather data for AI assistants — forecasts, current conditions, stations, and pollen from MeteoSwiss Open Data. Free, no API key required.",
+  "version": "2.1.0",
+  "author": {
+    "name": "Max Albrecht",
+    "email": "1@178.is"
+  },
+  "homepage": "https://meteoswiss-mcp.ars.is",
+  "repository": "https://github.com/eins78/meteoswiss-llm-tools",
+  "license": "CC0-1.0",
+  "keywords": ["weather", "meteoswiss", "switzerland", "open-data", "mcp", "skills"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
