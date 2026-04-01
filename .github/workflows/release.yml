@@ -141,6 +141,16 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Set package version from tag
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          if [ "$CURRENT" != "${{ steps.version.outputs.version }}" ]; then
+            npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+          else
+            echo "Version already set to $CURRENT"
+          fi
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
 
