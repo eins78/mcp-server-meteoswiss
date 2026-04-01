@@ -1,4 +1,4 @@
-# MeteoSwiss LLM Tools
+# 🌦️ MeteoSwiss LLM Tools
 
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](LICENSE)
 [![npm: meteoswiss-mcp](https://img.shields.io/npm/v/meteoswiss-mcp?label=npm%3A%20meteoswiss-mcp)](https://www.npmjs.com/package/meteoswiss-mcp)
