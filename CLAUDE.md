@@ -75,6 +75,22 @@ The MCP server is implemented using:
 3. Data is fetched from MeteoSwiss HTTP endpoints (or test fixtures in dev mode)
 4. Results are returned as JSON through MCP protocol
 
+## PR Quality Gates
+
+Before merging any PR, **all required status checks must pass**:
+
+- **Lint, Build & Test** — TypeScript compilation, ESLint, unit tests
+- **Security & Dependency Check** — Vulnerability scanning
+- **Docker Build Test** — Validates the Docker image builds
+- **Skill Validation** — Validates skill package structure
+
+**Never merge a PR with failing checks.** If a change breaks tests, fix the tests in the same PR before merging. Creating a release from a broken main branch wastes CI time and requires cleanup (delete release, fix, re-release).
+
+When working with PRs:
+1. Push changes and wait for CI to report
+2. If checks fail, diagnose and fix before merging
+3. Only create GitHub releases after confirming main is green
+
 ## Critical Development Guidelines
 
 ### TypeScript Import Rules
