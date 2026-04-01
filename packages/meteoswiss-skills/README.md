@@ -2,7 +2,7 @@
 
 Agent skill that teaches AI agents to access [MeteoSwiss Open Government Data](https://opendatadocs.meteoswiss.ch/) directly via HTTP — no MCP server or API key required.
 
-Part of the [meteoswiss-llm-tools](../../README.md) monorepo.
+Part of the [meteoswiss-llm-tools](../../README.md) monorepo. For a richer experience with structured JSON and fuzzy matching, see the [MCP server](../meteoswiss-mcp/) or try it at **[meteoswiss-mcp.ars.is](https://meteoswiss-mcp.ars.is/)**.
 
 ## Skills
 

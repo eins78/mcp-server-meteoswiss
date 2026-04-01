@@ -6,6 +6,8 @@
 
 MCP server for MeteoSwiss weather data — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website.
 
+**[meteoswiss-mcp.ars.is](https://meteoswiss-mcp.ars.is/)** — try it now, no setup needed.
+
 - **Multi-day forecasts** for ~6000 Swiss locations (postal codes, stations, place names)
 - **Real-time measurements** from ~160 automatic weather stations, updated every 10 minutes
 - **Station discovery** by name, canton, or GPS coordinates
