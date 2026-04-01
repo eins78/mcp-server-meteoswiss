@@ -9,7 +9,7 @@ license: CC0-1.0
 metadata:
   author: eins78
   repo: https://github.com/eins78/meteoswiss-llm-tools
-  version: 1.0.0-rc.1
+  version: 1.0.0
 compatibility: claude-code, cursor
 ---
 
