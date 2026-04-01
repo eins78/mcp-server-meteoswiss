@@ -34,10 +34,10 @@ Go to **Settings** → **Integrations** → **Add MCP Server** → paste the MCP
 
 ## Example Questions
 
-**German:** "Wie wird das Wetter in Zürich diese Woche?"
-**French:** "Quelle est la météo à Genève demain?"
-**Italian:** "Che tempo fa a Lugano?"
-**English:** "What's the current temperature at Jungfraujoch?"
+- **German:** "Wie wird das Wetter in Zürich diese Woche?"
+- **French:** "Quelle est la météo à Genève demain?"
+- **Italian:** "Che tempo fa a Lugano?"
+- **English:** "What's the current temperature at Jungfraujoch?"
 
 ## Self-Hosting & Development
 
