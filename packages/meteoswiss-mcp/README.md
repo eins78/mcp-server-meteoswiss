@@ -3,6 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/meteoswiss-mcp)](https://www.npmjs.com/package/meteoswiss-mcp)
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](../../LICENSE)
 [![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
+[![Add to Cursor](https://cursor.directory/api/badge?name=meteoswiss-llm-tools)](https://cursor.directory/plugins/meteoswiss-llm-tools)
 
 MCP server for MeteoSwiss weather data — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website.
 
@@ -38,6 +39,10 @@ Add to your configuration file (`~/Library/Application Support/Claude/claude_des
   }
 }
 ```
+
+### Cursor
+
+Install from the [Cursor Directory](https://cursor.directory/plugins/meteoswiss-llm-tools), or add manually via **Settings** → **MCP** → **Add Server** → paste `https://meteoswiss-mcp.ars.is/mcp`.
 
 ### Claude.ai
 
