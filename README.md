@@ -5,7 +5,7 @@
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io-blue)](https://ghcr.io/eins78/meteoswiss-mcp)
 [![live](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmeteoswiss-mcp.ars.is%2Fhealth&query=%24.version&label=live&color=brightgreen)](https://meteoswiss-mcp.ars.is/)
 [![next](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmeteoswiss-mcp-demo-test.cloud.kiste.li%2Fhealth&query=%24.version&label=next&color=lightgrey)](https://meteoswiss-mcp-demo-test.cloud.kiste.li/)
-[![Add to Cursor](https://cursor.directory/api/badge?name=meteoswiss-llm-tools)](https://cursor.directory/plugins/meteoswiss-llm-tools)
+[![Cursor Directory](https://img.shields.io/badge/Cursor_Directory-Add_to_Cursor-blue)](https://cursor.directory/plugins/meteoswiss-llm-tools)
 
 Swiss weather data for AI assistants — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website. Free, no API key required.
 
