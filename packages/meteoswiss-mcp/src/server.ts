@@ -59,7 +59,7 @@ export function createServer(): McpServer {
   debugServer('Registering tool: search');
   server.tool(
     'search',
-    'Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages, articles, and documents.',
+    'Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Note: pagination may return duplicate results across pages (upstream API limitation).',
     searchMeteoSwissContentSchema.shape,
     async (params: SearchMeteoSwissContentInput) => {
       const _t0 = performance.now();
@@ -102,7 +102,7 @@ export function createServer(): McpServer {
   debugServer('Registering tool: fetch');
   server.tool(
     'fetch',
-    'Fetch full content from a MeteoSwiss webpage. Can convert HTML to markdown or plain text, and optionally include metadata and images.',
+    'Fetch full content from a MeteoSwiss webpage and convert to markdown or plain text. Use the search tool first to discover valid page URLs, then pass the full URL as the id parameter.',
     fetchMeteoSwissContentSchema.shape,
     async (params: FetchMeteoSwissContentInput) => {
       const _t0 = performance.now();
