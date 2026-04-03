@@ -1,5 +1,6 @@
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { debugSession } from './logging.js';
+import { sessionOpened, sessionClosed } from './metrics.js';
 
 interface Session {
   transport: Transport;
@@ -46,6 +47,7 @@ export class SessionManager {
       lastActivity: Date.now(),
     });
 
+    sessionOpened();
     debugSession('Session added successfully: %s (new count: %d)', sessionId, this.sessions.size);
   }
 
@@ -78,6 +80,7 @@ export class SessionManager {
     if (session) {
       // Delete from map first to prevent recursion: close() triggers onclose → remove()
       this.sessions.delete(sessionId);
+      sessionClosed();
       debugSession('Session removed: %s (remaining: %d)', sessionId, this.sessions.size);
       // Close the transport if it has a close method
       if ('close' in session.transport && typeof session.transport.close === 'function') {

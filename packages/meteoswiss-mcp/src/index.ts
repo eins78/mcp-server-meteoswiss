@@ -8,6 +8,7 @@ import { createServer } from './server.js';
 import { createHttpServer } from './transports/streamable-http.js';
 import { debugMain, initFileLogging, closeFileLogging } from './support/logging.js';
 import { validateEnv } from './support/environment-validation.js';
+import { initMetrics } from './support/metrics.js';
 import { getMcpEndpointUrl } from './support/url-generation.js';
 import { getAppName, getVersion } from './support/version.js';
 import type { HttpServerInterface } from './transports/streamable-http.js';
@@ -63,6 +64,12 @@ async function main(): Promise<HttpServerInterface> {
 
   // Override port from command line if provided
   const port = process.argv[2] ? parseInt(process.argv[2], 10) : config.PORT;
+
+  // Initialize metrics (before logging to capture startup metrics)
+  initMetrics(config.METRICS_ENABLED);
+  if (config.METRICS_ENABLED) {
+    console.log('Prometheus metrics enabled at /metrics');
+  }
 
   // Initialize logging
   initFileLogging('meteoswiss');
