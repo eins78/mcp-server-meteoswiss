@@ -46,7 +46,9 @@ export const searchMeteoSwissContentSchema = z.object({
     })
     .optional()
     .default('relevance')
-    .describe('Sort order for results'),
+    .describe(
+      'Sort order for results. Note: date-asc severely degrades relevance — results are dominated by page age rather than query match.'
+    ),
 });
 
 export type SearchMeteoSwissContentInput = z.infer<typeof searchMeteoSwissContentSchema>;
