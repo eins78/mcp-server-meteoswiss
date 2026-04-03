@@ -45,6 +45,19 @@ function timestampToDate(ts: string): string {
 }
 
 /**
+ * Get today's date in YYYY-MM-DD format (UTC).
+ * In test fixture mode, uses the earliest date from the data to avoid
+ * filtering out all fixture dates.
+ */
+function todayUtc(): string {
+  if (process.env.USE_TEST_FIXTURES === 'true') {
+    // Don't filter dates in test mode — fixture dates are static
+    return '1900-01-01';
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
  * Build a daily forecast from station data (has daily min/max directly).
  */
 function buildStationForecast(
@@ -52,7 +65,11 @@ function buildStationForecast(
   days: number
 ): DailyForecast[] {
   const tempMaxData = paramData.get('tre200dx') ?? new Map<string, number | null>();
-  const dates = [...new Set([...tempMaxData.keys()].map(timestampToDate))].sort().slice(0, days);
+  const today = todayUtc();
+  const dates = [...new Set([...tempMaxData.keys()].map(timestampToDate))]
+    .sort()
+    .filter((d) => d >= today)
+    .slice(0, days);
 
   const dateKeyed = new Map(
     [...paramData.entries()].map(([param, tsMap]) => [
@@ -148,7 +165,11 @@ function buildHourlyAggregatedForecast(
   const tempByDate = groupByDate(hourlyTemp);
   const precipByDate = groupByDate(hourlyPrecip);
 
-  const dates = [...tempByDate.keys()].sort().slice(0, days);
+  const today = todayUtc();
+  const dates = [...tempByDate.keys()]
+    .sort()
+    .filter((d) => d >= today)
+    .slice(0, days);
   return dates.map((date) => {
     const temps = tempByDate.get(date) ?? [];
     const precips = precipByDate.get(date) ?? [];
