@@ -23,6 +23,7 @@ import { GetPollenDataParamsSchema } from './schemas/ogd-pollen-data.js';
 import type { GetPollenDataParams } from './schemas/ogd-pollen-data.js';
 import { getPollenData } from './data/ogd-pollen-data.js';
 import { debugServer, debugTools } from './support/logging.js';
+import { recordToolCall } from './support/metrics.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
 import { getVersion } from './support/version.js';
 
@@ -61,6 +62,7 @@ export function createServer(): McpServer {
     'Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages, articles, and documents.',
     searchMeteoSwissContentSchema.shape,
     async (params: SearchMeteoSwissContentInput) => {
+      const _t0 = performance.now();
       try {
         console.error(
           `Processing search request: query="${params.query}", language=${params.language || 'de'}`
@@ -69,6 +71,7 @@ export function createServer(): McpServer {
         const results = await meteoswissSearchTool(params);
         console.error(`Search returned ${results.totalResults} results`);
         debugTools('Search completed successfully');
+        recordToolCall('search', performance.now() - _t0);
         return {
           content: [
             {
@@ -80,6 +83,7 @@ export function createServer(): McpServer {
       } catch (error: unknown) {
         console.error('Error in search tool:', error);
         debugTools('Error in search: %O', error);
+        recordToolCall('search', performance.now() - _t0);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return {
           content: [
@@ -101,6 +105,7 @@ export function createServer(): McpServer {
     'Fetch full content from a MeteoSwiss webpage. Can convert HTML to markdown or plain text, and optionally include metadata and images.',
     fetchMeteoSwissContentSchema.shape,
     async (params: FetchMeteoSwissContentInput) => {
+      const _t0 = performance.now();
       try {
         console.error(
           `Processing fetch request: id="${params.id}", format=${params.format || 'markdown'}`
@@ -109,6 +114,7 @@ export function createServer(): McpServer {
         const content = await meteoswissFetchTool(params);
         console.error('Successfully fetched content');
         debugTools('Fetch completed successfully');
+        recordToolCall('fetch', performance.now() - _t0);
         return {
           content: [
             {
@@ -120,6 +126,7 @@ export function createServer(): McpServer {
       } catch (error: unknown) {
         console.error('Error in fetch tool:', error);
         debugTools('Error in fetch: %O', error);
+        recordToolCall('fetch', performance.now() - _t0);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return {
           content: [
@@ -151,6 +158,7 @@ Coverage: ~6000 Swiss locations (all postal codes + weather stations + mountain 
 Forecast horizon: up to 9 days. Updated hourly.`,
     GetLocalForecastParamsSchema.shape,
     async (params: GetLocalForecastParams) => {
+      const _t0 = performance.now();
       try {
         console.error(
           `Processing getLocalForecast request for location: ${params.location}, days: ${params.days}`
@@ -159,6 +167,7 @@ Forecast horizon: up to 9 days. Updated hourly.`,
         const result = await getLocalForecast(params);
         console.error('Successfully retrieved local forecast');
         debugTools('Local forecast retrieved successfully');
+        recordToolCall('meteoswissLocalForecast', performance.now() - _t0);
         return {
           content: [
             {
@@ -170,6 +179,7 @@ Forecast horizon: up to 9 days. Updated hourly.`,
       } catch (error: unknown) {
         console.error('Error in getLocalForecast tool:', error);
         debugTools('Error in getLocalForecast: %O', error);
+        recordToolCall('meteoswissLocalForecast', performance.now() - _t0);
         const errorMessage = error instanceof Error ? error.message : String(error);
         return {
           content: [
@@ -193,6 +203,7 @@ Forecast horizon: up to 9 days. Updated hourly.`,
 Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplatz 1 Bern"), or WGS84 coordinates. Automatically finds the nearest station.`,
     GetCurrentWeatherParamsSchema.shape,
     async (params: GetCurrentWeatherParams) => {
+      const _t0 = performance.now();
       try {
         console.error(
           `Processing meteoswissCurrentWeather request: station=${params.station ?? ''}, coords=${params.coordinates ? `${params.coordinates.lat},${params.coordinates.lon}` : ''}`
@@ -200,10 +211,12 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
         debugTools('getCurrentWeather called with params: %O', params);
         const result = await getCurrentWeather(params);
         console.error('Successfully retrieved current weather');
+        recordToolCall('meteoswissCurrentWeather', performance.now() - _t0);
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (error: unknown) {
         console.error('Error in meteoswissCurrentWeather tool:', error);
         debugTools('Error in getCurrentWeather: %O', error);
+        recordToolCall('meteoswissCurrentWeather', performance.now() - _t0);
         return {
           content: [
             {
@@ -224,6 +237,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
     `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of ~160 stations across Switzerland.`,
     ListStationsParamsSchema.shape,
     async (params: ListStationsParams) => {
+      const _t0 = performance.now();
       try {
         console.error(
           `Processing meteoswissStations request: search=${params.search ?? ''}, canton=${params.canton ?? ''}`
@@ -231,10 +245,12 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
         debugTools('listStations called with params: %O', params);
         const result = await listStations(params);
         console.error(`Successfully listed ${result.total} stations`);
+        recordToolCall('meteoswissStations', performance.now() - _t0);
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (error: unknown) {
         console.error('Error in meteoswissStations tool:', error);
         debugTools('Error in listStations: %O', error);
+        recordToolCall('meteoswissStations', performance.now() - _t0);
         return {
           content: [
             {
@@ -255,6 +271,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
     `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels by type (birch, grass, etc.). Useful for allergy sufferers.`,
     GetPollenDataParamsSchema.shape,
     async (params: GetPollenDataParams) => {
+      const _t0 = performance.now();
       try {
         console.error(
           `Processing meteoswissPollenData request: station=${params.station ?? 'all'}`
@@ -262,10 +279,12 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
         debugTools('getPollenData called with params: %O', params);
         const result = await getPollenData(params);
         console.error(`Successfully retrieved pollen data for ${result.stations.length} stations`);
+        recordToolCall('meteoswissPollenData', performance.now() - _t0);
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       } catch (error: unknown) {
         console.error('Error in meteoswissPollenData tool:', error);
         debugTools('Error in getPollenData: %O', error);
+        recordToolCall('meteoswissPollenData', performance.now() - _t0);
         return {
           content: [
             {

@@ -83,6 +83,11 @@ const envSchema = z.object({
     .string()
     .optional()
     .describe('Full public URL including protocol and port for URL generation'),
+  METRICS_ENABLED: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((val) => val.toLowerCase() === 'true'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -107,6 +112,7 @@ export function validateEnv(): EnvConfig {
     CORS_ORIGIN: process.env.CORS_ORIGIN,
     REQUEST_SIZE_LIMIT: process.env.REQUEST_SIZE_LIMIT,
     PUBLIC_URL: process.env.PUBLIC_URL,
+    METRICS_ENABLED: process.env.METRICS_ENABLED,
   });
 
   try {

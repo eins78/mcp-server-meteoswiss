@@ -24,6 +24,7 @@ import { SessionManager } from '../support/session-management.js';
 import type { EnvConfig } from '../support/environment-validation.js';
 import { renderHomepage } from '../support/markdown-rendering.js';
 import { debugTransport } from '../support/logging.js';
+import { metricsEnabled, register, recordRequest } from '../support/metrics.js';
 import { getMcpEndpointUrl } from '../support/url-generation.js';
 import { getVersion } from '../support/version.js';
 
@@ -130,6 +131,12 @@ export async function createHttpServer(
 
   // Apply rate limiting to all routes
   app.use(limiter);
+
+  // Request counting (before route handlers)
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    recordRequest(req.method);
+    next();
+  });
 
   // Global error handler for async routes
   const asyncHandler =
@@ -298,6 +305,15 @@ export async function createHttpServer(
     debugTransport('Health check requested, response: %O', health);
     res.json(health);
   });
+
+  // Prometheus metrics endpoint (only when METRICS_ENABLED=true)
+  if (metricsEnabled()) {
+    app.get('/metrics', async (_req: Request, res: Response) => {
+      res.set('Content-Type', register.contentType);
+      res.end(await register.metrics());
+    });
+    debugTransport('Metrics endpoint enabled at /metrics');
+  }
 
   const start = async (): Promise<void> => {
     return new Promise((resolve, reject) => {
