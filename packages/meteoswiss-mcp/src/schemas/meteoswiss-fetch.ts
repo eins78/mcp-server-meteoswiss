@@ -6,8 +6,10 @@ import { z } from 'zod';
 export const fetchMeteoSwissContentSchema = z.object({
   id: z
     .string()
-    .min(1, { message: 'Content ID cannot be empty. Please provide a valid content ID or path.' })
-    .describe('The content ID or path to fetch'),
+    .min(1, { message: 'Content ID cannot be empty. Use the search tool to find valid page URLs.' })
+    .describe(
+      'Full URL of a MeteoSwiss page to fetch. Use the search tool first to discover valid URLs. Example: https://www.meteoschweiz.admin.ch/klima/klimawandel/steigende-temperaturen.html'
+    ),
   format: z
     .enum(['markdown', 'text'], {
       message: "Format must be either 'markdown' or 'text'.",

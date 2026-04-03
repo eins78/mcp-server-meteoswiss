@@ -35,7 +35,7 @@ describe('MeteoSwiss Fetch Tool', () => {
         properties: {
           id: {
             type: 'string',
-            description: expect.stringContaining('content ID')
+            description: expect.stringContaining('URL')
           },
           format: {
             type: 'string',
@@ -72,6 +72,12 @@ describe('MeteoSwiss Fetch Tool', () => {
           contentType: expect.any(String)
         })
       });
+
+      // Content must include actual body text from web component attributes,
+      // not just the page title (regression test for empty content body bug)
+      expect(result.content).toContain('Verhaltensempfehlungen');
+      expect(result.content).toContain('Windereignisse');
+      expect(result.content).toContain('Gefahrenstufen von Wind');
     });
 
     it('should fetch content in plain text format', async () => {

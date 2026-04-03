@@ -72,12 +72,13 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
     filteredStations.map(async (stationRow): Promise<StationPollenData | null> => {
       const abbr = stationRow.station_abbr ?? '';
       const abbrLower = abbr.toLowerCase();
-      const dataUrl = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/${abbrLower}/ogd-pollen_${abbrLower}_d_now.csv`;
+      // MeteoSwiss OGD renamed _d_now.csv to _d_recent.csv in 2025
+      const dataUrl = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/${abbrLower}/ogd-pollen_${abbrLower}_d_recent.csv`;
 
       try {
         const rows = await getLatin1CsvData(
           dataUrl,
-          `pollen/${abbrLower}-daily-now.csv`,
+          `pollen/${abbrLower}-daily-recent.csv`,
           'realtime'
         );
         if (rows.length === 0) return null;
