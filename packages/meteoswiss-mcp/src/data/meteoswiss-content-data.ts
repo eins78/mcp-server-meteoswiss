@@ -7,6 +7,7 @@ import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import { fetchHtml, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
+import { expandWebComponents } from './meteoswiss-web-components.js';
 import type { FetchMeteoSwissContentInput } from '../schemas/meteoswiss-fetch.js';
 
 // Test fixtures location
@@ -134,7 +135,10 @@ async function fetchFromWeb(
   } catch (error) {
     debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
-      throw new Error(`Content not found: ${id}`, { cause: error });
+      throw new Error(
+        `Content not found: ${id}. Use the search tool to discover valid page URLs.`,
+        { cause: error }
+      );
     }
     throw new Error(
       `Failed to fetch content: ${error instanceof Error ? error.message : String(error)}`,
@@ -219,6 +223,9 @@ function processHtmlContent(
 
   const dom = new JSDOM(html);
   const document = dom.window.document;
+
+  // Expand MeteoSwiss web components into standard HTML before extraction
+  expandWebComponents(document);
 
   // Extract main content
   const mainContent = extractMainContent(document);
@@ -333,21 +340,6 @@ function extractMainContent(document: Document): string {
     }
   });
 
-  // First, expand any shadow DOM content by looking for slot elements
-  // and moving their assigned content into the main DOM
-  // Note: JSDOM doesn't fully support shadow DOM, so this is a best-effort approach
-  document.querySelectorAll('slot[name="main"]').forEach((slot) => {
-    const parent = slot.parentElement;
-    if (parent) {
-      // In JSDOM, slots don't have assignedNodes, so we'll just look for child elements
-      // that might be slotted content
-      const children = Array.from(slot.children);
-      children.forEach((child) => {
-        parent.appendChild(child.cloneNode(true));
-      });
-    }
-  });
-
   // Try different selectors for main content
   const selectors = [
     'main',
@@ -364,13 +356,7 @@ function extractMainContent(document: Document): string {
   for (const selector of selectors) {
     const element = document.querySelector(selector);
     if (element) {
-      // Also include any slot content that might be after the main content
-      const slotContent = element.querySelectorAll('slot[slot="main"], [slot="main"]');
-      let additionalContent = '';
-      slotContent.forEach((el) => {
-        additionalContent += el.innerHTML || el.textContent || '';
-      });
-      return element.innerHTML + additionalContent;
+      return element.innerHTML;
     }
   }
 
