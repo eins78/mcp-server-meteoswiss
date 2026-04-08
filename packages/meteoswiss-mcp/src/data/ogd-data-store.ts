@@ -24,6 +24,12 @@ function resolveFixturePath(url: string): string | null {
   // Map known URL patterns to fixture directories
   if (url.includes('VQHA80.csv')) return path.join(OGD_FIXTURES_ROOT, 'measurements', 'VQHA80.csv');
 
+  // SMN-precip metadata and data (must come BEFORE SMN to avoid 'smn' substring match)
+  if (url.includes('meta_stations.csv') && url.includes('smn-precip'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn-precip_meta_stations.csv');
+  if (url.includes('ogd-smn-precip') && url.includes('_t_recent.csv'))
+    return path.join(OGD_FIXTURES_ROOT, 'measurements', 'smn-precip-abe-t-recent.csv');
+
   // SMN (weather station) metadata
   if (url.includes('meta_stations.csv') && url.includes('smn'))
     return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn_meta_stations.csv');

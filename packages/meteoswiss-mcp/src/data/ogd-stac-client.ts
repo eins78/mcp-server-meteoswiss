@@ -22,6 +22,7 @@ const STAC_BASE = 'https://data.geo.admin.ch/api/stac/v1';
 const COLLECTION_FIXTURES: Record<string, string> = {
   'ch.meteoschweiz.ogd-local-forecasting': 'collection-local-forecasting.json',
   'ch.meteoschweiz.ogd-smn': 'collection-ogd-smn.json',
+  'ch.meteoschweiz.ogd-smn-precip': 'collection-ogd-smn-precip.json',
   'ch.meteoschweiz.ogd-pollen': 'collection-pollen.json',
 };
 
