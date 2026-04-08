@@ -23,14 +23,26 @@ function resolveFixturePath(url: string): string | null {
 
   // Map known URL patterns to fixture directories
   if (url.includes('VQHA80.csv')) return path.join(OGD_FIXTURES_ROOT, 'measurements', 'VQHA80.csv');
-  if (url.includes('meta_stations.csv'))
+
+  // SMN (weather station) metadata
+  if (url.includes('meta_stations.csv') && url.includes('smn'))
     return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn_meta_stations.csv');
+  if (url.includes('meta_parameters.csv') && url.includes('smn'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn_meta_parameters.csv');
+
+  // Pollen metadata and data
+  if (url.includes('meta_stations.csv') && url.includes('pollen'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-pollen_meta_stations.csv');
+  if (url.includes('meta_parameters.csv') && url.includes('pollen'))
+    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-pollen_meta_parameters.csv');
+  if (url.includes('ogd-pollen') && url.includes('_d_recent.csv'))
+    return path.join(OGD_FIXTURES_ROOT, 'pollen', 'pzh-daily-recent.csv');
+
+  // Forecast metadata
   if (url.includes('meta_point.csv'))
     return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-local-forecasting_meta_point.csv');
   if (url.includes('meta_parameters.csv') && url.includes('forecasting'))
     return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-local-forecasting_meta_parameters.csv');
-  if (url.includes('meta_parameters.csv') && url.includes('smn'))
-    return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-smn_meta_parameters.csv');
 
   // Forecast CSVs: match by parameter name
   for (const param of [

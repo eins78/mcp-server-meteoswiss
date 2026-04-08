@@ -151,25 +151,19 @@ Night codes are day code + 100. Used in `jww003i0` for nighttime hours.
 
 ## Pollen Types
 
-Common pollen parameter codes in daily pollen CSVs.
+Parameter codes in daily pollen CSVs. Each species has two daily resolutions:
+- `d0`: 6 UTC to 6 UTC following day (meteorological day)
+- `d1`: 0 UTC to 0 UTC (standard calendar day) — **recommended**
 
-| Code | Pollen type (English) |
-|------|----------------------|
-| `ALN` | Alder |
-| `AMB` | Ragweed |
-| `BET` | Birch |
-| `BIR` | Birch (alternate) |
-| `COR` | Hazel |
-| `FRA` | Ash |
-| `GRA` | Grass |
-| `HIE` | Plantain |
-| `OLE` | Olive |
-| `PAR` | Pellitory |
-| `PLA` | Plane |
-| `POA` | Grass (Poaceae) |
-| `RUM` | Sorrel |
-| `TAX` | Yew/Cypress |
-| `URT` | Nettle |
+| Prefix | Code (d1) | Pollen type | Latin name |
+|--------|-----------|-------------|------------|
+| `kaalnu` | `kaalnud1` | Alder | Alnus |
+| `kabetu` | `kabetud1` | Birch | Betula |
+| `kacory` | `kacoryd1` | Hazel | Corylus |
+| `kafagu` | `kafagud1` | Beech | Fagus |
+| `kafrax` | `kafraxd1` | Ash | Fraxinus |
+| `kaquer` | `kaquerd1` | Oak | Quercus |
+| `khpoac` | `khpoacd1` | Grasses | Poaceae |
 
 Values are in particles/m³. Not all pollen types are measured at every station.
 
@@ -177,21 +171,24 @@ Values are in particles/m³. Not all pollen types are measured at every station.
 
 | Abbreviation | Station name |
 |-------------|-------------|
-| BAS | Basel |
-| BER | Bern |
-| BUC | Buchs (SG) |
-| DAV | Davos |
-| GEN | Genève |
-| LAU | Lausanne |
-| LOG | Locarno |
-| LUG | Lugano |
-| LUZ | Luzern |
-| MUN | Münsterlingen |
-| NEU | Neuchâtel |
-| VIS | Visp |
-| ZUE | Zürich |
+| PBE | Bern |
+| PBS | Basel |
+| PBU | Buchs (SG) |
+| PCF | La Chaux-de-Fonds |
+| PDS | Davos |
+| PGE | Geneve |
+| PJU | Jungfraujoch |
+| PLO | Locarno |
+| PLS | Lausanne |
+| PLU | Lugano |
+| PLZ | Luzern |
+| PMU | Munsterlingen |
+| PNE | Neuchatel |
+| PPY | Payerne |
+| PSN | Sion |
+| PZH | Zurich |
 
-URL pattern (lowercase abbreviation): `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/{abbr}/ogd-pollen_{abbr}_d_now.csv`
+URL pattern (lowercase abbreviation): `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/{abbr}/ogd-pollen_{abbr}_d_recent.csv`
 
 ## STAC Collections
 

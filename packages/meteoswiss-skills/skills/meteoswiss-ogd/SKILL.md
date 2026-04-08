@@ -25,7 +25,7 @@ Access Swiss weather data from MeteoSwiss Open Government Data. Free, no API key
 | Station metadata | STAC `ch.meteoschweiz.ogd-smn` → asset `ogd-smn_meta_stations.csv` (Latin1) | Daily |
 | Forecast metadata | STAC `ch.meteoschweiz.ogd-local-forecasting` → asset containing `meta_point.csv` (Latin1) | Daily |
 | Forecast data | STAC items in `ch.meteoschweiz.ogd-local-forecasting` → parameter CSVs | Hourly |
-| Pollen data | `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/{abbr}/ogd-pollen_{abbr}_d_now.csv` (Latin1) | Daily |
+| Pollen data | `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/{abbr}/ogd-pollen_{abbr}_d_recent.csv` (Latin1) | Daily |
 
 STAC API base: `https://data.geo.admin.ch/api/stac/v1`
 
@@ -84,14 +84,14 @@ curl -s "$ASSET_URL" | awk -F';' 'NR==1 || $1=="48"'
 ## 4. Get Pollen Data
 
 ```bash
-# Stations: BAS, BER, BUC, DAV, GEN, LAU, LOG, LUG, LUZ, MUN, NEU, VIS, ZUE
+# Stations: PBE, PBS, PBU, PCF, PDS, PGE, PJU, PLO, PLS, PLU, PLZ, PMU, PNE, PPY, PSN, PZH
 # Use lowercase in URLs
-curl -s 'https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/zue/ogd-pollen_zue_d_now.csv' \
+curl -s 'https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/pzh/ogd-pollen_pzh_d_recent.csv' \
   | iconv -f latin1 -t utf-8 \
   | awk -F';' 'NR==1{print} {last=$0} END{print last}'
 ```
 
-Columns: `station_abbr`, `Date`, then pollen types (`BIR`=birch, `GRA`=grass, etc.) in particles/m³.
+Columns: `station_abbr`, `reference_timestamp`, then pollen parameter codes (e.g. `kabetud1`=birch, `khpoacd1`=grasses) in particles/m³. See `${CLAUDE_SKILL_DIR}/REFERENCE.md` for all codes.
 
 ## Error Handling
 

@@ -9,8 +9,60 @@ import { debugData } from './logging.js';
 export type CsvRow = Record<string, string | null>;
 
 /**
+ * Split a CSV line respecting RFC 4180 quoted fields.
+ * Fields wrapped in double quotes may contain the delimiter character literally.
+ * Doubled quotes ("") inside a quoted field represent a single literal quote.
+ *
+ * @param line - A single CSV line
+ * @param delimiter - The field delimiter character (';' for MeteoSwiss)
+ * @returns Array of field values with surrounding quotes stripped
+ */
+export function splitCsvLine(line: string, delimiter: string): string[] {
+  const fields: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < line.length) {
+    const ch = line[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          // Escaped double-quote inside quoted field
+          current += '"';
+          i += 2;
+        } else {
+          // End of quoted field
+          inQuotes = false;
+          i++;
+        }
+      } else {
+        current += ch;
+        i++;
+      }
+    } else if (ch === '"' && current.length === 0) {
+      // Start of quoted field (only valid at field start)
+      inQuotes = true;
+      i++;
+    } else if (ch === delimiter) {
+      fields.push(current);
+      current = '';
+      i++;
+    } else {
+      current += ch;
+      i++;
+    }
+  }
+
+  fields.push(current);
+  return fields;
+}
+
+/**
  * Parse a MeteoSwiss CSV string into typed rows.
  * MeteoSwiss uses semicolon delimiters with missing values as '-' or empty.
+ * Handles RFC 4180 quoted fields (descriptions may contain embedded semicolons).
  *
  * @param csvText - Raw CSV text content
  * @param filter - Optional predicate to filter rows during parsing (avoids allocating unneeded rows)
@@ -26,14 +78,14 @@ export function parseCsv(csvText: string, filter?: (row: CsvRow) => boolean): Cs
   if (!headerLine) {
     return [];
   }
-  const headers = headerLine.split(';').map((h) => h.trim());
+  const headers = splitCsvLine(headerLine, ';').map((h) => h.trim());
   debugData('[ogd-csv] Parsed %d headers: %s', headers.length, headers.join(', '));
 
   const rows: CsvRow[] = [];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
-    const values = line.split(';');
+    const values = splitCsvLine(line, ';');
     const row: CsvRow = {};
     for (let j = 0; j < headers.length; j++) {
       const header = headers[j];

@@ -17,6 +17,35 @@ import type {
 } from '../schemas/ogd-pollen-data.js';
 
 /**
+ * Map from the first 6 characters of a pollen parameter code to a short
+ * species display name. MeteoSwiss codes follow the pattern:
+ * k{a|h}{genus-4-chars}{resolution} where genus is a Latin-genus abbreviation.
+ */
+const POLLEN_SPECIES = {
+  kaalnu: 'Alder (Alnus)',
+  kabetu: 'Birch (Betula)',
+  kacory: 'Hazel (Corylus)',
+  kafagu: 'Beech (Fagus)',
+  kafrax: 'Ash (Fraxinus)',
+  kaquer: 'Oak (Quercus)',
+  khpoac: 'Grasses (Poaceae)',
+} as const;
+
+type PollenSpeciesPrefix = keyof typeof POLLEN_SPECIES;
+
+/**
+ * Get a short display name for a pollen parameter code.
+ * Falls back to the raw code if the prefix is not recognized.
+ *
+ * @param code - Parameter shortname (or 6-char prefix) like 'kaalnud1'
+ * @returns Short species name like 'Alder (Alnus)', or the raw code
+ */
+function pollenDisplayName(code: string): string {
+  const prefix = code.slice(0, 6) as PollenSpeciesPrefix;
+  return POLLEN_SPECIES[prefix] ?? code;
+}
+
+/**
  * Fetch pollen data from MeteoSwiss OGD.
  *
  * @param params - Tool parameters with optional station filter
@@ -37,19 +66,6 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
     'metadata/pollen-stations.csv',
     'metadata'
   );
-
-  // Get parameter metadata for pollen type names
-  const paramMetaAsset = collection.assets?.['ogd-pollen_meta_parameters.csv'];
-  const paramRows = paramMetaAsset
-    ? await getLatin1CsvData(paramMetaAsset.href, 'metadata/pollen-parameters.csv', 'metadata')
-    : [];
-
-  const paramNames = new Map<string, string>();
-  for (const row of paramRows) {
-    const code = row.parameter_shortname ?? '';
-    const name = row.parameter_description_en ?? row.parameter_description_de ?? code;
-    if (code) paramNames.set(code, name);
-  }
 
   // Filter stations if search provided
   let filteredStations = stationRows.filter((r) => r.station_abbr);
@@ -86,14 +102,34 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
         const latestRow = rows[rows.length - 1];
         if (!latestRow) return null;
 
-        const pollen: PollenMeasurement[] = [];
+        // Collect measurements, preferring d1 (calendar day 0-0 UTC) over d0 (6-6 UTC)
+        const d0Values = new Map<string, number>();
+        const d1Values = new Map<string, number>();
+
         for (const [key, value] of Object.entries(latestRow)) {
           if (key === 'station_abbr' || key === 'reference_timestamp' || key === 'Date') continue;
           const numVal = parseNumeric(value);
           if (numVal === null) continue;
+
+          const prefix = key.slice(0, 6);
+          const suffix = key.slice(6);
+
+          if (suffix === 'd1') {
+            d1Values.set(prefix, numVal);
+          } else if (suffix === 'd0') {
+            d0Values.set(prefix, numVal);
+          }
+          // Ignore h0, y0, and other resolutions for daily pollen output
+        }
+
+        const pollen: PollenMeasurement[] = [];
+        const allPrefixes = new Set([...d1Values.keys(), ...d0Values.keys()]);
+        for (const prefix of allPrefixes) {
+          const value = d1Values.get(prefix) ?? d0Values.get(prefix);
+          if (value === undefined) continue;
           pollen.push({
-            type: paramNames.get(key) ?? key,
-            value: numVal,
+            type: pollenDisplayName(prefix),
+            value,
             unit: 'particles/m\u00B3',
           });
         }
