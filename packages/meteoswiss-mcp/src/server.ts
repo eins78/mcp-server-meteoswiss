@@ -22,6 +22,9 @@ import { listStations } from './data/ogd-station-list.js';
 import { GetPollenDataParamsSchema } from './schemas/ogd-pollen-data.js';
 import type { GetPollenDataParams } from './schemas/ogd-pollen-data.js';
 import { getPollenData } from './data/ogd-pollen-data.js';
+import { GetClimateDataParamsSchema } from './schemas/ogd-climate-data.js';
+import type { GetClimateDataParams } from './schemas/ogd-climate-data.js';
+import { getClimateData } from './data/ogd-climate-data.js';
 import { debugServer, debugTools } from './support/logging.js';
 import { recordToolCall } from './support/metrics.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
@@ -290,6 +293,46 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
             {
               type: 'text' as const,
               text: `Failed to get pollen data: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getClimateData tool (OGD NBCN)
+  debugServer('Registering tool: getClimateData');
+  server.tool(
+    'meteoswissClimateData',
+    `Get homogeneous climate measurement series from Switzerland's National Basic Climatic Network (NBCN). Returns temperature, precipitation, sunshine, radiation, wind, pressure, and climate indicators (frost days, summer days, heat days) going back decades.
+
+29 climate stations + 46 precipitation stations with daily, monthly, and yearly resolution.
+
+Use cases: "What are typical January temperatures in Zurich?", "How has precipitation changed in Basel over 50 years?", "How many heat days did Lugano have last year?"
+
+Accepts station names ("Zurich", "Basel"), abbreviations ("SMA", "BAS"), or WGS84 coordinates.`,
+    GetClimateDataParamsSchema.shape,
+    async (params: GetClimateDataParams) => {
+      const _t0 = performance.now();
+      try {
+        console.error(
+          `Processing meteoswissClimateData request: station=${params.station ?? ''}, resolution=${params.resolution ?? 'monthly'}`
+        );
+        debugTools('getClimateData called with params: %O', params);
+        const result = await getClimateData(params);
+        console.error(`Successfully retrieved climate data: ${result.data.length} rows`);
+        recordToolCall('meteoswissClimateData', performance.now() - _t0);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        console.error('Error in meteoswissClimateData tool:', error);
+        debugTools('Error in getClimateData: %O', error);
+        recordToolCall('meteoswissClimateData', performance.now() - _t0);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get climate data: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,
