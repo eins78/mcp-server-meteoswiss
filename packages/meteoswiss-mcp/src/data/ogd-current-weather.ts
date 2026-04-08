@@ -3,7 +3,7 @@
  * Fetches real-time measurements from the consolidated VQHA80.csv.
  */
 
-import { getCsvData } from './ogd-data-store.js';
+import { getCsvData, getLatin1CsvData } from './ogd-data-store.js';
 import { resolveSmnStation, findNearestStation } from './ogd-smn-stations.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { reverseGeocodeSwiss } from '../support/reverse-geocode.js';
@@ -19,6 +19,9 @@ import type { CsvRow } from '../support/ogd-csv-parser.js';
 import type { SmnStation } from './ogd-smn-stations.js';
 
 const REALTIME_CSV_URL = 'https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv';
+
+/** The 8 stations that have visual observations (OBS) data */
+const OBS_STATIONS = new Set(['ALT', 'BAS', 'CHU', 'GSB', 'JUN', 'SAE', 'SIO', 'SMA']);
 
 /** Cache reverse geocode results per station (coordinates are static) */
 const reverseGeoCache = new Map<string, ReverseGeocodeResult | null>();
@@ -102,6 +105,12 @@ export async function getCurrentWeather(
     throw new Error(`No current data available for station ${station.abbr} (${station.name})`);
   }
 
+  // Enrich with visual observations for the 8 OBS stations
+  let visual_observations: CurrentWeatherResponse['visual_observations'];
+  if (OBS_STATIONS.has(station.abbr)) {
+    visual_observations = await fetchVisualObservations(station.abbr);
+  }
+
   return {
     station: {
       name: station.name,
@@ -128,6 +137,56 @@ export async function getCurrentWeather(
       pressure_sea_level: measurement(row, 'pp0qffs0', 'hPa'),
       snow_depth: measurement(row, 'htoauts0', 'cm'),
     },
+    visual_observations,
     source: SOURCE_ATTRIBUTION,
   };
+}
+
+/**
+ * Fetch the latest visual observation for an OBS station.
+ * Returns undefined if the fetch fails (non-critical enrichment).
+ */
+async function fetchVisualObservations(
+  abbr: string
+): Promise<CurrentWeatherResponse['visual_observations']> {
+  try {
+    const abbrLower = abbr.toLowerCase();
+    const url = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-obs/${abbrLower}/ogd-obs_${abbrLower}_d_recent.csv`;
+    const rows = await getLatin1CsvData(
+      url,
+      `observations/obs-${abbrLower}-d-recent.csv`,
+      'realtime'
+    );
+
+    if (rows.length === 0) return undefined;
+    const latestRow = rows[rows.length - 1]!;
+
+    const cloudCover = parseNumeric(latestRow.nto000d0 ?? null);
+    const parseFlag = (val: string | null): boolean | undefined => {
+      if (val === null) return undefined;
+      const num = parseNumeric(val);
+      return num === null ? undefined : num === 1;
+    };
+
+    // Parse timestamp DD.MM.YYYY → YYYY-MM-DD
+    const ts = latestRow.reference_timestamp ?? '';
+    const match = ts.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+    const date = match ? `${match[3]}-${match[2]}-${match[1]}` : ts;
+
+    return {
+      date,
+      cloud_cover_percent: cloudCover ?? undefined,
+      is_clear_day: parseFlag(latestRow.nto002d0 ?? null),
+      is_overcast_day: parseFlag(latestRow.nto008d0 ?? null),
+      has_rain: parseFlag(latestRow.w1p012d0 ?? null),
+      has_rain_and_snow: parseFlag(latestRow.w2p001d0 ?? null),
+      has_snowfall: parseFlag(latestRow.w2p002d0 ?? null),
+      has_hail: parseFlag(latestRow.w3p002d0 ?? null),
+      has_fog: parseFlag(latestRow.w5p002d0 ?? null),
+      has_snow_coverage: parseFlag(latestRow.est000d0 ?? null),
+    };
+  } catch (error) {
+    debugData('[ogd-weather] Failed to fetch visual observations for %s: %O', abbr, error);
+    return undefined;
+  }
 }

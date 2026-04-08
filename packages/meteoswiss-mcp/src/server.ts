@@ -203,6 +203,8 @@ Forecast horizon: up to 9 days. Updated hourly.`,
     'meteoswissCurrentWeather',
     `Get real-time weather measurements from ~300 Swiss automatic weather stations (~160 full weather + ~140 precipitation-only). Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes. Precipitation-only stations return only rainfall data.
 
+For 8 stations (Zurich, Basel, Chur, Sion, Altdorf, Säntis, Jungfraujoch, Grand St-Bernard), also includes daily visual observations: cloud cover, fog, rain, snowfall, hail, and snow coverage.
+
 Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplatz 1 Bern"), or WGS84 coordinates. Automatically finds the nearest station.`,
     GetCurrentWeatherParamsSchema.shape,
     async (params: GetCurrentWeatherParams) => {
