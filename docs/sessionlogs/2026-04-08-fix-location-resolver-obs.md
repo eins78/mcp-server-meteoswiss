@@ -44,16 +44,21 @@ Fixed two RC v2.3.0-rc.1 blockers: the location resolver silently returning wron
 - **Postal codes 1200/3000**: MeteoSwiss metadata may not include parent postal codes. Fix requires live geocoding which can't be tested with fixtures. The bounding box + distance threshold will improve production behavior.
 - **"Zurich" → KLO (airport)**: Both "Zürich / Kloten" and "Zürich / Fluntern" score equally (word boundary). Would require population data or manual preference list.
 
+## Post-Merge: CI Fix + Release
+
+After PR #66 merged, CI had flaky "Server failed to start in time" failures — each integration test was spawning its own MCP server in `beforeEach` (~64 process startups). Fixed by switching all 8 MCPClient test files to `beforeAll`/`afterAll` (one server per file, ~8 startups). Test runtime dropped from ~11s to ~3.4s locally.
+
+Released as `meteoswiss-mcp-v2.3.0-rc.2` (pre-release) following the same manual RC pattern as rc.1: changeset → `pnpm run version` → override to rc.2 → tag → GitHub release.
+
 ## Next Steps
 
-- [ ] Merge PR #66 after review
-- [ ] Re-run E2E tests against TEST deployment
-- [ ] Cut new RC if tests pass
+- [ ] Re-run E2E tests against TEST deployment with rc.2
+- [ ] Promote to stable v2.3.0 if E2E passes
 - [ ] Consider adding postal code prefix matching for parent codes (1200→1201)
 
 ## Repository State
 
-- Branch: `fix/location-resolver-and-obs`
-- PR: eins78/meteoswiss-llm-tools#66
-- CI: green (all 134 tests pass)
+- Branch: `main` (PR #66 merged)
+- Tag: `meteoswiss-mcp-v2.3.0-rc.2`
+- Release: https://github.com/eins78/meteoswiss-llm-tools/releases/tag/meteoswiss-mcp-v2.3.0-rc.2
 - Plan: `~/.claude/plans/clever-exploring-brook.md`
