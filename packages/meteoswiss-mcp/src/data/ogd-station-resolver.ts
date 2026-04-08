@@ -11,8 +11,12 @@ import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 import type { ForecastPoint } from '../schemas/ogd-shared.js';
 import { normalize } from '../support/normalize.js';
+import { scoreNameMatch } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation } from '../support/geocode.js';
+
+/** Max distance (km) for geocoding fallback — forecast points are dense (~6000) */
+const MAX_GEOCODE_DISTANCE_KM = 30;
 
 /** Indexed forecast point data for fast lookups */
 type ForecastIndex = {
@@ -92,6 +96,13 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
   const { points, byPostalCode, byAbbr } = await loadForecastIndex();
   const q = normalize(query.trim());
 
+  if (q === '') {
+    throw new Error(
+      'Location query must not be empty. Try a Swiss postal code (e.g., "8001"), ' +
+        'station abbreviation (e.g., "ZUE"), or place name (e.g., "Zurich").'
+    );
+  }
+
   // O(1) exact match on postal code
   const postalMatch = byPostalCode.get(q);
   if (postalMatch) {
@@ -104,27 +115,26 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
     return { match: abbrMatch, alternatives: [], confidence: 'exact' };
   }
 
-  // Fuzzy match on name (case-insensitive, diacritic-insensitive substring)
-  const nameMatches = points.filter((p) => normalize(p.name).includes(q));
-  if (nameMatches.length > 0) {
-    const sorted = nameMatches.sort((a, b) => {
-      // Exact name match first
-      if (normalize(a.name) === q && normalize(b.name) !== q) return -1;
-      if (normalize(b.name) === q && normalize(a.name) !== q) return 1;
-      // Postal codes before stations for city names
-      if (a.point_type_id === 2 && b.point_type_id !== 2) return -1;
-      if (b.point_type_id === 2 && a.point_type_id !== 2) return 1;
-      return 0;
+  // Scored name match — word-boundary matches beat substring matches
+  const scored = points
+    .map((p) => ({ point: p, score: scoreNameMatch(q, normalize(p.name)) }))
+    .filter((s) => s.score > 0)
+    .sort((a, b) => {
+      // Higher score first
+      if (b.score !== a.score) return b.score - a.score;
+      // Postal codes before stations for city names (at same score)
+      if (a.point.point_type_id === 2 && b.point.point_type_id !== 2) return -1;
+      if (b.point.point_type_id === 2 && a.point.point_type_id !== 2) return 1;
+      // Shorter names preferred (more specific)
+      return a.point.name.length - b.point.name.length;
     });
 
-    const best = sorted[0];
-    if (!best) {
-      throw new Error(`Unexpected empty match array for "${query}"`);
-    }
+  if (scored.length > 0) {
+    const best = scored[0]!;
     return {
-      match: best,
-      alternatives: sorted.slice(1, 4),
-      confidence: normalize(best.name) === q ? 'exact' : 'fuzzy',
+      match: best.point,
+      alternatives: scored.slice(1, 4).map((s) => s.point),
+      confidence: best.score >= 50 ? 'exact' : 'fuzzy',
     };
   }
 
@@ -142,7 +152,7 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
       geocoded.lat,
       geocoded.lon
     );
-    if (result) {
+    if (result && result.distance_km <= MAX_GEOCODE_DISTANCE_KM) {
       debugData(
         '[ogd-resolver] Geocoded "%s" → %s, nearest point: %s (%.1f km)',
         query,
@@ -151,6 +161,14 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
         result.distance_km
       );
       return { match: result.item, alternatives: [], confidence: 'fuzzy' };
+    }
+    if (result) {
+      debugData(
+        '[ogd-resolver] Geocoded "%s" too far from nearest point: %.1f km (limit: %d km)',
+        query,
+        result.distance_km,
+        MAX_GEOCODE_DISTANCE_KM
+      );
     }
   }
 
