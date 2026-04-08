@@ -76,4 +76,22 @@ describe('meteoswissLocalForecast Tool', () => {
       .catch((e: Error) => ({ isError: true, content: [{ text: e.message }] }));
     expect(result.isError).toBeTruthy();
   });
+
+  it('should return error for whitespace-only location', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: '   ',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('empty');
+  });
+
+  it('should resolve "Bern" to Bern / Zollikofen, not Passo del Bernina', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'Bern',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.location.name).toBe('Bern / Zollikofen');
+  });
 });

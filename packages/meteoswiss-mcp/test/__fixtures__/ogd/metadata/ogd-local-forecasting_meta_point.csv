@@ -3,30 +3,31 @@ point_id;point_type_id;station_abbr;postal_code;point_name;point_type_de;point_t
 2;1;RAG;;Bad Ragaz;Station;Station;Stazione;Station;497.0;2756911.0;1209351.0;47.016631;9.502594
 3;1;HAI;;Salen-Reutenen;Station;Station;Stazione;Station;719.0;2719100.0;1279047.0;47.651242;9.023911
 4;1;HLL;;Hallau;Station;Station;Stazione;Station;419.0;2677457.0;1283472.0;47.697278;8.470464
-6;1;DEM;;Delémont;Station;Station;Stazione;Station;439.0;2593270.0;1244543.0;47.351706;7.349567
+6;1;DEM;;Delï¿½mont;Station;Station;Stazione;Station;439.0;2593270.0;1244543.0;47.351706;7.349567
 7;1;EBK;;Ebnat-Kappel;Station;Station;Stazione;Station;623.0;2726348.0;1237176.0;47.273389;9.108494
 8;1;ELM;;Elm;Station;Station;Stazione;Station;958.0;2732266.0;1198424.0;46.923742;9.175347
 9;1;EIN;;Einsiedeln;Station;Station;Stazione;Station;911.0;2699984.0;1221068.0;47.133042;8.756556
 10;1;ANT;;Andermatt;Station;Station;Stazione;Station;1435.0;2687445.0;1165044.0;46.630914;8.580553
 11;1;MER;;Meiringen;Station;Station;Stazione;Station;589.0;2655844.0;1175930.0;46.732222;8.169247
-13;1;CHD;;Château-d'Oex;Station;Station;Stazione;Station;1028.0;2577040.0;1147655.0;46.479819;7.139656
+13;1;CHD;;Chï¿½teau-d'Oex;Station;Station;Stazione;Station;1028.0;2577040.0;1147655.0;46.479819;7.139656
 14;1;GRA;;Fribourg / Grangeneuve;Station;Station;Stazione;Station;651.0;2575184.0;1180076.0;46.7714;7.113736
 15;1;CHM;;Chaumont;Station;Station;Stazione;Station;1136.0;2565060.0;1211007.0;47.049169;6.978825
 17;1;LAG;;Langnau i.E.;Station;Station;Stazione;Station;744.0;2628004.0;1198793.0;46.939633;7.806425
 18;1;KOP;;Koppigen;Station;Station;Stazione;Station;485.0;2612663.0;1218665.0;47.11885;7.605503
-19;1;GRC;;Grächen;Station;Station;Stazione;Station;1605.0;2630738.0;1116062.0;46.195314;7.836822
-20;1;BLA;;Blatten, Lötschental;Station;Station;Stazione;Station;1548.0;2629776.0;1141283.0;46.422231;7.825969
+19;1;GRC;;Grï¿½chen;Station;Station;Stazione;Station;1605.0;2630738.0;1116062.0;46.195314;7.836822
+20;1;BLA;;Blatten, Lï¿½tschental;Station;Station;Stazione;Station;1548.0;2629776.0;1141283.0;46.422231;7.825969
 22;1;GRO;;Grono;Station;Station;Stazione;Station;324.0;2733018.0;1124089.0;46.255075;9.163758
 23;1;BEH;;Passo del Bernina;Station;Station;Stazione;Station;2260.0;2798423.0;1143020.0;46.409158;10.019567
 24;1;SIA;;Segl-Maria;Station;Station;Stazione;Station;1804.0;2778576.0;1144976.0;46.432331;9.762325
-25;1;SMM;;Sta. Maria, Val Müstair;Station;Station;Stazione;Station;1386.0;2828862.0;1165580.0;46.602256;10.426314
+25;1;SMM;;Sta. Maria, Val Mï¿½stair;Station;Station;Stazione;Station;1386.0;2828862.0;1165580.0;46.602256;10.426314
 26;1;DAV;;Davos;Station;Station;Stazione;Station;1594.0;2783519.0;1187459.0;46.812969;9.843558
 27;1;CHU;;Chur;Station;Station;Stazione;Station;556.0;2759485.0;1193176.0;46.870572;9.530761
 28;1;ROB;;Poschiavo / Robbia;Station;Station;Stazione;Station;1078.0;2801994.0;1136249.0;46.347217;10.063031
 29;1;SAM;;Samedan;Station;Station;Stazione;Station;1709.0;2787251.0;1155685.0;46.526247;9.879469
 30;1;SCU;;Scuol;Station;Station;Stazione;Station;1304.0;2817139.0;1186393.0;46.793275;10.283267
-31;1;DOL;;La Dôle;Station;Station;Stazione;Station;1670.0;2497059.0;1142373.0;46.424794;6.099453
+31;1;DOL;;La Dï¿½le;Station;Station;Stazione;Station;1670.0;2497059.0;1142373.0;46.424794;6.099453
 32;1;PAY;;Payerne;Station;Station;Stazione;Station;490.0;2562131.0;1184612.0;46.811581;6.942469
 33;1;JUN;;Jungfraujoch;Station;Station;Stazione;Station;3571.0;2641939.0;1155287.0;46.547556;7.985444
 800100;2;;8001;ZÃ¼rich;Zentrum Postleitzahl;Centre code postal;Centro codice postale;Postal code center;409.0;2683348.0;1247414.0;47.372289;8.542189
 48;1;NAP;;Napf;Station;Station;Stazione;Station;1404.0;2638137.0;1206079.0;47.004667;7.940117
+49;1;BER;;Bern / Zollikofen;Station;Station;Stazione;Station;553.0;2601934.0;1204410.0;46.990744;7.464061

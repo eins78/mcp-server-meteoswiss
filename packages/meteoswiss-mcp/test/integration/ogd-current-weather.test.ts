@@ -64,7 +64,7 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(result.content[0].text).toContain('station');
   });
 
-  it('should include visual observations for OBS stations', async () => {
+  it('should include visual observations for OBS stations with all boolean fields', async () => {
     // ALT (Altdorf) is one of the 8 OBS stations with visual observations
     const result = await client.callTool('meteoswissCurrentWeather', {
       station: 'ALT',
@@ -80,6 +80,17 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(data.visual_observations).toHaveProperty('date');
     expect(data.visual_observations).toHaveProperty('cloud_cover_percent');
     expect(typeof data.visual_observations.cloud_cover_percent).toBe('number');
+
+    // All boolean fields must be present (not stripped as undefined)
+    // MeteoSwiss '-' means "not observed" = false, not missing
+    expect(typeof data.visual_observations.is_clear_day).toBe('boolean');
+    expect(typeof data.visual_observations.is_overcast_day).toBe('boolean');
+    expect(typeof data.visual_observations.has_rain).toBe('boolean');
+    expect(typeof data.visual_observations.has_rain_and_snow).toBe('boolean');
+    expect(typeof data.visual_observations.has_snowfall).toBe('boolean');
+    expect(typeof data.visual_observations.has_hail).toBe('boolean');
+    expect(typeof data.visual_observations.has_fog).toBe('boolean');
+    expect(typeof data.visual_observations.has_snow_coverage).toBe('boolean');
   });
 
   it('should NOT include visual observations for non-OBS stations', async () => {
@@ -92,6 +103,25 @@ describe('meteoswissCurrentWeather Tool', () => {
     const data = JSON.parse(result.content[0].text);
     expect(data.station.abbreviation).toBe('ABO');
     expect(data.visual_observations).toBeUndefined();
+  });
+
+  it('should resolve "Bern" to BER (Bern / Zollikofen), not BEH (Passo del Bernina)', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'Bern',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.station.abbreviation).toBe('BER');
+    expect(data.station.name).toContain('Bern');
+  });
+
+  it('should return error for whitespace-only station query', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: '   ',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('empty');
   });
 
   it('should return precipitation for a precip-only station', async () => {
