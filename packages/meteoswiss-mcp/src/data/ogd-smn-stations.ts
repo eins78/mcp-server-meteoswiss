@@ -6,12 +6,15 @@
 
 import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
-import { parseNumeric } from '../support/ogd-csv-parser.js';
+import { parseNumeric, type CsvRow } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
 import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation } from '../support/geocode.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
+
+/** Station network type — SMN (full weather) or SMN-precip (precipitation only) */
+export type SmnNetwork = 'smn' | 'smn-precip';
 
 /** Parsed station metadata */
 export type SmnStation = {
@@ -22,30 +25,17 @@ export type SmnStation = {
   lat: number;
   lon: number;
   data_since: string;
+  network: SmnNetwork;
 };
 
 let stationCache: SmnStation[] | null = null;
 let stationByAbbr: Map<string, SmnStation> | null = null;
 
 /**
- * Load SMN station metadata from the OGD STAC API.
- * Cached in memory after first load.
- *
- * @returns Array of all SMN stations
+ * Parse station metadata rows into SmnStation objects.
  */
-export async function loadSmnStations(): Promise<SmnStation[]> {
-  if (stationCache) return stationCache;
-
-  debugData('[ogd-smn] Loading station metadata...');
-  const collection = await getCollection(OGD_COLLECTIONS.SMN);
-  const metaAsset = collection.assets?.['ogd-smn_meta_stations.csv'];
-  if (!metaAsset) {
-    throw new Error('Station metadata asset not found in SMN collection');
-  }
-
-  const rows = await getLatin1CsvData(metaAsset.href, 'metadata/smn-stations.csv', 'metadata');
-
-  stationCache = rows
+function parseStationRows(rows: CsvRow[], network: SmnNetwork): SmnStation[] {
+  return rows
     .filter((r) => r.station_abbr)
     .map((row) => ({
       abbr: row.station_abbr ?? '',
@@ -55,10 +45,54 @@ export async function loadSmnStations(): Promise<SmnStation[]> {
       lat: parseNumeric(row.station_coordinates_wgs84_lat ?? null) ?? 0,
       lon: parseNumeric(row.station_coordinates_wgs84_lon ?? null) ?? 0,
       data_since: row.station_data_since ?? '',
+      network,
     }));
+}
 
+/**
+ * Load SMN + SMN-precip station metadata from the OGD STAC API.
+ * Merges both networks into a single list. Cached in memory after first load.
+ *
+ * @returns Array of all SMN and SMN-precip stations
+ */
+export async function loadSmnStations(): Promise<SmnStation[]> {
+  if (stationCache) return stationCache;
+
+  debugData('[ogd-smn] Loading station metadata (SMN + SMN-precip)...');
+
+  // Load both collections in parallel
+  const [smnCollection, precipCollection] = await Promise.all([
+    getCollection(OGD_COLLECTIONS.SMN),
+    getCollection(OGD_COLLECTIONS.SMN_PRECIP),
+  ]);
+
+  const smnAsset = smnCollection.assets?.['ogd-smn_meta_stations.csv'];
+  if (!smnAsset) {
+    throw new Error('Station metadata asset not found in SMN collection');
+  }
+
+  const precipAsset = precipCollection.assets?.['ogd-smn-precip_meta_stations.csv'];
+  if (!precipAsset) {
+    throw new Error('Station metadata asset not found in SMN-precip collection');
+  }
+
+  // Fetch both metadata CSVs in parallel
+  const [smnRows, precipRows] = await Promise.all([
+    getLatin1CsvData(smnAsset.href, 'metadata/smn-stations.csv', 'metadata'),
+    getLatin1CsvData(precipAsset.href, 'metadata/smn-precip-stations.csv', 'metadata'),
+  ]);
+
+  const smnStations = parseStationRows(smnRows, 'smn');
+  const precipStations = parseStationRows(precipRows, 'smn-precip');
+
+  stationCache = [...smnStations, ...precipStations];
   stationByAbbr = new Map(stationCache.map((s) => [s.abbr.toLowerCase(), s]));
-  debugData('[ogd-smn] Loaded %d stations', stationCache.length);
+  debugData(
+    '[ogd-smn] Loaded %d stations (%d SMN + %d precip)',
+    stationCache.length,
+    smnStations.length,
+    precipStations.length
+  );
   return stationCache;
 }
 
