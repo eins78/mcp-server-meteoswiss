@@ -48,9 +48,10 @@ export class MCPClient {
   }
 
   /**
-   * Wait for the HTTP server to be ready
+   * Wait for the HTTP server to be ready.
+   * CI runners can be slow — allow up to 30 seconds (100 × 300ms).
    */
-  private async waitForServer(maxAttempts = 50): Promise<void> {
+  private async waitForServer(maxAttempts = 100): Promise<void> {
     for (let i = 0; i < maxAttempts; i++) {
       try {
         await new Promise((resolve, reject) => {
@@ -59,13 +60,17 @@ export class MCPClient {
             resolve(true);
           });
           socket.on('error', reject);
+          socket.setTimeout(1000, () => {
+            socket.destroy();
+            reject(new Error('Connection timed out'));
+          });
         });
         return;
-      } catch (error) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
     }
-    throw new Error('Server failed to start in time');
+    throw new Error(`Server failed to start in time (${maxAttempts} attempts on port ${this.port})`);
   }
 
   /**
