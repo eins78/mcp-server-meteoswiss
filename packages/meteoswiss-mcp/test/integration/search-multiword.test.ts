@@ -1,18 +1,16 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import { MCPClient } from './mcp-client.js';
 
 describe('Search tool - Multi-word queries', () => {
   let client: MCPClient;
 
-  beforeEach(async () => {
-    // Use test fixtures to test the query handling logic
+  beforeAll(async () => {
     process.env.USE_TEST_FIXTURES = 'true';
-    
     client = new MCPClient();
     await client.start();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await client.stop();
     jest.restoreAllMocks();
   });
