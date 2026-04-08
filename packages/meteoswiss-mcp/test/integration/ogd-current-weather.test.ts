@@ -63,4 +63,22 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('station');
   });
+
+  it('should return precipitation for a precip-only station', async () => {
+    // ABE is a precipitation-only station from the smn-precip network
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'ABE',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.station).toBeDefined();
+    expect(data.station.abbreviation).toBe('ABE');
+    expect(data.station.network).toBe('smn-precip');
+    // Precip-only stations have precipitation but not temperature
+    expect(data.measurements.precipitation).toBeDefined();
+    expect(data.measurements.precipitation.unit).toBe('mm');
+    expect(data.measurements.temperature).toBeUndefined();
+    expect(data.source).toBe('MeteoSwiss Open Data');
+  });
 });
