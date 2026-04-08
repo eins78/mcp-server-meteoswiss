@@ -39,6 +39,7 @@ export type CurrentWeatherResponse = {
     municipality?: string;
     canton?: string;
     distance_km?: number;
+    network?: string;
   };
   timestamp: string;
   measurements: {

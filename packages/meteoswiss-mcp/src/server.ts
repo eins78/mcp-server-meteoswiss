@@ -198,7 +198,7 @@ Forecast horizon: up to 9 days. Updated hourly.`,
   debugServer('Registering tool: getCurrentWeather');
   server.tool(
     'meteoswissCurrentWeather',
-    `Get real-time weather measurements from any of ~160 Swiss automatic weather stations. Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes.
+    `Get real-time weather measurements from ~300 Swiss automatic weather stations (~160 full weather + ~140 precipitation-only). Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes. Precipitation-only stations return only rainfall data.
 
 Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplatz 1 Bern"), or WGS84 coordinates. Automatically finds the nearest station.`,
     GetCurrentWeatherParamsSchema.shape,
