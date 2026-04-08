@@ -22,6 +22,9 @@ import { listStations } from './data/ogd-station-list.js';
 import { GetPollenDataParamsSchema } from './schemas/ogd-pollen-data.js';
 import type { GetPollenDataParams } from './schemas/ogd-pollen-data.js';
 import { getPollenData } from './data/ogd-pollen-data.js';
+import { GetClimateDataParamsSchema } from './schemas/ogd-climate-data.js';
+import type { GetClimateDataParams } from './schemas/ogd-climate-data.js';
+import { getClimateData } from './data/ogd-climate-data.js';
 import { debugServer, debugTools } from './support/logging.js';
 import { recordToolCall } from './support/metrics.js';
 import type { McpPromptResponse } from './types/mcp-prompts.js';
@@ -200,6 +203,8 @@ Forecast horizon: up to 9 days. Updated hourly.`,
     'meteoswissCurrentWeather',
     `Get real-time weather measurements from ~300 Swiss automatic weather stations (~160 full weather + ~140 precipitation-only). Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes. Precipitation-only stations return only rainfall data.
 
+For 8 stations (Zurich, Basel, Chur, Sion, Altdorf, Säntis, Jungfraujoch, Grand St-Bernard), also includes daily visual observations: cloud cover, fog, rain, snowfall, hail, and snow coverage.
+
 Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplatz 1 Bern"), or WGS84 coordinates. Automatically finds the nearest station.`,
     GetCurrentWeatherParamsSchema.shape,
     async (params: GetCurrentWeatherParams) => {
@@ -290,6 +295,46 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
             {
               type: 'text' as const,
               text: `Failed to get pollen data: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Register getClimateData tool (OGD NBCN)
+  debugServer('Registering tool: getClimateData');
+  server.tool(
+    'meteoswissClimateData',
+    `Get homogeneous climate measurement series from Switzerland's National Basic Climatic Network (NBCN). Returns temperature, precipitation, sunshine, radiation, wind, pressure, and climate indicators (frost days, summer days, heat days) going back decades.
+
+29 climate stations + 46 precipitation stations with daily, monthly, and yearly resolution.
+
+Use cases: "What are typical January temperatures in Zurich?", "How has precipitation changed in Basel over 50 years?", "How many heat days did Lugano have last year?"
+
+Accepts station names ("Zurich", "Basel"), abbreviations ("SMA", "BAS"), or WGS84 coordinates.`,
+    GetClimateDataParamsSchema.shape,
+    async (params: GetClimateDataParams) => {
+      const _t0 = performance.now();
+      try {
+        console.error(
+          `Processing meteoswissClimateData request: station=${params.station ?? ''}, resolution=${params.resolution ?? 'monthly'}`
+        );
+        debugTools('getClimateData called with params: %O', params);
+        const result = await getClimateData(params);
+        console.error(`Successfully retrieved climate data: ${result.data.length} rows`);
+        recordToolCall('meteoswissClimateData', performance.now() - _t0);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (error: unknown) {
+        console.error('Error in meteoswissClimateData tool:', error);
+        debugTools('Error in getClimateData: %O', error);
+        recordToolCall('meteoswissClimateData', performance.now() - _t0);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to get climate data: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,

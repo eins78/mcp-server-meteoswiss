@@ -64,6 +64,36 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(result.content[0].text).toContain('station');
   });
 
+  it('should include visual observations for OBS stations', async () => {
+    // ALT (Altdorf) is one of the 8 OBS stations with visual observations
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'ALT',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.station.abbreviation).toBe('ALT');
+    expect(data.measurements.temperature).toBeDefined();
+
+    // OBS stations should have visual observations
+    expect(data.visual_observations).toBeDefined();
+    expect(data.visual_observations).toHaveProperty('date');
+    expect(data.visual_observations).toHaveProperty('cloud_cover_percent');
+    expect(typeof data.visual_observations.cloud_cover_percent).toBe('number');
+  });
+
+  it('should NOT include visual observations for non-OBS stations', async () => {
+    // ABO (Adelboden) is NOT an OBS station
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'ABO',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.station.abbreviation).toBe('ABO');
+    expect(data.visual_observations).toBeUndefined();
+  });
+
   it('should return precipitation for a precip-only station', async () => {
     // ABE is a precipitation-only station from the smn-precip network
     const result = await client.callTool('meteoswissCurrentWeather', {
