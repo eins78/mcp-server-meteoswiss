@@ -46,6 +46,10 @@ function resolveFixturePath(url: string): string | null {
   if (url.includes('ogd-nbcn') && url.includes('_d_recent.csv'))
     return path.join(OGD_FIXTURES_ROOT, 'climate', 'nbcn-bas-d-recent.csv');
 
+  // OBS (visual observations) data
+  if (url.includes('ogd-obs') && url.includes('_d_recent.csv'))
+    return path.join(OGD_FIXTURES_ROOT, 'observations', 'obs-sma-d-recent.csv');
+
   // Pollen metadata and data
   if (url.includes('meta_stations.csv') && url.includes('pollen'))
     return path.join(OGD_FIXTURES_ROOT, 'metadata', 'ogd-pollen_meta_stations.csv');

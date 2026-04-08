@@ -56,5 +56,18 @@ export type CurrentWeatherResponse = {
     pressure_sea_level?: MeasurementValue;
     snow_depth?: MeasurementValue;
   };
+  /** Visual observations (only for 8 OBS stations: ALT, BAS, CHU, GSB, JUN, SAE, SIO, SMA) */
+  visual_observations?: {
+    date: string;
+    cloud_cover_percent?: number;
+    is_clear_day?: boolean;
+    is_overcast_day?: boolean;
+    has_rain?: boolean;
+    has_rain_and_snow?: boolean;
+    has_snowfall?: boolean;
+    has_hail?: boolean;
+    has_fog?: boolean;
+    has_snow_coverage?: boolean;
+  };
   source: string;
 };

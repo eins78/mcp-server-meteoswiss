@@ -25,6 +25,7 @@ const COLLECTION_FIXTURES: Record<string, string> = {
   'ch.meteoschweiz.ogd-smn-precip': 'collection-ogd-smn-precip.json',
   'ch.meteoschweiz.ogd-nbcn': 'collection-ogd-nbcn.json',
   'ch.meteoschweiz.ogd-nbcn-precip': 'collection-ogd-nbcn-precip.json',
+  'ch.meteoschweiz.ogd-obs': 'collection-ogd-obs.json',
   'ch.meteoschweiz.ogd-pollen': 'collection-pollen.json',
 };
 
