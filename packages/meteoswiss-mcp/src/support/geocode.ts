@@ -11,6 +11,27 @@ import { USE_TEST_FIXTURES } from './test-fixtures.js';
 
 const SEARCH_URL = 'https://api3.geo.admin.ch/rest/services/ech/SearchServer';
 
+/** Approximate WGS84 bounding box for Switzerland (slightly padded for border areas) */
+const SWISS_BOUNDS = {
+  latMin: 45.7,
+  latMax: 47.9,
+  lonMin: 5.8,
+  lonMax: 10.6,
+} as const;
+
+/**
+ * Check whether a WGS84 coordinate falls within Switzerland's approximate bounding box.
+ * Slightly padded to include border regions and Liechtenstein.
+ */
+export function isInsideSwitzerland(lat: number, lon: number): boolean {
+  return (
+    lat >= SWISS_BOUNDS.latMin &&
+    lat <= SWISS_BOUNDS.latMax &&
+    lon >= SWISS_BOUNDS.lonMin &&
+    lon <= SWISS_BOUNDS.lonMax
+  );
+}
+
 /** In-memory cache for geocode results, keyed by normalized query */
 const geocodeCache = new Map<string, GeocodeResult | null>();
 
@@ -96,6 +117,20 @@ export async function geocodeSwissLocation(query: string): Promise<GeocodeResult
     lon: result.attrs.lon,
     origin: result.attrs.origin ?? 'unknown',
   };
+
+  // Reject results outside Switzerland to prevent non-Swiss queries (e.g., "Paris")
+  // from returning coordinates that would resolve to a random Swiss station
+  if (!isInsideSwitzerland(geocoded.lat, geocoded.lon)) {
+    debugData(
+      '[geocode] Result outside Switzerland for "%s": %s (%f, %f) — rejected',
+      query,
+      geocoded.name,
+      geocoded.lat,
+      geocoded.lon
+    );
+    geocodeCache.set(cacheKey, null);
+    return null;
+  }
 
   debugData(
     '[geocode] Resolved "%s" to %s (%f, %f)',

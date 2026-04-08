@@ -1,16 +1,16 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, jest, beforeAll, afterAll } from '@jest/globals';
 import { MCPClient } from './mcp-client.js';
 
 describe('meteoswissLocalForecast Tool', () => {
   let client: MCPClient;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     process.env.USE_TEST_FIXTURES = 'true';
     client = new MCPClient();
     await client.start();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await client.stop();
     jest.restoreAllMocks();
   });
@@ -75,5 +75,23 @@ describe('meteoswissLocalForecast Tool', () => {
       .callTool('meteoswissLocalForecast', { location: '' })
       .catch((e: Error) => ({ isError: true, content: [{ text: e.message }] }));
     expect(result.isError).toBeTruthy();
+  });
+
+  it('should return error for whitespace-only location', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: '   ',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('empty');
+  });
+
+  it('should resolve "Bern" to Bern / Zollikofen, not Passo del Bernina', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'Bern',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.location.name).toBe('Bern / Zollikofen');
   });
 });

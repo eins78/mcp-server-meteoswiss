@@ -162,10 +162,12 @@ async function fetchVisualObservations(
     const latestRow = rows[rows.length - 1]!;
 
     const cloudCover = parseNumeric(latestRow.nto000d0 ?? null);
-    const parseFlag = (val: string | null): boolean | undefined => {
-      if (val === null) return undefined;
+    // MeteoSwiss CSV uses '-' for "phenomenon not observed", which the CSV parser
+    // maps to null. For boolean observation flags, not-observed means false.
+    const parseFlag = (val: string | null): boolean => {
+      if (val === null) return false;
       const num = parseNumeric(val);
-      return num === null ? undefined : num === 1;
+      return num === 1;
     };
 
     // Parse timestamp DD.MM.YYYY → YYYY-MM-DD

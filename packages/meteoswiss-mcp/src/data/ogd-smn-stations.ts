@@ -8,10 +8,14 @@ import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric, type CsvRow } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
+import { scoreNameMatch } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation } from '../support/geocode.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
+
+/** Max distance (km) for geocoding fallback — rejects queries that geocode far from any station */
+const MAX_GEOCODE_DISTANCE_KM = 50;
 
 /** Station network type — SMN (full weather) or SMN-precip (precipitation only) */
 export type SmnNetwork = 'smn' | 'smn-precip';
@@ -145,35 +149,67 @@ export async function resolveSmnStation(query: string): Promise<SmnStation> {
   }
 
   const q = normalize(query.trim());
+  if (q === '') {
+    throw new Error(
+      'Station query must not be empty. Provide a station name (e.g., "Zurich"), ' +
+        'abbreviation (e.g., "SMA"), or address (e.g., "Bahnhofplatz 1 Bern").'
+    );
+  }
 
   // Exact match on abbreviation
   const exact = stationByAbbr.get(q);
   if (exact) return exact;
 
-  // Fuzzy match on name
-  const nameMatch = stations.find((s) => normalize(s.name).includes(q));
-  if (nameMatch) return nameMatch;
+  // Scored name match — word-boundary matches beat substring matches
+  // This prevents "Bern" matching "Passo del Bernina" over "Bern / Zollikofen"
+  let bestStation: SmnStation | undefined;
+  let bestScore = 0;
+  for (const s of stations) {
+    const score = scoreNameMatch(q, normalize(s.name));
+    if (
+      score > bestScore ||
+      (score === bestScore && bestStation && s.name.length < bestStation.name.length)
+    ) {
+      bestScore = score;
+      bestStation = s;
+    }
+  }
+  if (bestStation) return bestStation;
 
   // Geocoding fallback: resolve query to coordinates, find nearest station
   debugData('[ogd-smn] No direct match for "%s", trying geocoding...', query);
   const geocoded = await geocodeSwissLocation(query);
   if (geocoded) {
-    const { station } = await findNearestStation(geocoded.lat, geocoded.lon);
-    debugData(
-      '[ogd-smn] Geocoded "%s" → %s, nearest station: %s (%s)',
-      query,
-      geocoded.name,
-      station.abbr,
-      station.name
-    );
-    return station;
+    const { station, distance_km } = await findNearestStation(geocoded.lat, geocoded.lon);
+    if (distance_km > MAX_GEOCODE_DISTANCE_KM) {
+      debugData(
+        '[ogd-smn] Geocoded "%s" too far from nearest station: %.1f km (limit: %d km)',
+        query,
+        distance_km,
+        MAX_GEOCODE_DISTANCE_KM
+      );
+    } else {
+      debugData(
+        '[ogd-smn] Geocoded "%s" → %s, nearest station: %s (%s, %.1f km)',
+        query,
+        geocoded.name,
+        station.abbr,
+        station.name,
+        distance_km
+      );
+      return station;
+    }
   }
 
   const examples = stations
+    .filter((s) => s.network === 'smn')
     .slice(0, 5)
     .map((s) => `${s.abbr} (${s.name})`)
     .join(', ');
-  throw new Error(`No weather station found for "${query}". Examples: ${examples}`);
+  throw new Error(
+    `No weather station found for "${query}". ` +
+      `Try a Swiss location name, station abbreviation, or address. Examples: ${examples}`
+  );
 }
 
 /**

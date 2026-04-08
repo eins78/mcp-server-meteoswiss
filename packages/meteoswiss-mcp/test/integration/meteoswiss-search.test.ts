@@ -1,18 +1,16 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, jest, beforeAll, afterAll } from '@jest/globals';
 import { MCPClient } from './mcp-client.js';
 
 describe('MeteoSwiss Search Tool', () => {
   let client: MCPClient;
 
-  beforeEach(async () => {
-    // Set environment variable to use test fixtures
+  beforeAll(async () => {
     process.env.USE_TEST_FIXTURES = 'true';
-    
     client = new MCPClient();
     await client.start();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await client.stop();
     jest.restoreAllMocks();
   });
