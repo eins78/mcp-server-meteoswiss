@@ -82,13 +82,24 @@ export async function getCurrentWeather(
     getCachedReverseGeocode(station.lat, station.lon, station.abbr),
   ]);
 
-  if (rows.length === 0) {
-    throw new Error(`No current data available for station ${station.abbr} (${station.name})`);
+  let row: CsvRow | undefined = rows[0];
+
+  // Fallback for precipitation-only stations: VQHA80 does not include them
+  if (!row && station.network === 'smn-precip') {
+    debugData('[ogd-weather] Station %s is precip-only, fetching per-station CSV', station.abbr);
+    const abbrLower = station.abbr.toLowerCase();
+    const precipUrl = `https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn-precip/${abbrLower}/ogd-smn-precip_${abbrLower}_t_recent.csv`;
+    const precipRows = await getCsvData(
+      precipUrl,
+      `measurements/smn-precip-${abbrLower}-t-recent.csv`,
+      'realtime'
+    );
+    // Use the most recent row (last in the CSV)
+    row = precipRows.length > 0 ? precipRows[precipRows.length - 1] : undefined;
   }
 
-  const row = rows[0];
   if (!row) {
-    throw new Error(`No data row for station ${station.abbr}`);
+    throw new Error(`No current data available for station ${station.abbr} (${station.name})`);
   }
 
   return {
@@ -100,8 +111,9 @@ export async function getCurrentWeather(
       municipality: geo?.municipality,
       canton: geo?.canton ?? station.canton,
       distance_km,
+      network: station.network,
     },
-    timestamp: row.Date ?? '',
+    timestamp: row.Date ?? row.reference_timestamp ?? '',
     measurements: {
       temperature: measurement(row, 'tre200s0', '\u00B0C'),
       humidity: measurement(row, 'ure200s0', '%'),
