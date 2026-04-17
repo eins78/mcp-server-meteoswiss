@@ -160,7 +160,7 @@ importers:
     devDependencies:
       skills:
         specifier: ^1.1.6
-        version: 1.5.0
+        version: 1.5.1
 
 packages:
 
@@ -3534,8 +3534,8 @@ packages:
     resolution: {integrity: sha512-a2B9Y0KlNXl9u/vsW6sTIu9vGEpfKu2wRV6l1H3XEas/0gUIzGzBoP/IouTcUQbm9JWZLH3COxyn03TYlFax6w==}
     engines: {node: '>=10'}
 
-  skills@1.5.0:
-    resolution: {integrity: sha512-PzotCoDQVNMO+usmrSJqzIddbP3Jim3TdJljg6w0fweIqfQSNXCgNFOhBrN01W83Pe5NkfCc+6QOTZNZRXd+4A==}
+  skills@1.5.1:
+    resolution: {integrity: sha512-8LQFrbFPexuV8U1B0LnIexL2KRjGBNiy+9+rLp8iDrBQrVPhb6TbFon7ngspnTTqkA/Up+GkBbCeUGx0gtK2VQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -7835,7 +7835,7 @@ snapshots:
     dependencies:
       semver: 7.7.4
 
-  skills@1.5.0:
+  skills@1.5.1:
     dependencies:
       yaml: 2.8.3
 
