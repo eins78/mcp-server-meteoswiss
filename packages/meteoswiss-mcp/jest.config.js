@@ -17,6 +17,7 @@ export default {
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.claude/plugins/', '/.claude/skills/'],
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   testTimeout: 60000, // 60 seconds for inspector tests (needed for macOS)
+  maxWorkers: process.env.CI ? 1 : '50%', // Serialize on CI: 13 integration tests each spawn 2 child processes; concurrent spawning starves 2-vCPU runners past the 30s boot timeout
   collectCoverageFrom: [
     'src/**/*.{js,ts}',
     '!src/**/*.d.ts',
