@@ -10,7 +10,8 @@ import { parseNumeric, type CsvRow } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
 import { scoreNameMatch } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
-import { geocodeSwissLocation } from '../support/geocode.js';
+import { geocodeSwissLocation, type GeocodeOrigin } from '../support/geocode.js';
+import { classifyQuery } from '../support/query-classifier.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 
@@ -176,9 +177,13 @@ export async function resolveSmnStation(query: string): Promise<SmnStation> {
   }
   if (bestStation) return bestStation;
 
-  // Geocoding fallback: resolve query to coordinates, find nearest station
-  debugData('[ogd-smn] No direct match for "%s", trying geocoding...', query);
-  const geocoded = await geocodeSwissLocation(query);
+  // Geocoding fallback: resolve query to coordinates, find nearest station.
+  // Use origins='place' for plain names/postal codes so "Paris" can't match
+  // a Swiss street label; widen to 'all' only for address-shaped queries.
+  const kind = classifyQuery(query.trim());
+  const origins: GeocodeOrigin = kind === 'address' ? 'all' : 'place';
+  debugData('[ogd-smn] No direct match for "%s", geocoding (origins=%s)...', query, origins);
+  const geocoded = await geocodeSwissLocation(query, { origins });
   if (geocoded) {
     const { station, distance_km } = await findNearestStation(geocoded.lat, geocoded.lon);
     if (distance_km > MAX_GEOCODE_DISTANCE_KM) {
@@ -208,7 +213,8 @@ export async function resolveSmnStation(query: string): Promise<SmnStation> {
     .join(', ');
   throw new Error(
     `No weather station found for "${query}". ` +
-      `Try a Swiss location name, station abbreviation, or address. Examples: ${examples}`
+      `Is this a Swiss location? Examples: ${examples}. ` +
+      `Use meteoswissStations to search by name, canton, or coordinates.`
   );
 }
 
