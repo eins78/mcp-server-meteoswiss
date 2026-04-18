@@ -193,3 +193,96 @@ quoted invalid input, up to 5 concrete examples, and a pointer to
   live-mode behaviour (restricted swisstopo origins) can only be verified
   against a real swisstopo, not against fixtures.
 - [ ] If green, promote to stable `v2.3.0`.
+
+## Post-Merge: RC3 Release and Test Deployment
+
+The orchestrator extended the mandate post-PR-approval — merge, cut rc.3,
+publish, deploy. Completed all but the last-mile deploy (out of repo scope).
+
+### Merge
+
+- PR #81 merged with merge-commit style (matching rc.2's PR #66
+  convention) at **2026-04-18 12:55 UTC**.
+- Merge commit: **`8f0b163bb05d20fc6c0e970c2fc7a42b6eac3ee4`**.
+- Remote branch `meteoswiss-b2-fix` auto-deleted via `--delete-branch`.
+
+### Version bump and tag
+
+- Ran `pnpm run version` on main — changesets produced a patch bump to
+  `2.3.0`. Manually overrode `packages/meteoswiss-mcp/package.json` and
+  `packages/meteoswiss-mcp/CHANGELOG.md` to `2.3.0-rc.3` (same manual-RC
+  pattern as rc.1 and rc.2 — changesets doesn't handle RC tags natively).
+- Plugin.json files (`.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`)
+  left at `2.1.0` — changesets does not bump them.
+- Commit **`b1023e0`**: `I: Version meteoswiss-mcp v2.3.0-rc.3`
+  (Arlo notation per repo convention — matches rc.2 commit `6e14e21`).
+- Tag: **`meteoswiss-mcp-v2.3.0-rc.3`** (annotated, pushed).
+- GitHub pre-release: https://github.com/eins78/meteoswiss-llm-tools/releases/tag/meteoswiss-mcp-v2.3.0-rc.3
+
+### CI + publish (run ID 24605209041 — "Release MCP Server")
+
+All three jobs succeeded:
+
+- **CI Validation** ✅ — lint, build, test, integration tests
+- **Publish to npm** ✅ — `meteoswiss-mcp@2.3.0-rc.3` on `next` dist-tag
+  (per workflow's `prerelease=true` branch)
+- **Publish to GHCR** ✅ — `ghcr.io/eins78/meteoswiss-mcp:2.3.0-rc.3`
+  (amd64 + arm64). Image confirmed via
+  `gh api /users/eins78/packages/container/meteoswiss-mcp/versions` —
+  top version tagged `2.3.0-rc.3`, digest `sha256:d8c2f97c68d229…`.
+  Per `.github/workflows/release.yml` lines 167–174, pre-releases do
+  **not** also push `:latest` (that's prod-stable-only), and the
+  workflow does not maintain any floating `:next`/`:rc` Docker tag —
+  only the exact semver tag goes to GHCR.
+
+### Test environment deploy — documented gap
+
+**Not executed by this session.** Verified from `curl https://meteoswiss-mcp-demo-test.cloud.kiste.li/health`
+at 2026-04-18 ~13:10 UTC: test env still reports `version: "2.3.0-rc.2"`.
+
+Per project reference memory (`reference_deployment.md`):
+
+> "Deployment is manual: pull new GHCR image locally, restart compose."
+> "Compose (prod): ~/Docker/selfhosted/docker-compose.yaml"
+
+The test environment's compose file pins a specific version tag (not a
+floating one — confirmed by the fact that rc.2 → rc.3 doesn't happen
+automatically after GHCR publish). Updating that tag from `:2.3.0-rc.2`
+to `:2.3.0-rc.3` plus running `docker compose pull && docker compose up -d`
+on `mac-zrh` is the standard mechanism.
+
+I did not execute the deploy because `~/Docker/selfhosted/` is outside
+the meteoswiss-mcp repo scope and my permissions were explicitly denied
+for searching that directory (per mandate: "DO NOT invent SSH or API
+calls"). The deploy step is left for Max / the orchestrator.
+
+**What Max (or orchestrator) needs to do on `mac-zrh`:**
+
+1. Edit the test-env compose file to bump the `meteoswiss-mcp` service
+   image from `ghcr.io/eins78/meteoswiss-mcp:2.3.0-rc.2` to
+   `ghcr.io/eins78/meteoswiss-mcp:2.3.0-rc.3`.
+2. `docker compose pull meteoswiss-mcp && docker compose up -d meteoswiss-mcp`
+   (or equivalent per the test-env compose layout).
+3. Verify: `curl https://meteoswiss-mcp-demo-test.cloud.kiste.li/health`
+   should report `version: "2.3.0-rc.3"`.
+
+### Final state
+
+| Artefact | Identifier | Status |
+|---|---|---|
+| Merge commit | `8f0b163bb05d20fc6c0e970c2fc7a42b6eac3ee4` | ✅ on main |
+| Version bump | `b1023e08f169aa27a85f9e686cd2dd881f652493` | ✅ on main |
+| Git tag | `meteoswiss-mcp-v2.3.0-rc.3` (annotated) | ✅ pushed |
+| GitHub release | `meteoswiss-mcp-v2.3.0-rc.3` (prerelease, auto notes) | ✅ published |
+| npm | `meteoswiss-mcp@2.3.0-rc.3` on `next` dist-tag | ✅ published |
+| GHCR | `ghcr.io/eins78/meteoswiss-mcp:2.3.0-rc.3` (amd64+arm64) | ✅ published |
+| Test env | `meteoswiss-mcp-demo-test.cloud.kiste.li` | ⚠️ still on rc.2 — manual deploy needed |
+| Prod env | `meteoswiss-mcp.ars.is` — intentionally untouched | (stays on v2.2.1) |
+
+### What's explicitly NOT done (per mandate)
+
+- Production deployment to `meteoswiss-mcp.ars.is` — stays on v2.2.1
+  until Max promotes.
+- Stable `v2.3.0` promotion — Max re-tests rc.3 first, then promotes.
+- Renovate PRs #71 (@types/jsdom v28) and #79 (jsdom v29) — separate
+  concerns.
