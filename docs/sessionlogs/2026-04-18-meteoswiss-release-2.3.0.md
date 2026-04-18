@@ -124,3 +124,7 @@ All run against `https://meteoswiss-mcp.ars.is/mcp` post-deploy.
 | GHCR | `ghcr.io/eins78/meteoswiss-mcp:2.3.0` + `:latest` |
 | compose file | Fixed (both services restored to correct tags) |
 | Rollback target | `ghcr.io/eins78/meteoswiss-mcp:2.2.1` |
+
+---
+
+*Session wrapped: all work landed — version bump `15138a4`, sessionlog `78eed3d`, both pushed to `main`. PROD smoke-tested clean.*
