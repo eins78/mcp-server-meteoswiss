@@ -1,25 +1,18 @@
 # meteoswiss-mcp
 
-## 2.3.0-rc.4
+## 2.3.0
 
 ### Patch Changes
 
-- de9c937: Fix international city false-positives in location resolvers (Paris → Payerne, etc.): add a blocklist for well-known international city names applied before geocoding. Add a post-geocoding name-match guard to reject gibberish queries (NOTASTATION → CHA) that the live swisstopo API resolves to unrelated Swiss coordinates. Revert `fetch` tool parameter rename: `id` → `url` (the rc.3 rename was unintentional and breaking for existing clients).
-
-## 2.3.0-rc.3
-
-### Patch Changes
-
-- 5d21a9d: Complete B2 location-resolver fix. Non-Swiss inputs ("Paris"), invalid abbreviations ("NOTASTATION", "INVALID_STATION_XYZ"), invalid postal codes ("99999"), and gibberish ("ABCDE") now return helpful errors with examples and a pointer to `meteoswissStations`, matching the `meteoswissPollenData` reference pattern. Round-number parent postal codes ("1200" → Geneva, "3000" → Bern) resolve via a postal-code prefix fallback before geocoding. The geocoder's swisstopo query is now restricted to `zipcode`, `gg25`, `district`, and `kantone` origins for plain place-name / postal-code queries, so non-Swiss city names can no longer match arbitrary Swiss street labels.
-
-## 2.3.0-rc.2
-
-### Patch Changes
-
-- Fix location resolver returning wrong data for ambiguous/invalid inputs, and normalize OBS visual observation boolean fields.
-  - **Location resolver**: Scored name matching prevents "Bern" resolving to Bernina; Swiss bounding box and distance threshold reject non-Swiss queries; empty/whitespace input validation added
-  - **OBS visual observations**: Boolean fields (has_rain, has_snowfall, etc.) now always present as true/false instead of being stripped when MeteoSwiss reports "-" (not observed)
-  - **CI stability**: Integration tests share one MCP server per test file via beforeAll/afterAll, eliminating flaky startup timeouts
+- de9c937: Fix location resolver robustness across all MCP tools. Non-Swiss inputs, invalid station codes, and gibberish now return helpful errors instead of silently resolving to wrong Swiss locations.
+  - **International city blocklist**: Reject well-known non-Swiss city names (Paris, London, Tokyo, etc.) before geocoding, preventing false-positive Swiss station matches (e.g. Paris → Payerne)
+  - **Post-geocoding name guard**: Reject gibberish inputs (NOTASTATION, ABCDE) that the swisstopo API resolves to unrelated Swiss coordinates
+  - **Non-Swiss error messages**: Return descriptive errors with examples and a pointer to `meteoswissStations` for invalid inputs, matching the `meteoswissPollenData` reference pattern
+  - **Postal-code prefix fallback**: Round-number parent postal codes (1200 → Geneva, 3000 → Bern) now resolve correctly
+  - **Geocoder origin restriction**: swisstopo queries restricted to `zipcode`, `gg25`, `district`, `kantone` origins to prevent non-Swiss city names from matching Swiss street labels
+  - **Scored name matching**: Prevents "Bern" from resolving to Bernina; Swiss bounding box and distance threshold reject out-of-country inputs
+  - **OBS visual observations**: Boolean fields (`has_rain`, `has_snowfall`, etc.) always return `true`/`false` instead of being stripped when MeteoSwiss reports "-" (not observed)
+  - **`fetch` tool**: Revert unintentional breaking parameter rename — `id` reverted to `url`
 
 ## 2.2.0
 
