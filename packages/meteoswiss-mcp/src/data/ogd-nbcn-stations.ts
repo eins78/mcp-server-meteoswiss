@@ -10,7 +10,8 @@ import { parseNumeric, type CsvRow } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
 import { scoreNameMatch } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
-import { geocodeSwissLocation } from '../support/geocode.js';
+import { geocodeSwissLocation, type GeocodeOrigin } from '../support/geocode.js';
+import { classifyQuery } from '../support/query-classifier.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 
@@ -155,8 +156,12 @@ export async function resolveNbcnStation(query: string): Promise<NbcnStation> {
   }
   if (bestStation) return bestStation;
 
-  debugData('[ogd-nbcn] No direct match for "%s", trying geocoding...', query);
-  const geocoded = await geocodeSwissLocation(query);
+  // Geocoding fallback with origins restricted by query shape
+  // (see ogd-smn-stations.ts for the rationale).
+  const kind = classifyQuery(query.trim());
+  const origins: GeocodeOrigin = kind === 'address' ? 'all' : 'place';
+  debugData('[ogd-nbcn] No direct match for "%s", geocoding (origins=%s)...', query, origins);
+  const geocoded = await geocodeSwissLocation(query, { origins });
   if (geocoded) {
     const { station, distance_km } = await findNearestNbcnStation(geocoded.lat, geocoded.lon);
     if (distance_km > MAX_GEOCODE_DISTANCE_KM) {
@@ -186,7 +191,8 @@ export async function resolveNbcnStation(query: string): Promise<NbcnStation> {
     .join(', ');
   throw new Error(
     `No climate station found for "${query}". ` +
-      `Try a Swiss location name, station abbreviation, or address. Examples: ${examples}`
+      `Is this a Swiss location? Examples: ${examples}. ` +
+      `Use meteoswissStations to browse the ~75 long-term climate stations.`
   );
 }
 

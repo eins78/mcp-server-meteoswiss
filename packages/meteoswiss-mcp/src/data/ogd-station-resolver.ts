@@ -13,7 +13,8 @@ import type { ForecastPoint } from '../schemas/ogd-shared.js';
 import { normalize } from '../support/normalize.js';
 import { scoreNameMatch } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
-import { geocodeSwissLocation } from '../support/geocode.js';
+import { geocodeSwissLocation, type GeocodeOrigin } from '../support/geocode.js';
+import { classifyQuery } from '../support/query-classifier.js';
 
 /** Max distance (km) for geocoding fallback — forecast points are dense (~6000) */
 const MAX_GEOCODE_DISTANCE_KM = 30;
@@ -109,6 +110,23 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
     return { match: postalMatch, alternatives: [], confidence: 'exact' };
   }
 
+  // Postal-code prefix fallback: round-number parent codes like "1200"
+  // (Geneva) and "3000" (Bern) are not in the MeteoSwiss grid metadata;
+  // pick the numerically closest indexed neighbour with the same 3- or
+  // 2-digit prefix before falling through to geocoding.
+  const kind = classifyQuery(query.trim());
+  if (kind === 'postal_code') {
+    const prefixMatch = findPostalCodeNeighbour(q, byPostalCode);
+    if (prefixMatch) {
+      debugData(
+        '[ogd-resolver] Postal code "%s" → prefix neighbour %s',
+        q,
+        prefixMatch.postal_code
+      );
+      return { match: prefixMatch, alternatives: [], confidence: 'fuzzy' };
+    }
+  }
+
   // O(1) exact match on station abbreviation
   const abbrMatch = byAbbr.get(q);
   if (abbrMatch) {
@@ -138,9 +156,16 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
     };
   }
 
-  // Geocoding fallback: resolve query to coordinates, find nearest forecast point
-  debugData('[ogd-resolver] No direct match for "%s", trying geocoding...', query);
-  const geocoded = await geocodeSwissLocation(query);
+  // Geocoding fallback: resolve query to coordinates, find nearest forecast point.
+  // Restrict swisstopo origins by query shape so non-Swiss queries ("Paris")
+  // can't match Swiss street labels; widen to 'all' for address-shaped input.
+  const geocodeOrigins: GeocodeOrigin = kind === 'address' ? 'all' : 'place';
+  debugData(
+    '[ogd-resolver] No direct match for "%s", geocoding (origins=%s)...',
+    query,
+    geocodeOrigins
+  );
+  const geocoded = await geocodeSwissLocation(query, { origins: geocodeOrigins });
   if (geocoded) {
     // Prefer postal code points for geocoded locations
     const candidates = points.filter((p) => p.point_type_id === 2);
@@ -173,9 +198,43 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
   }
 
   throw new Error(
-    `No forecast point found for "${query}". Try a Swiss postal code (e.g., "8001"), ` +
-      `station abbreviation (e.g., "ZUE"), or place name (e.g., "Zurich").`
+    `No forecast location found for "${query}". ` +
+      `Try a Swiss postal code (e.g., "8001" for Zurich), station abbreviation ` +
+      `(e.g., "BER", "SMA"), or place name (e.g., "Zurich", "Bern", "Lugano"). ` +
+      `Use meteoswissStations to discover valid stations.`
   );
+}
+
+/**
+ * Given a 4-digit postal code not present in the index, pick the numerically
+ * closest postal code that shares the same 3- or 2-digit prefix. Returns null
+ * when no same-prefix neighbour exists — falls through to geocoding.
+ *
+ * Swiss postal codes group regionally: 1200s → Geneva, 3000s → Bern, so the
+ * same-prefix neighbour is almost always in the same city area.
+ */
+function findPostalCodeNeighbour(
+  q: string,
+  byPostalCode: Map<string, ForecastPoint>
+): ForecastPoint | null {
+  const target = Number(q);
+  if (!Number.isFinite(target)) return null;
+
+  for (const prefixLen of [3, 2]) {
+    const prefix = q.slice(0, prefixLen);
+    const candidates: { point: ForecastPoint; distance: number }[] = [];
+    for (const [code, point] of byPostalCode.entries()) {
+      if (!code.startsWith(prefix)) continue;
+      const value = Number(code);
+      if (!Number.isFinite(value)) continue;
+      candidates.push({ point, distance: Math.abs(value - target) });
+    }
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.distance - b.distance);
+      return candidates[0]!.point;
+    }
+  }
+  return null;
 }
 
 /**

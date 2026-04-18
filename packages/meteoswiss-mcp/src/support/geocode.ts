@@ -32,7 +32,51 @@ export function isInsideSwitzerland(lat: number, lon: number): boolean {
   );
 }
 
-/** In-memory cache for geocode results, keyed by normalized query */
+/**
+ * Swisstopo SearchServer origin presets.
+ * - `place`:   municipalities, districts, cantons, and postal codes (admin/place-name lookups)
+ * - `address`: street-address lookups
+ * - `all`:     every origin the API supports (default behaviour — widest)
+ *
+ * Non-`all` presets narrow the API response so non-Swiss queries ("Paris")
+ * cannot match arbitrary Swiss street/business labels.
+ */
+export const GEOCODE_ORIGINS = ['place', 'address', 'all'] as const;
+export type GeocodeOrigin = (typeof GEOCODE_ORIGINS)[number];
+
+/** Map origin presets to swisstopo `origins=` query-param values */
+const ORIGIN_PARAMS: Record<GeocodeOrigin, string | undefined> = {
+  place: 'zipcode,gg25,district,kantone',
+  address: 'address',
+  all: undefined,
+};
+
+/**
+ * Build the swisstopo SearchServer URL for a query. Exported as a pure
+ * helper so unit tests can verify origin-param assembly without mocking
+ * `fetch`.
+ */
+export function buildGeocodeUrl(query: string, origins: GeocodeOrigin = 'all'): string {
+  const params = new URLSearchParams({
+    searchText: query,
+    type: 'locations',
+    sr: '4326',
+    limit: '1',
+  });
+  const originsParam = ORIGIN_PARAMS[origins];
+  if (originsParam) {
+    params.set('origins', originsParam);
+  }
+  return `${SEARCH_URL}?${params.toString()}`;
+}
+
+/** Options accepted by geocodeSwissLocation */
+export type GeocodeOptions = {
+  /** Restrict swisstopo match origins. Defaults to `'all'`. */
+  origins?: GeocodeOrigin;
+};
+
+/** In-memory cache for geocode results, keyed by normalized query + origins */
 const geocodeCache = new Map<string, GeocodeResult | null>();
 
 /** Result from the swisstopo geocoding API */
@@ -70,28 +114,32 @@ function stripHtml(html: string): string {
 
 /**
  * Geocode a Swiss location using the swisstopo SearchServer API.
- * Handles addresses, place names, ZIP codes, landmarks, etc.
+ *
+ * The optional `origins` option restricts which kinds of swisstopo records
+ * the API will match. Callers should pass `'place'` for plain place-name
+ * lookups so international city names ("Paris") don't match Swiss street
+ * labels, and `'all'` (or omit) only when the query is clearly an address.
+ *
  * Network errors propagate to the caller; only empty results return null.
  *
  * @param query - Location query (e.g., "Bahnhofplatz 1 Bern", "Matterhorn", "8001")
+ * @param options - Optional match restrictions
  * @returns Geocode result with lat/lon, or null if no match found
  */
-export async function geocodeSwissLocation(query: string): Promise<GeocodeResult | null> {
-  const cacheKey = query.trim().toLowerCase();
+export async function geocodeSwissLocation(
+  query: string,
+  options: GeocodeOptions = {}
+): Promise<GeocodeResult | null> {
+  const originsPreset: GeocodeOrigin = options.origins ?? 'all';
+
+  const cacheKey = `${originsPreset}:${query.trim().toLowerCase()}`;
   if (geocodeCache.has(cacheKey)) {
-    debugData('[geocode] Cache hit for: %s', query);
+    debugData('[geocode] Cache hit for: %s (origins=%s)', query, originsPreset);
     return geocodeCache.get(cacheKey) ?? null;
   }
 
-  const params = new URLSearchParams({
-    searchText: query,
-    type: 'locations',
-    sr: '4326',
-    limit: '1',
-  });
-
-  const url = `${SEARCH_URL}?${params.toString()}`;
-  debugData('[geocode] Geocoding: %s', query);
+  const url = buildGeocodeUrl(query, originsPreset);
+  debugData('[geocode] Geocoding: %s (origins=%s)', query, originsPreset);
 
   // In test mode, return null (geocoding requires live API)
   if (USE_TEST_FIXTURES) {
