@@ -19,7 +19,7 @@ describe('MeteoSwiss Fetch Tool', () => {
     it('should be registered with the name "fetch" for ChatGPT compatibility', async () => {
       const tools = await client.listTools();
       const fetchTool = tools.find((tool) => tool.name === 'fetch');
-      
+
       expect(fetchTool).toBeDefined();
       expect(fetchTool?.description).toContain('Fetch');
     });
@@ -27,11 +27,11 @@ describe('MeteoSwiss Fetch Tool', () => {
     it('should accept required and optional parameters', async () => {
       const tools = await client.listTools();
       const fetchTool = tools.find((tool) => tool.name === 'fetch');
-      
+
       expect(fetchTool?.inputSchema).toMatchObject({
         type: 'object',
         properties: {
-          id: {
+          url: {
             type: 'string',
             description: expect.stringContaining('URL')
           },
@@ -47,20 +47,20 @@ describe('MeteoSwiss Fetch Tool', () => {
             description: expect.stringContaining('metadata')
           }
         },
-        required: ['id']
+        required: ['url']
       });
     });
 
-    it('should fetch content by ID in markdown format', async () => {
+    it('should fetch content by URL in markdown format', async () => {
       const response = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
         format: 'markdown'
       });
 
       const result = JSON.parse(response.content[0].text);
 
       expect(result).toMatchObject({
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        id: expect.stringContaining('/wetter/gefahren/verhaltensempfehlungen/wind.html'),
         title: expect.any(String),
         content: expect.stringContaining('#'), // Markdown heading
         format: 'markdown',
@@ -80,7 +80,7 @@ describe('MeteoSwiss Fetch Tool', () => {
 
     it('should fetch content in plain text format', async () => {
       const response = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
         format: 'text'
       });
 
@@ -97,7 +97,7 @@ describe('MeteoSwiss Fetch Tool', () => {
 
     it('should exclude metadata when requested', async () => {
       const response = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
         includeMetadata: false
       });
 
@@ -107,9 +107,9 @@ describe('MeteoSwiss Fetch Tool', () => {
     });
 
 
-    it('should handle non-existent content IDs', async () => {
+    it('should handle non-existent content URLs', async () => {
       const response = await client.callTool('fetch', {
-        id: '/non-existent-page.html'
+        url: '/non-existent-page.html'
       });
 
       expect(response.isError).toBe(true);
@@ -120,7 +120,7 @@ describe('MeteoSwiss Fetch Tool', () => {
       // MCP SDK may throw (SSE) or return error result (Streamable HTTP) for invalid params
       const result = await client
         .callTool('fetch', {
-          id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+          url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
           format: 'invalid',
         })
         .catch((e: Error) => ({ isError: true, content: [{ text: e.message }] }));
@@ -129,21 +129,21 @@ describe('MeteoSwiss Fetch Tool', () => {
 
     it('should cache content for performance', async () => {
       const startTime = Date.now();
-      
+
       // First fetch - may be slower
       const firstResponse = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
+        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
       });
-      
+
       const firstFetchTime = Date.now() - startTime;
-      
+
       // Second fetch - should be cached and faster
       const secondStartTime = Date.now();
       const secondResponse = await client.callTool('fetch', {
-        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
+        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
       });
       const secondFetchTime = Date.now() - secondStartTime;
-      
+
       expect(JSON.parse(secondResponse.content[0].text)).toBeDefined();
       // Caching not implemented yet, so just check that it works
       expect(secondFetchTime).toBeLessThan(firstFetchTime * 2); // Not much slower

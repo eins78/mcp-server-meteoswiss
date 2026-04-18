@@ -12,6 +12,7 @@ import { scoreNameMatch } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation, type GeocodeOrigin } from '../support/geocode.js';
 import { classifyQuery } from '../support/query-classifier.js';
+import { isBlocklisted } from '../support/location-blocklist.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 
@@ -136,6 +137,29 @@ export async function findNearestStation(
 }
 
 /**
+ * Returns true if the user's query has at least one token (≥3 chars) that
+ * appears as a substring in the geocoded place name, or vice versa.
+ * Guards against gibberish queries (e.g., "NOTASTATION") that the live
+ * swisstopo API fuzzy-matches to an unrelated Swiss coordinate.
+ */
+function geocodedNameMatchesQuery(query: string, geocodedName: string): boolean {
+  const queryNorm = normalize(query.trim());
+  const nameNorm = normalize(geocodedName);
+
+  const queryTokens = queryNorm.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of queryTokens) {
+    if (nameNorm.includes(token)) return true;
+  }
+
+  const nameTokens = nameNorm.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of nameTokens) {
+    if (queryNorm.includes(token)) return true;
+  }
+
+  return false;
+}
+
+/**
  * Resolve a query to an SMN station.
  * Tries: exact abbreviation → fuzzy name → geocoding fallback (nearest to geocoded point).
  *
@@ -154,6 +178,17 @@ export async function resolveSmnStation(query: string): Promise<SmnStation> {
     throw new Error(
       'Station query must not be empty. Provide a station name (e.g., "Zurich"), ' +
         'abbreviation (e.g., "SMA"), or address (e.g., "Bahnhofplatz 1 Bern").'
+    );
+  }
+
+  // Reject well-known international city names before any lookup.
+  // Switzerland has hamlets named after major cities (e.g., "Paris" in Vaud near Payerne)
+  // which the geocoder would otherwise silently accept.
+  if (isBlocklisted(query.trim())) {
+    throw new Error(
+      `"${query}" is a well-known international city name, not a Swiss weather station. ` +
+        `Use a specific Swiss location instead (postal code, canton, or place name). ` +
+        `Use meteoswissStations to discover available stations.`
     );
   }
 
@@ -185,24 +220,35 @@ export async function resolveSmnStation(query: string): Promise<SmnStation> {
   debugData('[ogd-smn] No direct match for "%s", geocoding (origins=%s)...', query, origins);
   const geocoded = await geocodeSwissLocation(query, { origins });
   if (geocoded) {
-    const { station, distance_km } = await findNearestStation(geocoded.lat, geocoded.lon);
-    if (distance_km > MAX_GEOCODE_DISTANCE_KM) {
+    // Reject geocoding hits where the query bears no textual resemblance to the
+    // geocoded place name. Prevents gibberish queries ("NOTASTATION") from
+    // resolving to whatever the swisstopo API happens to return.
+    if (!geocodedNameMatchesQuery(query, geocoded.name)) {
       debugData(
-        '[ogd-smn] Geocoded "%s" too far from nearest station: %.1f km (limit: %d km)',
-        query,
-        distance_km,
-        MAX_GEOCODE_DISTANCE_KM
+        '[ogd-smn] Geocoded name "%s" does not match query "%s" — rejected',
+        geocoded.name,
+        query
       );
     } else {
-      debugData(
-        '[ogd-smn] Geocoded "%s" → %s, nearest station: %s (%s, %.1f km)',
-        query,
-        geocoded.name,
-        station.abbr,
-        station.name,
-        distance_km
-      );
-      return station;
+      const { station, distance_km } = await findNearestStation(geocoded.lat, geocoded.lon);
+      if (distance_km > MAX_GEOCODE_DISTANCE_KM) {
+        debugData(
+          '[ogd-smn] Geocoded "%s" too far from nearest station: %.1f km (limit: %d km)',
+          query,
+          distance_km,
+          MAX_GEOCODE_DISTANCE_KM
+        );
+      } else {
+        debugData(
+          '[ogd-smn] Geocoded "%s" → %s, nearest station: %s (%s, %.1f km)',
+          query,
+          geocoded.name,
+          station.abbr,
+          station.name,
+          distance_km
+        );
+        return station;
+      }
     }
   }
 

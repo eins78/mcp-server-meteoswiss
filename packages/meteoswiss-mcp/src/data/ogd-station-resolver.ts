@@ -15,6 +15,7 @@ import { scoreNameMatch } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation, type GeocodeOrigin } from '../support/geocode.js';
 import { classifyQuery } from '../support/query-classifier.js';
+import { isBlocklisted } from '../support/location-blocklist.js';
 
 /** Max distance (km) for geocoding fallback — forecast points are dense (~6000) */
 const MAX_GEOCODE_DISTANCE_KM = 30;
@@ -87,6 +88,29 @@ export type ResolveResult = {
 };
 
 /**
+ * Returns true if the user's query has at least one token (≥3 chars) that
+ * appears as a substring in the geocoded place name, or vice versa.
+ * Guards against gibberish queries (e.g., "NOTASTATION") that the live
+ * swisstopo API fuzzy-matches to an unrelated Swiss coordinate.
+ */
+function geocodedNameMatchesQuery(query: string, geocodedName: string): boolean {
+  const queryNorm = normalize(query.trim());
+  const nameNorm = normalize(geocodedName);
+
+  const queryTokens = queryNorm.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of queryTokens) {
+    if (nameNorm.includes(token)) return true;
+  }
+
+  const nameTokens = nameNorm.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of nameTokens) {
+    if (queryNorm.includes(token)) return true;
+  }
+
+  return false;
+}
+
+/**
  * Resolve a query string to a forecast point.
  * Matches against station abbreviations, postal codes, and place names.
  *
@@ -101,6 +125,15 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
     throw new Error(
       'Location query must not be empty. Try a Swiss postal code (e.g., "8001"), ' +
         'station abbreviation (e.g., "ZUE"), or place name (e.g., "Zurich").'
+    );
+  }
+
+  // Reject well-known international city names before any lookup.
+  if (isBlocklisted(query.trim())) {
+    throw new Error(
+      `"${query}" is a well-known international city name, not a Swiss location. ` +
+        `Use a specific Swiss location instead (Swiss postal code, station abbreviation, or place name). ` +
+        `Examples: "8001" for Zürich, "GVE" for Geneva. Use meteoswissStations to discover valid stations.`
     );
   }
 
@@ -167,33 +200,43 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
   );
   const geocoded = await geocodeSwissLocation(query, { origins: geocodeOrigins });
   if (geocoded) {
-    // Prefer postal code points for geocoded locations
-    const candidates = points.filter((p) => p.point_type_id === 2);
-    const pool = candidates.length > 0 ? candidates : points;
-    const result = findNearest(
-      pool,
-      (p) => p.coordinates.lat,
-      (p) => p.coordinates.lon,
-      geocoded.lat,
-      geocoded.lon
-    );
-    if (result && result.distance_km <= MAX_GEOCODE_DISTANCE_KM) {
+    // Reject geocoding hits where the query bears no textual resemblance to the
+    // geocoded place name. Prevents gibberish queries from returning random Swiss points.
+    if (!geocodedNameMatchesQuery(query, geocoded.name)) {
       debugData(
-        '[ogd-resolver] Geocoded "%s" → %s, nearest point: %s (%.1f km)',
-        query,
+        '[ogd-resolver] Geocoded name "%s" does not match query "%s" — rejected',
         geocoded.name,
-        result.item.name,
-        result.distance_km
+        query
       );
-      return { match: result.item, alternatives: [], confidence: 'fuzzy' };
-    }
-    if (result) {
-      debugData(
-        '[ogd-resolver] Geocoded "%s" too far from nearest point: %.1f km (limit: %d km)',
-        query,
-        result.distance_km,
-        MAX_GEOCODE_DISTANCE_KM
+    } else {
+      // Prefer postal code points for geocoded locations
+      const candidates = points.filter((p) => p.point_type_id === 2);
+      const pool = candidates.length > 0 ? candidates : points;
+      const result = findNearest(
+        pool,
+        (p) => p.coordinates.lat,
+        (p) => p.coordinates.lon,
+        geocoded.lat,
+        geocoded.lon
       );
+      if (result && result.distance_km <= MAX_GEOCODE_DISTANCE_KM) {
+        debugData(
+          '[ogd-resolver] Geocoded "%s" → %s, nearest point: %s (%.1f km)',
+          query,
+          geocoded.name,
+          result.item.name,
+          result.distance_km
+        );
+        return { match: result.item, alternatives: [], confidence: 'fuzzy' };
+      }
+      if (result) {
+        debugData(
+          '[ogd-resolver] Geocoded "%s" too far from nearest point: %.1f km (limit: %d km)',
+          query,
+          result.distance_km,
+          MAX_GEOCODE_DISTANCE_KM
+        );
+      }
     }
   }
 

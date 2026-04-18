@@ -149,11 +149,8 @@ describe('meteoswissCurrentWeather Tool', () => {
       station: 'Paris',
     });
     expect(result.isError).toBe(true);
-    // In fixture mode swisstopo is skipped entirely, so Paris cannot match.
-    // The error message must quote the input and hint at alternatives.
     expect(result.content[0].text).toContain('"Paris"');
-    expect(result.content[0].text).toMatch(/weather station found for/);
-    expect(result.content[0].text).toContain('meteoswissStations');
+    expect(result.content[0].text).toContain('international city');
   });
 
   it('rejects gibberish station name "NOTASTATION" with a helpful error', async () => {
@@ -164,5 +161,51 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(result.content[0].text).toContain('"NOTASTATION"');
     expect(result.content[0].text).toMatch(/weather station found for/);
     expect(result.content[0].text).toContain('meteoswissStations');
+  });
+
+  // --- rc.4 regression tests — international city blocklist ---
+
+  it('rejects "Berlin" (international city, not Swiss)', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'Berlin',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"Berlin"');
+    expect(result.content[0].text).toContain('international city');
+  });
+
+  it('rejects "London" (international city, not Swiss)', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'London',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"London"');
+    expect(result.content[0].text).toContain('international city');
+  });
+
+  it('rejects "Tokyo" (international city, not Swiss)', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'Tokyo',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"Tokyo"');
+    expect(result.content[0].text).toContain('international city');
+  });
+
+  it('rejects gibberish "ZZZZZZ" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'ZZZZZZ',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"ZZZZZZ"');
+    expect(result.content[0].text).toMatch(/weather station found for/);
+  });
+
+  it('rejects numeric gibberish "1234567890" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: '1234567890',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toMatch(/weather station found for/);
   });
 });

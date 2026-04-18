@@ -22,7 +22,7 @@ export async function meteoswissFetchTool(input: unknown): Promise<unknown> {
   try {
     // Fetch the content
     const content = await fetchMeteoSwissContent(params);
-    debugTools('Fetched content for ID: %s', params.id);
+    debugTools('Fetched content for URL: %s', params.url);
 
     return content;
   } catch (error) {

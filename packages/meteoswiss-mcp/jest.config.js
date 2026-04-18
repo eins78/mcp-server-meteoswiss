@@ -14,7 +14,7 @@ export default {
     ],
   },
   testMatch: ['**/test/**/*.test.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.claude/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.claude/plugins/', '/.claude/skills/'],
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   testTimeout: 60000, // 60 seconds for inspector tests (needed for macOS)
   collectCoverageFrom: [

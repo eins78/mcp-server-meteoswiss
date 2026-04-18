@@ -110,8 +110,27 @@ describe('meteoswissLocalForecast Tool', () => {
     });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('"Paris"');
-    expect(result.content[0].text).toMatch(/forecast location found for/);
-    expect(result.content[0].text).toContain('meteoswissStations');
+    expect(result.content[0].text).toContain('international city');
+  });
+
+  // --- rc.4 regression tests — international city blocklist ---
+
+  it('rejects "London" as a forecast location (international city)', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'London',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"London"');
+    expect(result.content[0].text).toContain('international city');
+  });
+
+  it('rejects "Berlin" as a forecast location (international city)', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'Berlin',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"Berlin"');
+    expect(result.content[0].text).toContain('international city');
   });
 
   it('rejects invalid 5-digit postal code "99999" with a helpful error', async () => {

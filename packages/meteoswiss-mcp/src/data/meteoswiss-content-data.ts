@@ -72,41 +72,41 @@ export interface ContentResponse {
 export async function fetchMeteoSwissContent(
   params: FetchMeteoSwissContentInput
 ): Promise<ContentResponse> {
-  const { id, format = 'markdown', includeMetadata = true } = params;
+  const { url, format = 'markdown', includeMetadata = true } = params;
 
   debugData('fetchMeteoSwissContent called with params: %o', {
-    id,
+    url,
     format,
     includeMetadata,
   });
 
   if (USE_TEST_FIXTURES) {
     debugData('Using test fixtures for content fetch');
-    return fetchFromTestFixtures(id, format, includeMetadata);
+    return fetchFromTestFixtures(url, format, includeMetadata);
   }
 
   debugData('Using live API for content fetch');
-  return fetchFromWeb(id, format, includeMetadata);
+  return fetchFromWeb(url, format, includeMetadata);
 }
 
 /**
  * Fetch content from the web
  */
 async function fetchFromWeb(
-  id: string,
+  url: string,
   format: 'markdown' | 'text',
   includeMetadata: boolean
 ): Promise<ContentResponse> {
-  // The ID should now be a full URL from the search tool
-  const url = id.startsWith('http')
-    ? id
-    : `https://www.meteoswiss.admin.ch${id.startsWith('/') ? id : '/' + id}`; // Fallback for backward compatibility
+  // Normalise to full URL (accept full URLs; prepend base for bare paths for backward compat)
+  const fullUrl = url.startsWith('http')
+    ? url
+    : `https://www.meteoswiss.admin.ch${url.startsWith('/') ? url : '/' + url}`;
 
-  debugData('Fetching content from URL: %s', url);
+  debugData('Fetching content from URL: %s', fullUrl);
 
   // Validate the URL is from an allowed MeteoSwiss domain
   try {
-    const parsedUrl = new URL(url);
+    const parsedUrl = new URL(fullUrl);
     if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
       throw new Error(
         `Invalid domain: ${parsedUrl.hostname}. Only MeteoSwiss domains are allowed.`
@@ -114,14 +114,14 @@ async function fetchFromWeb(
     }
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error(`Invalid URL: ${url}`, { cause: error });
+      throw new Error(`Invalid URL: ${fullUrl}`, { cause: error });
     }
     throw error;
   }
 
   try {
     debugData('Making HTTP request to fetch content');
-    const html = await fetchHtml(url);
+    const html = await fetchHtml(fullUrl);
     debugData('Content fetched successfully, size: %d bytes', html.length);
 
     // Add timeout protection for HTML processing
@@ -129,14 +129,14 @@ async function fetchFromWeb(
       setTimeout(() => reject(new Error('HTML processing timeout after 10 seconds')), 10000);
     });
 
-    const contentProcessing = processHtmlContent(html, id, url, format, includeMetadata);
+    const contentProcessing = processHtmlContent(html, fullUrl, format, includeMetadata);
 
     return await Promise.race([contentProcessing, processingTimeout]);
   } catch (error) {
     debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
       throw new Error(
-        `Content not found: ${id}. Use the search tool to discover valid page URLs.`,
+        `Content not found: ${url}. Use the search tool to discover valid page URLs.`,
         { cause: error }
       );
     }
@@ -151,28 +151,28 @@ async function fetchFromWeb(
  * Fetch content from test fixtures
  */
 async function fetchFromTestFixtures(
-  id: string,
+  url: string,
   format: 'markdown' | 'text',
   includeMetadata: boolean
 ): Promise<ContentResponse> {
-  debugData('Looking for test fixture for ID: %s', id);
+  debugData('Looking for test fixture for URL: %s', url);
 
   // Extract language from URL if it's a full URL
   let detectedLang = 'de';
-  let urlPath = id;
+  let urlPath = url;
 
-  if (id.startsWith('http')) {
-    const url = new URL(id);
-    urlPath = url.pathname;
+  if (url.startsWith('http')) {
+    const parsed = new URL(url);
+    urlPath = parsed.pathname;
 
     // Detect language from domain
-    if (url.hostname.includes('meteoschweiz')) {
+    if (parsed.hostname.includes('meteoschweiz')) {
       detectedLang = 'de';
-    } else if (url.hostname.includes('meteosuisse')) {
+    } else if (parsed.hostname.includes('meteosuisse')) {
       detectedLang = 'fr';
-    } else if (url.hostname.includes('meteosvizzera')) {
+    } else if (parsed.hostname.includes('meteosvizzera')) {
       detectedLang = 'it';
-    } else if (url.hostname.includes('meteoswiss')) {
+    } else if (parsed.hostname.includes('meteoswiss')) {
       detectedLang = 'en';
     }
   }
@@ -189,14 +189,14 @@ async function fetchFromTestFixtures(
     if (existsSync(fixtureFile)) {
       debugData('Loading test fixture from: %s', fixtureFile);
       const html = await fs.readFile(fixtureFile, 'utf-8');
-      const url = id.startsWith('http') ? id : `https://www.meteoswiss.admin.ch${id}`;
+      const fullUrl = url.startsWith('http') ? url : `https://www.meteoswiss.admin.ch${url}`;
 
-      return processHtmlContent(html, id, url, format, includeMetadata);
+      return processHtmlContent(html, fullUrl, format, includeMetadata);
     }
   }
 
-  debugData('No test fixture found for ID: %s', id);
-  throw new Error(`Content not found: ${id}`);
+  debugData('No test fixture found for URL: %s', url);
+  throw new Error(`Content not found: ${url}`);
 }
 
 /**
@@ -204,7 +204,6 @@ async function fetchFromTestFixtures(
  */
 function processHtmlContent(
   html: string,
-  id: string,
   url: string,
   format: 'markdown' | 'text',
   includeMetadata: boolean
@@ -274,7 +273,7 @@ function processHtmlContent(
   debugData('Content processed successfully, content length: %d characters', content.length);
 
   return {
-    id,
+    id: url,
     title,
     content,
     format,

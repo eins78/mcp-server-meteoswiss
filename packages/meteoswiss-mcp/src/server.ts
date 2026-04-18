@@ -111,7 +111,7 @@ export function createServer(): McpServer {
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing fetch request: id="${params.id}", format=${params.format || 'markdown'}`
+          `Processing fetch request: url="${params.url}", format=${params.format || 'markdown'}`
         );
         debugTools('fetch called with params: %O', params);
         const content = await meteoswissFetchTool(params);
