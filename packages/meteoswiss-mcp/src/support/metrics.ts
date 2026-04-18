@@ -5,6 +5,7 @@
  */
 
 import { Registry, Counter, Histogram, Gauge, collectDefaultMetrics } from 'prom-client';
+import { getVersion } from './version.js';
 
 let enabled = false;
 
@@ -46,6 +47,14 @@ export function initMetrics(metricsEnabled: boolean): void {
     help: 'Number of currently active MCP sessions',
     registers: [register],
   });
+
+  const buildInfoGauge = new Gauge({
+    name: 'meteoswiss_mcp_build_info',
+    help: 'MeteoSwiss MCP server build information',
+    labelNames: ['version', 'node_version'] as const,
+    registers: [register],
+  });
+  buildInfoGauge.labels({ version: getVersion(), node_version: process.version }).set(1);
 
   collectDefaultMetrics({ register });
 }
