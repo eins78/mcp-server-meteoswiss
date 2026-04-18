@@ -54,3 +54,7 @@ Fix correctness relies on CI for definitive verification (consistent reproductio
 ## Files Changed
 
 - `packages/meteoswiss-mcp/jest.config.js` — +1 line, no changeset (test-infra change)
+
+## Status
+
+PR #86 filed 2026-04-18, awaiting review. Work fully landed on branch `worktree-mcp-harness-flake`; orchestrator to rebase PR #83 onto main after merge.
