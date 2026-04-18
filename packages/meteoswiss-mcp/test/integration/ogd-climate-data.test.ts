@@ -71,4 +71,18 @@ describe('meteoswissClimateData Tool', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('station');
   });
+
+  // --- B2 regression tests (rc.2 failing cases) ---
+
+  it('rejects gibberish station "INVALID_STATION_XYZ" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissClimateData', {
+      station: 'INVALID_STATION_XYZ',
+      resolution: 'monthly',
+      limit: 1,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"INVALID_STATION_XYZ"');
+    expect(result.content[0].text).toMatch(/climate station found for/);
+    expect(result.content[0].text).toContain('meteoswissStations');
+  });
 });

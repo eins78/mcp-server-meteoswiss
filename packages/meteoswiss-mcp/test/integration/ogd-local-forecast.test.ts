@@ -85,13 +85,80 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(result.content[0].text).toContain('empty');
   });
 
-  it('should resolve "Bern" to Bern / Zollikofen, not Passo del Bernina', async () => {
+  it('should resolve "Bern" to a Bern-area point, not Passo del Bernina', async () => {
+    // Intent of this test (from rc.2): name-matching must prefer word-boundary
+    // matches over substring matches, so "Bern" does NOT match "Bernina".
+    // The winning point may be the BER station OR a Bern postal code — both
+    // are in the Bern area (lat ~46.95) and both are correct for this query.
     const result = await client.callTool('meteoswissLocalForecast', {
       location: 'Bern',
     });
 
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
-    expect(data.location.name).toBe('Bern / Zollikofen');
+    expect(data.location.name.toLowerCase()).toContain('bern');
+    expect(data.location.name).not.toContain('Bernina');
+    expect(data.location.coordinates.lat).toBeGreaterThan(46.8);
+    expect(data.location.coordinates.lat).toBeLessThan(47.1);
+  });
+
+  // --- B2 regression tests (rc.2 failing cases) ---
+
+  it('rejects non-Swiss city "Paris" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'Paris',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"Paris"');
+    expect(result.content[0].text).toMatch(/forecast location found for/);
+    expect(result.content[0].text).toContain('meteoswissStations');
+  });
+
+  it('rejects invalid 5-digit postal code "99999" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: '99999',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"99999"');
+    expect(result.content[0].text).toMatch(/forecast location found for/);
+  });
+
+  it('rejects gibberish location "ABCDE" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'ABCDE',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"ABCDE"');
+    expect(result.content[0].text).toMatch(/forecast location found for/);
+  });
+
+  it('resolves parent postal code "1200" to a Geneva-area point via prefix fallback', async () => {
+    // MeteoSwiss metadata lacks round-number parent codes like 1200 (Geneva).
+    // Prefix fallback must pick the numerically closest same-prefix code (1201 Genève in the fixture).
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: '1200',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.location).toBeDefined();
+    expect(data.location.type).toBe('postal_code');
+    // Geneva lies at ~46.2° N; the prefix-fallback neighbour must be in that band.
+    expect(data.location.coordinates.lat).toBeGreaterThanOrEqual(46.1);
+    expect(data.location.coordinates.lat).toBeLessThanOrEqual(46.3);
+  });
+
+  it('resolves parent postal code "3000" to a Bern-area point via prefix fallback', async () => {
+    // Bern ~46.94° N; prefix fallback should land in 3001 Bern (fixture).
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: '3000',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.location).toBeDefined();
+    expect(data.location.type).toBe('postal_code');
+    expect(data.location.coordinates.lat).toBeGreaterThanOrEqual(46.8);
+    expect(data.location.coordinates.lat).toBeLessThanOrEqual(47.0);
   });
 });

@@ -141,4 +141,28 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(data.measurements.temperature).toBeUndefined();
     expect(data.source).toBe('MeteoSwiss Open Data');
   });
+
+  // --- B2 regression tests (rc.2 failing cases) ---
+
+  it('rejects non-Swiss city "Paris" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'Paris',
+    });
+    expect(result.isError).toBe(true);
+    // In fixture mode swisstopo is skipped entirely, so Paris cannot match.
+    // The error message must quote the input and hint at alternatives.
+    expect(result.content[0].text).toContain('"Paris"');
+    expect(result.content[0].text).toMatch(/weather station found for/);
+    expect(result.content[0].text).toContain('meteoswissStations');
+  });
+
+  it('rejects gibberish station name "NOTASTATION" with a helpful error', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'NOTASTATION',
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('"NOTASTATION"');
+    expect(result.content[0].text).toMatch(/weather station found for/);
+    expect(result.content[0].text).toContain('meteoswissStations');
+  });
 });
