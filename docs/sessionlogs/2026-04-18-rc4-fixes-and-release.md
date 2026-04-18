@@ -56,14 +56,14 @@
 ## Release
 
 - Changeset: `.changeset/rc4-blocklist-fixes.md`
-- Version commit: [to be filled]
+- Version commit: `546ad47` (I: Version meteoswiss-mcp v2.3.0-rc.4)
 - Tag: `meteoswiss-mcp-v2.3.0-rc.4`
-- GitHub release: [to be filled]
+- GitHub release: https://github.com/eins78/meteoswiss-llm-tools/releases/tag/meteoswiss-mcp-v2.3.0-rc.4
 - GHCR image: `ghcr.io/eins78/meteoswiss-mcp:2.3.0-rc.4`
-- Publish workflow run: [to be filled]
+- Publish workflow run: 24607560021 (success)
 
 ## Deploy
 
 - Deploy command: `~/Docker/selfhosted/scripts/meteoswiss-deploy.sh test 2.3.0-rc.4`
-- Health check response: [to be filled]
-- Deploy verification: [to be filled]
+- Health check response: `{"status":"ok","version":"2.3.0-rc.4","sessions":0,"endpoint":"https://meteoswiss-mcp-demo-test.cloud.kiste.li/mcp"}`
+- Deploy verification: 2026-04-18T17:19:21Z — health check passed on attempt 1
