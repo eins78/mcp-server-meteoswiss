@@ -1,14 +1,19 @@
 import { z } from 'zod';
 
 /**
- * Schema for fetch tool parameters
+ * Schema for fetch tool parameters.
+ *
+ * Canonical input arg is `id` to match the ChatGPT Deep Research MCP contract:
+ * <https://github.com/openai/openai-cookbook/blob/main/examples/deep_research_api/how_to_build_a_deep_research_mcp_server/main.py>
+ *
+ * For this server the `id` is a full MeteoSwiss page URL returned by the search tool.
  */
 export const fetchMeteoSwissContentSchema = z.object({
-  url: z
+  id: z
     .string()
-    .min(1, { message: 'URL cannot be empty. Use the search tool to find valid page URLs.' })
+    .min(1, { message: 'id cannot be empty. Use the search tool to find valid page URLs.' })
     .describe(
-      'Full URL of a MeteoSwiss page to fetch. Use the search tool first to discover valid URLs. Example: https://www.meteoschweiz.admin.ch/klima/klimawandel/steigende-temperaturen.html'
+      'Identifier of a MeteoSwiss page to fetch. For this server the id is a full URL returned by the search tool. Example: https://www.meteoschweiz.admin.ch/klima/klimawandel/steigende-temperaturen.html'
     ),
   format: z
     .enum(['markdown', 'text'], {

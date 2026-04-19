@@ -31,30 +31,30 @@ describe('MeteoSwiss Fetch Tool', () => {
       expect(fetchTool?.inputSchema).toMatchObject({
         type: 'object',
         properties: {
-          url: {
+          id: {
             type: 'string',
-            description: expect.stringContaining('URL')
+            description: expect.stringContaining('Identifier'),
           },
           format: {
             type: 'string',
             enum: ['markdown', 'text'],
             default: 'markdown',
-            description: expect.stringContaining('output format')
+            description: expect.stringContaining('output format'),
           },
           includeMetadata: {
             type: 'boolean',
             default: true,
-            description: expect.stringContaining('metadata')
-          }
+            description: expect.stringContaining('metadata'),
+          },
         },
-        required: ['url']
+        required: ['id'],
       });
     });
 
-    it('should fetch content by URL in markdown format', async () => {
+    it('should fetch content by id in markdown format', async () => {
       const response = await client.callTool('fetch', {
-        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
-        format: 'markdown'
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        format: 'markdown',
       });
 
       const result = JSON.parse(response.content[0].text);
@@ -62,43 +62,49 @@ describe('MeteoSwiss Fetch Tool', () => {
       expect(result).toMatchObject({
         id: expect.stringContaining('/wetter/gefahren/verhaltensempfehlungen/wind.html'),
         title: expect.any(String),
-        content: expect.stringContaining('#'), // Markdown heading
+        text: expect.stringContaining('#'), // Markdown heading (canonical ChatGPT field)
+        content: expect.stringContaining('#'), // Back-compat alias
         format: 'markdown',
+        url: expect.stringContaining('meteoswiss'),
         metadata: expect.objectContaining({
           url: expect.stringContaining('meteoswiss'),
           language: expect.any(String),
-          contentType: expect.any(String)
-        })
+          contentType: expect.any(String),
+        }),
       });
 
-      // Content must include actual body text from web component attributes,
-      // not just the page title (regression test for empty content body bug)
-      expect(result.content).toContain('Verhaltensempfehlungen');
-      expect(result.content).toContain('Windereignisse');
-      expect(result.content).toContain('Gefahrenstufen von Wind');
+      // text and content must hold identical strings (alias guarantee from
+      // docs/plans/2026-04-19-chatgpt-fetch-compat.md §6.3).
+      expect(result.text).toBe(result.content);
+
+      // Body must include actual page text from web component attributes,
+      // not just the page title (regression guard for empty-content body bug).
+      expect(result.text).toContain('Verhaltensempfehlungen');
+      expect(result.text).toContain('Windereignisse');
+      expect(result.text).toContain('Gefahrenstufen von Wind');
     });
 
     it('should fetch content in plain text format', async () => {
       const response = await client.callTool('fetch', {
-        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
-        format: 'text'
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        format: 'text',
       });
 
       const result = JSON.parse(response.content[0].text);
 
       expect(result).toMatchObject({
+        text: expect.any(String),
         content: expect.any(String),
-        format: 'text'
+        format: 'text',
       });
-      expect(result.content).not.toContain('<'); // No HTML tags
-      expect(result.content).not.toContain('#'); // No markdown
+      expect(result.text).not.toContain('<'); // No HTML tags
+      expect(result.text).not.toContain('#'); // No markdown
     });
-
 
     it('should exclude metadata when requested', async () => {
       const response = await client.callTool('fetch', {
-        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
-        includeMetadata: false
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+        includeMetadata: false,
       });
 
       const result = JSON.parse(response.content[0].text);
@@ -106,10 +112,9 @@ describe('MeteoSwiss Fetch Tool', () => {
       expect(result.metadata).toBeUndefined();
     });
 
-
-    it('should handle non-existent content URLs', async () => {
+    it('should handle non-existent content ids', async () => {
       const response = await client.callTool('fetch', {
-        url: '/non-existent-page.html'
+        id: '/non-existent-page.html',
       });
 
       expect(response.isError).toBe(true);
@@ -120,7 +125,7 @@ describe('MeteoSwiss Fetch Tool', () => {
       // MCP SDK may throw (SSE) or return error result (Streamable HTTP) for invalid params
       const result = await client
         .callTool('fetch', {
-          url: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
+          id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
           format: 'invalid',
         })
         .catch((e: Error) => ({ isError: true, content: [{ text: e.message }] }));
@@ -132,7 +137,7 @@ describe('MeteoSwiss Fetch Tool', () => {
 
       // First fetch - may be slower
       const firstResponse = await client.callTool('fetch', {
-        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
       });
 
       const firstFetchTime = Date.now() - startTime;
@@ -140,10 +145,11 @@ describe('MeteoSwiss Fetch Tool', () => {
       // Second fetch - should be cached and faster
       const secondStartTime = Date.now();
       const secondResponse = await client.callTool('fetch', {
-        url: '/wetter/gefahren/verhaltensempfehlungen/wind.html'
+        id: '/wetter/gefahren/verhaltensempfehlungen/wind.html',
       });
       const secondFetchTime = Date.now() - secondStartTime;
 
+      expect(JSON.parse(firstResponse.content[0].text)).toBeDefined();
       expect(JSON.parse(secondResponse.content[0].text)).toBeDefined();
       // Caching not implemented yet, so just check that it works
       expect(secondFetchTime).toBeLessThan(firstFetchTime * 2); // Not much slower
