@@ -46,13 +46,22 @@ const turndownService = new TurndownService({
 turndownService.use(gfm);
 
 /**
- * Content response structure
+ * Content response structure.
+ *
+ * Field naming follows the ChatGPT Deep Research MCP contract:
+ * `id`, `title`, `text`, `url`, `metadata`. The `content` field is kept
+ * as a back-compat alias for `text` and will be removed in 3.0.
  */
 export interface ContentResponse {
   id: string;
   title?: string;
+  /** Canonical body field (matches ChatGPT Deep Research spec). */
+  text: string;
+  /** @deprecated Alias of `text` kept for back-compat with v2.3.x callers. Will be removed in 3.0. */
   content: string;
   format: 'markdown' | 'text';
+  /** Canonical URL field (matches ChatGPT Deep Research spec). For this server `url === id`. */
+  url: string;
   metadata?: {
     url: string;
     language?: string;
@@ -64,7 +73,9 @@ export interface ContentResponse {
 }
 
 /**
- * Fetch MeteoSwiss content by ID
+ * Fetch MeteoSwiss content by ID.
+ *
+ * The `id` parameter is a full MeteoSwiss page URL returned by the search tool.
  *
  * @param params Fetch parameters
  * @returns Content response
@@ -72,35 +83,37 @@ export interface ContentResponse {
 export async function fetchMeteoSwissContent(
   params: FetchMeteoSwissContentInput
 ): Promise<ContentResponse> {
-  const { url, format = 'markdown', includeMetadata = true } = params;
+  const { id, format = 'markdown', includeMetadata = true } = params;
 
   debugData('fetchMeteoSwissContent called with params: %o', {
-    url,
+    id,
     format,
     includeMetadata,
   });
 
   if (USE_TEST_FIXTURES) {
     debugData('Using test fixtures for content fetch');
-    return fetchFromTestFixtures(url, format, includeMetadata);
+    return fetchFromTestFixtures(id, format, includeMetadata);
   }
 
   debugData('Using live API for content fetch');
-  return fetchFromWeb(url, format, includeMetadata);
+  return fetchFromWeb(id, format, includeMetadata);
 }
 
 /**
- * Fetch content from the web
+ * Fetch content from the web.
+ *
+ * @param id The page id — a full URL or a path returned by the search tool.
  */
 async function fetchFromWeb(
-  url: string,
+  id: string,
   format: 'markdown' | 'text',
   includeMetadata: boolean
 ): Promise<ContentResponse> {
   // Normalise to full URL (accept full URLs; prepend base for bare paths for backward compat)
-  const fullUrl = url.startsWith('http')
-    ? url
-    : `https://www.meteoswiss.admin.ch${url.startsWith('/') ? url : '/' + url}`;
+  const fullUrl = id.startsWith('http')
+    ? id
+    : `https://www.meteoswiss.admin.ch${id.startsWith('/') ? id : '/' + id}`;
 
   debugData('Fetching content from URL: %s', fullUrl);
 
@@ -136,7 +149,7 @@ async function fetchFromWeb(
     debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
       throw new Error(
-        `Content not found: ${url}. Use the search tool to discover valid page URLs.`,
+        `Content not found: ${id}. Use the search tool to discover valid page URLs.`,
         { cause: error }
       );
     }
@@ -148,21 +161,23 @@ async function fetchFromWeb(
 }
 
 /**
- * Fetch content from test fixtures
+ * Fetch content from test fixtures.
+ *
+ * @param id The page id — a full URL or a path returned by the search tool.
  */
 async function fetchFromTestFixtures(
-  url: string,
+  id: string,
   format: 'markdown' | 'text',
   includeMetadata: boolean
 ): Promise<ContentResponse> {
-  debugData('Looking for test fixture for URL: %s', url);
+  debugData('Looking for test fixture for id: %s', id);
 
   // Extract language from URL if it's a full URL
   let detectedLang = 'de';
-  let urlPath = url;
+  let urlPath = id;
 
-  if (url.startsWith('http')) {
-    const parsed = new URL(url);
+  if (id.startsWith('http')) {
+    const parsed = new URL(id);
     urlPath = parsed.pathname;
 
     // Detect language from domain
@@ -189,14 +204,14 @@ async function fetchFromTestFixtures(
     if (existsSync(fixtureFile)) {
       debugData('Loading test fixture from: %s', fixtureFile);
       const html = await fs.readFile(fixtureFile, 'utf-8');
-      const fullUrl = url.startsWith('http') ? url : `https://www.meteoswiss.admin.ch${url}`;
+      const fullUrl = id.startsWith('http') ? id : `https://www.meteoswiss.admin.ch${id}`;
 
       return processHtmlContent(html, fullUrl, format, includeMetadata);
     }
   }
 
-  debugData('No test fixture found for URL: %s', url);
-  throw new Error(`Content not found: ${url}`);
+  debugData('No test fixture found for id: %s', id);
+  throw new Error(`Content not found: ${id}`);
 }
 
 /**
@@ -275,8 +290,10 @@ function processHtmlContent(
   return {
     id: url,
     title,
+    text: content,
     content,
     format,
+    url,
     metadata,
   };
 }
