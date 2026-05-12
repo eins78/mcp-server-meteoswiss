@@ -78,7 +78,7 @@
     "@types/debug": "^4.1.13",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
-    "@types/jsdom": "^21.1.7",
+    "@types/jsdom": "^28.0.0",
     "@types/node": "^25.5.0",
     "@types/turndown": "^5.0.6",
     "@typescript-eslint/eslint-plugin": "^8.57.2",
