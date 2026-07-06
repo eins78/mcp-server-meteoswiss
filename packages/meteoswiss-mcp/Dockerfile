@@ -6,6 +6,9 @@ FROM node:24-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Run pnpm non-interactively (auto-confirm node_modules purge, no TTY in Docker build)
+ENV CI=true
+
 # Install pnpm using npm and corepack
 RUN npm i -g corepack && pnpm -v
 
@@ -39,6 +42,9 @@ LABEL org.opencontainers.image.description="MCP server for MeteoSwiss weather da
 LABEL org.opencontainers.image.source="https://github.com/eins78/meteoswiss-llm-tools"
 LABEL org.opencontainers.image.url="https://meteoswiss-mcp.ars.is"
 LABEL org.opencontainers.image.licenses="CC0-1.0"
+
+# Run pnpm non-interactively (auto-confirm node_modules purge, no TTY in Docker build)
+ENV CI=true
 
 # Install pnpm using npm and corepack (needed for pnpm run start)
 RUN npm i -g corepack && pnpm -v
