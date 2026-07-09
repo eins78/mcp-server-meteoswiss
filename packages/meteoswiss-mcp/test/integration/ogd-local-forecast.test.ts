@@ -54,6 +54,54 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(day.weather_icon_url).toMatch(/^https:\/\/www\.meteoschweiz\.admin\.ch\/static\/resources\/weather-symbols\/\d+\.svg$/);
   });
 
+  it('returns an hourly precipitation breakdown for a postal code, in local Zurich time', async () => {
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: '8001',
+      days: 2,
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+
+    // Fixture (rre150h0.csv, point 800100) day 2026-03-28: 06:00-09:00 UTC carry
+    // rain (0.1/0.3/0.5/0.2 mm), the rest of the day is dry. Assert the exact
+    // series content — not just array shape — per the fixture's known values.
+    const day1 = data.forecast.find((d: { date: string }) => d.date === '2026-03-28');
+    expect(day1).toBeDefined();
+    expect(Array.isArray(day1.precipitation.hourly)).toBe(true);
+    expect(day1.precipitation.hourly.length).toBeGreaterThan(0);
+    expect(day1.precipitation.hourly).toContainEqual({
+      time: '2026-03-28T09:00:00+01:00',
+      value: 0.5,
+    });
+    // The daily total must be derivable from (i.e. consistent with) the hourly series.
+    const summed =
+      Math.round(
+        day1.precipitation.hourly.reduce((sum: number, h: { value: number }) => sum + h.value, 0) *
+          10
+      ) / 10;
+    expect(day1.precipitation.total).toBe(summed);
+    expect(day1.precipitation.total).toBe(1.7);
+
+    // Fixture crosses the CET->CEST spring-forward (2026-03-29, 02:00 local).
+    // Day 2 must contain readings on both sides of the DST boundary.
+    const day2 = data.forecast.find((d: { date: string }) => d.date === '2026-03-29');
+    expect(day2).toBeDefined();
+    const offsets = new Set(
+      day2.precipitation.hourly.map((h: { time: string }) => h.time.slice(-6))
+    );
+    expect(offsets.has('+01:00')).toBe(true);
+    expect(offsets.has('+02:00')).toBe(true);
+    expect(day2.precipitation.hourly).toContainEqual({
+      time: '2026-03-29T01:00:00+01:00',
+      value: 0.0,
+    });
+    expect(day2.precipitation.hourly).toContainEqual({
+      time: '2026-03-29T03:00:00+02:00',
+      value: 0.0,
+    });
+  });
+
   it('should return forecast with weather_icon_url for a station', async () => {
     const result = await client.callTool('meteoswissLocalForecast', {
       location: 'Napf',
@@ -68,6 +116,9 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(day.weather_icon_url).toMatch(
       /^https:\/\/www\.meteoschweiz\.admin\.ch\/static\/resources\/weather-symbols\/\d+\.svg$/
     );
+    // Stations don't fetch hourly precip params yet — hourly must be explicitly
+    // null, distinct from "available but empty".
+    expect(day.precipitation.hourly).toBeNull();
   });
 
   it('should return error for empty location', async () => {

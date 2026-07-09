@@ -17,6 +17,7 @@ import type {
   GetLocalForecastParams,
   LocalForecastResponse,
   DailyForecast,
+  HourlyPrecip,
 } from '../schemas/ogd-local-forecast.js';
 import type { StacItem } from '../schemas/ogd-shared.js';
 
@@ -42,6 +43,42 @@ function findLatestAssetKey(item: StacItem, param: string): string | null {
  */
 function timestampToDate(ts: string): string {
   return `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}`;
+}
+
+/**
+ * Formatter that renders a UTC instant as local Europe/Zurich wall-clock time
+ * plus its UTC offset (DST-aware). Reused across calls since constructing an
+ * `Intl.DateTimeFormat` repeatedly is comparatively expensive.
+ */
+const zurichFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Zurich',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+  timeZoneName: 'longOffset',
+});
+
+/**
+ * Convert a MeteoSwiss UTC timestamp (YYYYMMDDhhmm) to an ISO 8601 string in
+ * local Europe/Zurich time with UTC offset, DST-correct
+ * (e.g. "202603280800" -> "2026-03-28T09:00:00+01:00").
+ */
+function utcTimestampToZurichIso(ts: string): string {
+  const utcMs = Date.UTC(
+    Number(ts.slice(0, 4)),
+    Number(ts.slice(4, 6)) - 1,
+    Number(ts.slice(6, 8)),
+    Number(ts.slice(8, 10)),
+    Number(ts.slice(10, 12))
+  );
+  const parts = zurichFormatter.formatToParts(new Date(utcMs));
+  const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
+  const offset = get('timeZoneName').replace('GMT', '');
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}${offset}`;
 }
 
 /**
@@ -92,6 +129,8 @@ function buildStationForecast(
       precipitation: {
         total: dateKeyed.get('rka150d0')?.get(date) ?? null,
         unit: 'mm',
+        // Stations use daily params (rka150d0) — hourly precip isn't fetched for them yet.
+        hourly: null,
       },
     };
   });
@@ -107,6 +146,25 @@ function groupByDate(hourlyMap: Map<string, number | null>): Map<string, number[
     const date = timestampToDate(ts);
     const existing = byDate.get(date) ?? [];
     existing.push(val);
+    byDate.set(date, existing);
+  }
+  return byDate;
+}
+
+/**
+ * Group hourly precipitation values by UTC date, converting each timestamp to
+ * local Europe/Zurich time. Within each day, entries are sorted chronologically
+ * and null/missing readings are skipped (zero-mm hours are kept).
+ */
+function groupPrecipByDate(hourlyMap: Map<string, number | null>): Map<string, HourlyPrecip[]> {
+  const byDate = new Map<string, HourlyPrecip[]>();
+  const sortedTimestamps = [...hourlyMap.keys()].sort();
+  for (const ts of sortedTimestamps) {
+    const val = hourlyMap.get(ts) ?? null;
+    if (val === null) continue;
+    const date = timestampToDate(ts);
+    const existing = byDate.get(date) ?? [];
+    existing.push({ time: utcTimestampToZurichIso(ts), value: val });
     byDate.set(date, existing);
   }
   return byDate;
@@ -163,7 +221,7 @@ function buildHourlyAggregatedForecast(
   const hourlyIcon = paramData.get('jww003i0') ?? new Map<string, number | null>();
 
   const tempByDate = groupByDate(hourlyTemp);
-  const precipByDate = groupByDate(hourlyPrecip);
+  const precipByDate = groupPrecipByDate(hourlyPrecip);
 
   const today = todayUtc();
   const dates = [...tempByDate.keys()]
@@ -172,9 +230,11 @@ function buildHourlyAggregatedForecast(
     .slice(0, days);
   return dates.map((date) => {
     const temps = tempByDate.get(date) ?? [];
-    const precips = precipByDate.get(date) ?? [];
+    // Derive both the daily total and the hourly series from the same list so
+    // they cannot disagree with each other.
+    const hourly = precipByDate.get(date) ?? [];
     const precipTotal =
-      precips.length > 0 ? Math.round(precips.reduce((a, b) => a + b, 0) * 10) / 10 : null;
+      hourly.length > 0 ? Math.round(hourly.reduce((sum, h) => sum + h.value, 0) * 10) / 10 : null;
     const iconCode = pickDaytimeIcon(hourlyIcon, date);
 
     return {
@@ -184,7 +244,7 @@ function buildHourlyAggregatedForecast(
         max: temps.length > 0 ? Math.max(...temps) : null,
         unit: '\u00B0C',
       },
-      precipitation: { total: precipTotal, unit: 'mm' },
+      precipitation: { total: precipTotal, unit: 'mm', hourly },
       weather: iconCode !== null ? weatherIconDescription(iconCode) : null,
       weather_icon_url: iconCode !== null ? weatherIconUrl(iconCode) : null,
     };

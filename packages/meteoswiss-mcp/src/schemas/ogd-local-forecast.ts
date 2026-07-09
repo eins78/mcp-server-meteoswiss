@@ -22,13 +22,30 @@ export const GetLocalForecastParamsSchema = z.object({
 });
 export type GetLocalForecastParams = z.infer<typeof GetLocalForecastParamsSchema>;
 
+/** A single hourly precipitation reading within a day */
+export type HourlyPrecip = {
+  /** ISO 8601 timestamp with UTC offset, in local Europe/Zurich time (e.g. "2026-03-28T09:00:00+01:00") */
+  time: string;
+  /** Precipitation sum for that hour, in mm */
+  value: number;
+};
+
 /** Daily forecast summary for one day */
 export type DailyForecast = {
   date: string;
   weather: string | null;
   weather_icon_url: string | null;
   temperature: { min: number | null; max: number | null; unit: string };
-  precipitation: { total: number | null; unit: string };
+  precipitation: {
+    total: number | null;
+    unit: string;
+    /**
+     * Per-hour precipitation breakdown, local Europe/Zurich time.
+     * `null` when not available for this location's point type (currently: weather stations).
+     * An empty array means the breakdown is available but no rain fell.
+     */
+    hourly: HourlyPrecip[] | null;
+  };
 };
 
 /** Full forecast response */

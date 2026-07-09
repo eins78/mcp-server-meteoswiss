@@ -158,7 +158,12 @@ Accepts:
 - Place names: "Zurich", "Basel", "Lugano"
 
 Coverage: ~6000 Swiss locations (all postal codes + weather stations + mountain points).
-Forecast horizon: up to 9 days. Updated hourly.`,
+Forecast horizon: up to 9 days. Updated hourly.
+
+For postal codes and mountain points, each day also includes an hourly precipitation
+breakdown (precipitation.hourly, local Europe/Zurich time) — useful for judging *when*
+rain is expected, not just the daily total. Not yet available for weather stations
+(precipitation.hourly is null there).`,
     GetLocalForecastParamsSchema.shape,
     async (params: GetLocalForecastParams) => {
       const _t0 = performance.now();
