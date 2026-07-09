@@ -17,6 +17,7 @@ import type { LocalForecastResponse } from "./types.js";
 import {
   type CanonicalReading,
   argmaxHour,
+  dailyTotal,
   dayObjectFor,
   isDryAt,
   offsetAt,
@@ -195,14 +196,30 @@ export function stationQuestion(
  * Secondary, longer-horizon track (advisor recommendation, see PLAN.md): tests whether
  * legibility holds up over a full week (~168 hourly entries) rather than the 1.5-day primary
  * fixture — a proxy for "will consumers still cope once we add more time-series over more
- * days" (the next feature this eval is meant to derisk). Subordinate to the UTC-vs-local gate:
- * kept to 2 questions so it adds modest token cost, not a second full question set.
+ * days" (the next feature this eval is meant to derisk). Subordinate to the UTC-vs-local gate.
+ *
+ * Originally 2 questions; expanded to 5 (see PLAN.md "Compact long-series representation")
+ * when Max asked whether a more compact hourly representation rescues tiny-tier comprehension
+ * on this fixture (tiny tier scored ~50% here in the full sweep, vs. ~86-100% on the shorter
+ * primary fixture). These 5 questions are run UNCHANGED against both the full-representation
+ * fixture (fixtureLabel "sevenday") and the compact one (fixtureLabel "sevenday-compact", see
+ * src/compact-representation.ts) — same ground truth either way, so the only variable is the
+ * hourly representation's density, isolating that ablation the same way fixture.ts isolates
+ * the local-vs-UTC one.
  */
 export function sevenDayQuestions(
   readings: CanonicalReading[],
 ): GeneratedQuestion[] {
   const wettest = wettestDate(readings);
   const showerDaySum = sumRange(readings, "2026-04-10", 14, 17);
+  const thuHour15 = valueAt(readings, "2026-04-09", 15);
+  const monTotal = dailyTotal(readings, "2026-04-06");
+  const tueTotal = dailyTotal(readings, "2026-04-07");
+  if (thuHour15 === null) {
+    throw new Error(
+      "Ground truth computation failed for sevenday fixture — check fixture data",
+    );
+  }
   return [
     {
       id: "sevenday-wettest",
@@ -222,6 +239,32 @@ export function sevenDayQuestions(
         value: showerDaySum,
         tolerance: 0.05,
       },
+    },
+    {
+      id: "sevenday-thu-hour15",
+      family: "point-num",
+      fixtureLabel: "sevenday",
+      promptText: `How many mm of rain fall during the 15:00 local-time hour on 2026-04-09? ${ANSWER_INSTRUCTION} Schema: {"mm": <number>}`,
+      expected: {
+        key: "mm",
+        kind: "number",
+        value: thuHour15,
+        tolerance: 0.05,
+      },
+    },
+    {
+      id: "sevenday-mon-dry",
+      family: "point-bool",
+      fixtureLabel: "sevenday",
+      promptText: `Was 2026-04-06 completely dry all day (0mm total rainfall)? ${ANSWER_INSTRUCTION} Schema: {"answer": "yes" | "no"}`,
+      expected: { key: "answer", kind: "bool", value: monTotal === 0 },
+    },
+    {
+      id: "sevenday-tue-total",
+      family: "range-num",
+      fixtureLabel: "sevenday",
+      promptText: `What is the TOTAL rainfall in mm for the full day 2026-04-07? ${ANSWER_INSTRUCTION} Schema: {"mm": <number>}`,
+      expected: { key: "mm", kind: "number", value: tueTotal, tolerance: 0.05 },
     },
   ];
 }

@@ -59,7 +59,20 @@ providers:
           effort: minimal
   - id: openrouter:google/gemini-3.1-pro-preview
     label: frontier/gemini-3.1-pro
-    config: *lookup_config_reasoning_mandatory
+    # Own config, NOT *lookup_config_reasoning_mandatory: the 2026-07-09 full sweep found this
+    # provider leaks visible "Thinking: ..." text into the completion even at
+    # reasoning.effort:'minimal', which under the shared 256-token budget truncated its JSON
+    # answer mid-response on ~1/3 of calls (see PLAN.md "Full sweep results, complete" for the
+    # trace). Bumped max_tokens only for this provider so the leaked reasoning text doesn't
+    # crowd out the answer -- the other three models sharing the mandatory-reasoning anchor
+    # (gpt-5.2, gpt-5-mini, gpt-5-nano) scored 100%/100%/67% local with the 256 budget and
+    # don't need this.
+    config:
+      temperature: 0
+      max_tokens: 1024
+      passthrough:
+        reasoning:
+          effort: minimal
   - id: openrouter:mistralai/mistral-large-2512
     label: frontier/mistral-large
     config: *lookup_config

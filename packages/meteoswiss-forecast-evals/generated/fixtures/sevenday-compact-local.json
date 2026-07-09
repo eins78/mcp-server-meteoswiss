@@ -1,0 +1,226 @@
+{
+  "location": {
+    "name": "Zürich",
+    "type": "postal_code",
+    "elevation": 409,
+    "coordinates": {
+      "lat": 47.372289,
+      "lon": 8.542189
+    }
+  },
+  "generated": "2026-04-06T04:00:00.000000Z",
+  "forecast": [
+    {
+      "date": "2026-04-06",
+      "weather": "sunny",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/1.svg",
+      "temperature": {
+        "min": 6,
+        "max": 16,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 0,
+        "unit": "mm",
+        "hourly": [],
+        "hourly_note": "Only local hours with measurable precipitation (more than 0mm) are listed here. Any local hour of this day NOT listed had 0mm precipitation."
+      }
+    },
+    {
+      "date": "2026-04-07",
+      "weather": "rain showers",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/25.svg",
+      "temperature": {
+        "min": 7,
+        "max": 17,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 0.4,
+        "unit": "mm",
+        "hourly": [
+          {
+            "time": "2026-04-07T06:00:00+02:00",
+            "value": 0.1
+          },
+          {
+            "time": "2026-04-07T07:00:00+02:00",
+            "value": 0.2
+          },
+          {
+            "time": "2026-04-07T08:00:00+02:00",
+            "value": 0.1
+          }
+        ],
+        "hourly_note": "Only local hours with measurable precipitation (more than 0mm) are listed here. Any local hour of this day NOT listed had 0mm precipitation."
+      }
+    },
+    {
+      "date": "2026-04-08",
+      "weather": "sunny",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/1.svg",
+      "temperature": {
+        "min": 8,
+        "max": 18,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 0,
+        "unit": "mm",
+        "hourly": [],
+        "hourly_note": "Only local hours with measurable precipitation (more than 0mm) are listed here. Any local hour of this day NOT listed had 0mm precipitation."
+      }
+    },
+    {
+      "date": "2026-04-09",
+      "weather": "rain",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/22.svg",
+      "temperature": {
+        "min": 9,
+        "max": 19,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 5.1,
+        "unit": "mm",
+        "hourly": [
+          {
+            "time": "2026-04-09T05:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T06:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T07:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T08:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T09:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T10:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T11:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T12:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T13:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T14:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T15:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T16:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T17:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T18:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T19:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T20:00:00+02:00",
+            "value": 0.3
+          },
+          {
+            "time": "2026-04-09T21:00:00+02:00",
+            "value": 0.3
+          }
+        ],
+        "hourly_note": "Only local hours with measurable precipitation (more than 0mm) are listed here. Any local hour of this day NOT listed had 0mm precipitation."
+      }
+    },
+    {
+      "date": "2026-04-10",
+      "weather": "sunny intervals, rain showers",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/25.svg",
+      "temperature": {
+        "min": 10,
+        "max": 20,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 1.3,
+        "unit": "mm",
+        "hourly": [
+          {
+            "time": "2026-04-10T14:00:00+02:00",
+            "value": 0.2
+          },
+          {
+            "time": "2026-04-10T15:00:00+02:00",
+            "value": 0.6
+          },
+          {
+            "time": "2026-04-10T16:00:00+02:00",
+            "value": 0.4
+          },
+          {
+            "time": "2026-04-10T17:00:00+02:00",
+            "value": 0.1
+          }
+        ],
+        "hourly_note": "Only local hours with measurable precipitation (more than 0mm) are listed here. Any local hour of this day NOT listed had 0mm precipitation."
+      }
+    },
+    {
+      "date": "2026-04-11",
+      "weather": "sunny",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/1.svg",
+      "temperature": {
+        "min": 11,
+        "max": 21,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 0,
+        "unit": "mm",
+        "hourly": [],
+        "hourly_note": "Only local hours with measurable precipitation (more than 0mm) are listed here. Any local hour of this day NOT listed had 0mm precipitation."
+      }
+    },
+    {
+      "date": "2026-04-12",
+      "weather": "sunny",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/1.svg",
+      "temperature": {
+        "min": 12,
+        "max": 22,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 0,
+        "unit": "mm",
+        "hourly": [],
+        "hourly_note": "Only local hours with measurable precipitation (more than 0mm) are listed here. Any local hour of this day NOT listed had 0mm precipitation."
+      }
+    }
+  ],
+  "source": "MeteoSwiss Open Data"
+}

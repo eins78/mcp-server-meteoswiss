@@ -5,8 +5,12 @@
  * `meteoswiss-mcp` emits today; it exists purely to compare two candidate container shapes
  * before that feature is built, so the shape choice has evidence behind it.
  *
- * Kept clearly subordinate to the UTC-vs-local gate: one day, one small hourly table, 5
- * questions, run across a small model slice — not folded into the primary question set.
+ * Kept clearly subordinate to the UTC-vs-local gate: one day, one small hourly table, run
+ * across a small model slice — not folded into the primary question set. Originally 5
+ * questions; expanded to 11 (see PLAN.md "Multi-series eval, expanded") once Max asked for
+ * a conclusive Shape A vs B verdict ahead of the full multi-series feature (tracked in a new
+ * GitHub issue) — the extra questions stress deeper cross-series reasoning (conditional
+ * argmax, existence checks, more field combinations) that the original 5 didn't cover.
  *
  * Both shapes below are rendered from the SAME canonical HOURLY table, so their ground truth
  * is identical by construction — only the container shape differs:
@@ -86,17 +90,47 @@ export const multiseriesGroundTruth = (() => {
   const maxWindHour = rows.reduce((max, r) =>
     r.windKmh > max.windKmh ? r : max,
   ).hour;
+  const maxPrecipHour = rows.reduce((max, r) =>
+    r.precipMm > max.precipMm ? r : max,
+  ).hour;
+  // "Best walk hour": dry AND some sunshine AND calm (wind < 10 km/h). Multiple hours can
+  // qualify (they do, in this table) -- tie-break by most sunshine, derived not hand-typed.
+  const walkCandidates = rows.filter(
+    (r) => r.precipMm === 0 && r.sunshineMin > 0 && r.windKmh < 10,
+  );
+  if (walkCandidates.length === 0)
+    throw new Error(
+      "multiseries table has no hour satisfying the walk criteria",
+    );
+  const bestWalkHour = walkCandidates.reduce((max, r) =>
+    r.sunshineMin > max.sunshineMin ? r : max,
+  ).hour;
+  // Existence + earliest-match question: dry AND windy (wind >= 14 km/h) -- deliberately
+  // NOT the same hour as maxWindHour (which is rainy), to test the model isn't just pattern-
+  // matching "the windy hour" without checking the dry condition too.
+  const windyDryCandidates = rows.filter(
+    (r) => r.precipMm === 0 && r.windKmh >= 14,
+  );
+  const windyDryExists = windyDryCandidates.length > 0;
+  const windyDryHour = windyDryExists ? windyDryCandidates[0]!.hour : null;
   const h8 = rows.find((r) => r.hour === 8);
   const h13 = rows.find((r) => r.hour === 13);
-  if (!h8 || !h13) throw new Error("multiseries table missing expected hours");
+  const h19 = rows.find((r) => r.hour === 19);
+  if (!h8 || !h13 || !h19)
+    throw new Error("multiseries table missing expected hours");
   return {
     precipTotal,
     sunshineTotal,
     windAvg,
     maxSunshineHour,
     maxWindHour,
+    maxPrecipHour,
+    bestWalkHour,
+    windyDryExists,
+    windyDryHour,
     h8,
     h13,
+    h19,
   };
 })();
 
@@ -182,7 +216,9 @@ export type MultiseriesQuestion = {
   expected: Expected;
 };
 
-/** The 5 cross-series questions, run identically against both shapes. */
+/** The 11 cross-series questions (5 original + 6 added for the Max-directed "make it
+ * conclusive" expansion, see PLAN.md "Multi-series eval, expanded"), run identically against
+ * both shapes. */
 export function multiseriesQuestions(): MultiseriesQuestion[] {
   const gt = multiseriesGroundTruth;
   return [
@@ -240,6 +276,72 @@ export function multiseriesQuestions(): MultiseriesQuestion[] {
             kind: "number",
             value: gt.sunshineTotal,
             tolerance: 1,
+          },
+          { key: "matches_hourly_sum", kind: "bool", value: true },
+        ],
+      },
+    },
+    {
+      id: "ms-argmax-precip",
+      family: "ms-argmax",
+      promptText: `Which single local hour on ${DATE} has the most rainfall? ${ANSWER_INSTRUCTION} Schema: {"hour": "HH:00"}`,
+      expected: { key: "hour", kind: "hour", value: gt.maxPrecipHour },
+    },
+    {
+      id: "ms-best-walk-hour",
+      family: "ms-compound-argmax",
+      promptText: `Which single local hour on ${DATE} is BEST for a walk: it must be dry (0mm rain), have some sunshine (more than 0 minutes), and be calm (wind under 10 km/h)? If more than one hour qualifies, pick the one with the most sunshine. ${ANSWER_INSTRUCTION} Schema: {"hour": "HH:00"}`,
+      expected: { key: "hour", kind: "hour", value: gt.bestWalkHour },
+    },
+    {
+      id: "ms-windy-dry-hour",
+      family: "ms-existence",
+      promptText: `Is there a local hour on ${DATE} that is both completely dry (0mm rain) AND has wind of at least 14 km/h? If yes, give the earliest such hour; if no, say so. ${ANSWER_INSTRUCTION} Schema: {"exists": true | false, "hour": "HH:00"}`,
+      expected: {
+        kind: "compound",
+        parts: [
+          { key: "exists", kind: "bool", value: gt.windyDryExists },
+          { key: "hour", kind: "hour", value: gt.windyDryHour ?? -1 },
+        ],
+      },
+    },
+    {
+      id: "ms-point-1900",
+      family: "ms-point-cross",
+      promptText: `At 19:00 local time on ${DATE}: is it dry, is there any sunshine, and is it windy (wind at or above 10 km/h)? ${ANSWER_INSTRUCTION} Schema: {"dry": true | false, "sunny": true | false, "windy": true | false}`,
+      expected: {
+        kind: "compound",
+        parts: [
+          { key: "dry", kind: "bool", value: gt.h19.precipMm === 0 },
+          { key: "sunny", kind: "bool", value: gt.h19.sunshineMin > 0 },
+          { key: "windy", kind: "bool", value: gt.h19.windKmh >= 10 },
+        ],
+      },
+    },
+    {
+      id: "ms-wind-avg-check",
+      family: "ms-cross-field",
+      promptText: `What is the average wind speed in km/h for ${DATE}, and does it match averaging the hourly wind series (allow rounding)? ${ANSWER_INSTRUCTION} Schema: {"avg_kmh": <number>, "matches_hourly_avg": true | false}`,
+      expected: {
+        kind: "compound",
+        parts: [
+          { key: "avg_kmh", kind: "number", value: gt.windAvg, tolerance: 0.5 },
+          { key: "matches_hourly_avg", kind: "bool", value: true },
+        ],
+      },
+    },
+    {
+      id: "ms-precip-total-check",
+      family: "ms-cross-field",
+      promptText: `What is the total precipitation in mm for ${DATE}, and does it match summing the hourly precipitation series (allow rounding)? ${ANSWER_INSTRUCTION} Schema: {"total_mm": <number>, "matches_hourly_sum": true | false}`,
+      expected: {
+        kind: "compound",
+        parts: [
+          {
+            key: "total_mm",
+            kind: "number",
+            value: gt.precipTotal,
+            tolerance: 0.05,
           },
           { key: "matches_hourly_sum", kind: "bool", value: true },
         ],

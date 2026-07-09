@@ -1,7 +1,34 @@
 # Handoff
 
 Status as of 2026-07-09: **complete 13-provider sweep + judge slice, all clean (0 API errors),
-verdict confirmed. All open questions from earlier partial runs are resolved.**
+verdict confirmed. All open questions from earlier partial runs are resolved. Follow-up:
+multi-series shape + compact-representation evals run and posted to new issue #101.**
+
+## Follow-up: multi-series Shape A/B + compact representation (see PLAN.md for full detail)
+
+Max was happy with the local-vs-UTC verdict and asked for two things ahead of a new GitHub issue
+covering the full multi-series expansion (sunshine, wind, temperature hourly series):
+
+1. **Created issue [#101](https://github.com/eins78/meteoswiss-llm-tools/issues/101)** —
+   "Implement all hourly time series in getLocalForecast" — references #98/#99/#100, folds in
+   #98's station-hourly-precipitation follow-up, and structures the work so evals run BEFORE
+   implementation (step 1, already done — see the issue comment).
+2. **Made the multi-series Shape A vs B eval conclusive**: expanded from 5 to 11 questions,
+   ran across 5 representative providers (110 calls, 0 errors). **Shape B (unified per-hour
+   objects) wins: 84% vs 76%**, with the advantage concentrated in cross-parameter questions
+   (`ms-compound-argmax`: 20%→60%) and no advantage on single-parameter lookups — exactly the
+   pattern you'd expect if Shape A's cost is index/timestamp alignment across separate arrays.
+3. **Tested whether a compact/sparse 7-day representation rescues tiny-tier comprehension**
+   (the full sweep found ~50% tiny-tier accuracy there). Honest finding after fixing a sample-
+   size confound (expanded 2→5 questions, ran both representations apples-to-apples): only a
+   **marginal improvement (75%→80% tiny-tier)**, not a rescue — the dominant failure (a 4-hour
+   range-sum) persists almost identically on both representations. The original ~50% was mostly
+   an artifact of a thin 2-question sample, not broad long-series collapse.
+4. **Confirmed the `gemini-3.1-pro-preview` max_tokens fix works**: gave it its own config
+   (`max_tokens: 1024`) after tracing its full-sweep truncation issue to a token-budget
+   artifact, not comprehension — 100%/100% on both shapes in this run, 0 truncations.
+5. Posted the full results as a comment on #101. **Actual spend: ~$0.51** (account usage
+   $1.4514 → $1.9574), well under the $1-2 target.
 
 ## Headline verdict (see PLAN.md "Full sweep results, complete" for the full breakdown)
 
@@ -113,8 +140,10 @@ field is confirmed non-functional for OpenRouter.
 ## Not yet done
 
 - PR #100 has not been merged (explicit constraint — do not merge).
-- Acting on the verdict itself (e.g. touching PR #99's schema) — out of scope for this PR, which
-  is evals-only and independent of #99.
-- Optional follow-up, not blocking: raise `max_tokens` for `gemini-3.1-pro-preview` specifically
-  to eliminate its reasoning-leak truncation artifact (see PLAN.md) — cosmetic, doesn't change
-  the verdict.
+- Acting on the verdict itself (e.g. touching PR #99's schema, or implementing #101) — out of
+  scope for this PR, which is evals-only.
+- `gemini-3.1-pro-preview`'s `max_tokens` fix is DONE (was "optional, not blocking" — now
+  implemented and confirmed working, see above).
+- #101's Step 2+ (confirming actual OGD param codes for hourly sunshine/wind, station-hourly
+  precip, schema/implementation) — not started, deliberately: #101 is structured so evals come
+  first (done) and implementation is a separate, later effort.

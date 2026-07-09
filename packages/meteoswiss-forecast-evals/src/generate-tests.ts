@@ -29,6 +29,7 @@ import {
   shapeAFixture,
   shapeBFixture,
 } from "./multiseries.js";
+import { compactSevenDayFixture } from "./compact-representation.js";
 import type { LocalForecastResponse } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -165,6 +166,18 @@ function main(): void {
     for (const q of sevenDayQs)
       tests.push(toTestCase(variant, "sevenday", jsonBlob, q));
   }
+
+  // --- 7-day COMPACT representation (secondary; see PLAN.md "Compact long-series
+  // representation" + src/compact-representation.ts). Same questions, same ground truth,
+  // local-only (this ablates representation density, not time-labeling) -- isolates whether a
+  // sparse hourly array rescues the tiny-tier drop seen on the full-representation fixture. ---
+  const sevenDayCompact = compactSevenDayFixture(sevenDayLocal);
+  const sevenDayCompactBlob = writeFixtureJson(
+    "sevenday-compact-local",
+    sevenDayCompact,
+  );
+  for (const q of sevenDayQs)
+    tests.push(toTestCase("local", "sevenday-compact", sevenDayCompactBlob, q));
 
   // --- Multi-series mock (secondary; shape A vs shape B, see PLAN.md + src/multiseries.ts). ---
   const shapeA = shapeAFixture();

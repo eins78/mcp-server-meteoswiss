@@ -148,6 +148,11 @@ already shows a directional signal — shape B scored 100% vs shape A's 90% — 
 shape is far too small to act on; a full run across more models/tiers is needed before this
 should influence a real design decision.
 
+**Superseded by a conclusive run — see "Multi-series eval, expanded" below.** Max asked for this
+to be made conclusive ahead of a new GitHub issue (#101) covering the full multi-series
+expansion (sunshine, wind, temperature). The mild 5-question signal above held up: Shape B wins,
+84% vs 76% overall across an expanded 11-question set.
+
 ## Open-ended judge slice
 
 4 prompts (cyclist-commute, umbrella-tomorrow, compare-days, station-honesty) in
@@ -625,3 +630,117 @@ on local this run, similar to the partial run's 92.6%. Failures are `wrong:5`, s
 across different models/families per the per-model table above (no single model or question
 family dominates tiny-tier local failures) — read as ordinary model noise at the tiny-tier
 capability floor, not a local-format defect worth acting on before release.
+
+## Multi-series eval, expanded (2026-07-09)
+
+Max was happy with the local-vs-UTC verdict ("cheap, settles the local-time question") and asked
+for two follow-ups ahead of a new GitHub issue (#101) covering the full multi-series expansion
+(sunshine, wind, temperature — generalizing #98/#99's precipitation groundwork): make the
+Shape A vs B comparison conclusive (the original 5-question mock only gave a mild signal), and
+test whether a compact long-series representation rescues the tiny-tier drop seen on the 7-day
+fixture in the full sweep above.
+
+**Expanded `src/multiseries.ts` from 5 to 11 questions.** The original 5 (point-cross,
+argmax-sunshine, argmax-wind, a 3-field compound check, sunshine cross-field) don't stress
+*conditional* multi-series reasoning much. Added 6: `ms-argmax-precip` (single-param argmax, a
+control), `ms-best-walk-hour` (conditional argmax: dry AND sunny AND calm, tie-broken by most
+sunshine — new family `ms-compound-argmax`), `ms-windy-dry-hour` (existence + earliest-match:
+dry AND wind>=14km/h — new family `ms-existence`, deliberately NOT the same hour as the
+single-param wind argmax, to check the model isn't just pattern-matching "the windy hour"),
+`ms-point-1900` (a second point-cross combination, all-different-from-the-original-hour's
+true/false pattern to avoid the model learning a shortcut), and two more cross-field checks
+(`ms-wind-avg-check`, `ms-precip-total-check`, mirroring the existing sunshine one). Every new
+expected value is derived programmatically from `HOURLY_TABLE` via `.filter()`/`.reduce()` in
+`multiseriesGroundTruth`, same "derived not hand-typed" discipline as the rest of this suite —
+verified by hand against the raw table before running anything paid.
+
+**Run: 5 representative providers** (not all 13, to control cost per Max's suggestion) — 1-2 per
+tier: `opus-4.8` + `gemini-3.1-pro-preview` (frontier), `haiku-4.5` (cheap), `gpt-5-nano` +
+`gemini-2.5-flash-lite` (tiny) — × 11 questions × 2 shapes = 110 calls, **0 API errors**.
+
+```
+shape                    n     score
+multiseries-a (parallel) 55     76%  [correct:42]
+multiseries-b (unified)  55     84%  [correct:46]
+```
+
+By family — Shape B's advantage concentrates exactly where cross-parameter combination is
+required, and disappears (or slightly reverses) for single-parameter lookups:
+
+```
+family                       A      B
+ms-compound-argmax          20%    60%   (conditional argmax: 3x better on B)
+ms-cross-field               87%   100%   (does the daily total match the hourly sum)
+ms-argmax (single-param)     93%    87%   (no shape benefit — nothing to cross-reference)
+ms-point-cross                67%    73%
+ms-existence                  80%    80%   (tied)
+```
+
+Per-provider: `opus-4.8` 82%→100% (A→B), `gemini-2.5-flash-lite` 64%→91%, `haiku-4.5` tied 73%,
+`gemini-3.1-pro-preview` 100%/100% (see below), `gpt-5-nano` 64%→55% (the one exception — its
+shape-B misses are wrong-hour guesses of the same kind it makes on shape A, not shape-specific).
+4 of 5 providers score equal-or-better on Shape B.
+
+**`gemini-3.1-pro-preview`'s `max_tokens` fix confirmed working.** Gave this provider its own
+config (`max_tokens: 1024` instead of the shared 256) in `promptfooconfig.yaml` — see that
+file's comment — after tracing its depressed local-fixture score in the full sweep to a
+token-budget truncation artifact, not a comprehension failure. Result: 100%/100% on both shapes
+here, 22 calls, 0 truncations. Fix confirmed, not just theorized.
+
+**Verdict: build the multi-series expansion as Shape B** (`hourly[]` of `{time, precip_mm,
+sunshine_minutes, wind_kmh}` objects), not Shape A (parallel per-parameter arrays). Posted as a
+comment on #101 alongside the full breakdown.
+
+## Compact long-series representation (2026-07-09)
+
+The full sweep found tiny tier scoring ~50% on the 7-day (~168-entry) fixture, vs. 86-100% on
+the shorter primary fixture — raising the question of whether the sheer length/sparsity of the
+array (144 of 168 hourly entries are exactly 0 on this fixture) was the cause, and whether a
+compact representation would help.
+
+**Caution applied before concluding anything**: that ~50% figure came from just 2 questions
+(`sevenday-wettest`, `sevenday-afternoon-shower`) — too thin to draw a "long series breaks tiny
+models" conclusion from. Expanded `sevenDayQuestions()` from 2 to 5 (added `sevenday-thu-hour15`
+a point-num lookup, `sevenday-mon-dry` a day-level bool, `sevenday-tue-total` a day total) so any
+finding would be less confounded by one hard question dominating a tiny sample.
+
+**Candidate compact representation** (`src/compact-representation.ts`): list only hours with
+measurable rain (`value > 0`), with an explanatory note that unlisted hours were 0mm. On this
+fixture that's a 168→24-entry reduction, ~67% smaller by byte size (19,205 -> 6,374 bytes for
+the JSON blob). Same underlying instants/ground truth as the full representation — only the
+hourly array's density changes, isolating that one variable the same way `fixture.ts` isolates
+local-vs-UTC.
+
+**Ran both representations against the same 5 questions, same tiny-tier providers, for a clean
+apples-to-apples comparison** (not the confounded 2-question figure from the full sweep):
+
+```
+representation          tiny-tier score (n=20, 4 models: gpt-5-nano, gemini-2.5-flash-lite,
+                                            ministral-8b-2512, llama-3.3-70b-instruct)
+full (168 entries)             75%  (15/20)
+compact (sparse, 24 entries)   80%  (16/20)
+```
+
+**Honest finding: marginal improvement, not a rescue.** Traced per-model: only
+`ministral-8b-2512` actually improved (80%→100%); the other three tiny models scored
+*identically* on both representations. The dominant recurring failure
+(`sevenday-afternoon-shower`, a 4-hour range-sum) persists almost unchanged across both — 3 of 4
+tiny models undershoot that sum by 0.1-0.3mm on full representation, and by a near-identical
+margin on compact. **This means the tiny-tier weak point on long series is multi-hour summation
+accuracy, not array length/sparsity** — compacting the array doesn't fix a summation error, it
+just gives the model less irrelevant data to scan past on the way to the numbers it still adds
+up wrong. The original ~50% figure was mostly an artifact of a thin 2-question sample where that
+one hard question happened to dominate, not a broad "tiny models can't cope with long series"
+signal — with 5 questions, tiny tier holds up much better (75-80%) on this fixture than the
+partial sample suggested.
+
+**Recommendation for #101**: adopt the compact/sparse representation as a reasonable, low-risk
+size optimization for long-horizon requests (smaller payload, no measured downside, small
+positive signal), but don't expect it alone to solve range-sum accuracy for the smallest models —
+that would need a different intervention (e.g. the tool computing and surfacing period totals
+itself, rather than expecting the model to sum a long hourly series), out of scope for this PR.
+
+**Cost for both follow-ups**: multi-series expansion + compact-representation comparison +
+apples-to-apples full-representation rerun (to fix the confound above) together cost **~$0.51**
+(account usage $1.4514 -> $1.9574, verified via OpenRouter's account API), comfortably within
+the $1-2 target and the $10 ceiling.
