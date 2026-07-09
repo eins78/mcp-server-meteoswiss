@@ -49,6 +49,11 @@
         "digest"
       ],
       "automerge": true
+    },
+    {
+      "description": "Pin js-yaml — read-yaml-file@1.1.0 (via @changesets/cli -> @manypkg/get-packages) calls js-yaml.safeLoad, removed in v4. Renovate PR #104 bumped the <3.14.2 override target to v5 and broke `changeset version`. Keep the override at 3.14.2 (security floor + v3 safeLoad). Do not update.",
+      "matchPackageNames": ["js-yaml"],
+      "enabled": false
     }
   ]
 }
