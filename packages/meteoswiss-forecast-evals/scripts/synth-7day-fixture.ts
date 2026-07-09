@@ -1,4 +1,4 @@
-#!/usr/bin/env -S npx tsx
+#!/usr/bin/env -S node --import tsx
 /**
  * One-off, deterministic generator for fixtures/forecast-8001-7day-local.json.
  *
@@ -20,7 +20,10 @@
  * edge case is already exercised by forecast-8001-2day-local.json; this fixture's job is
  * series *length*, not DST.
  *
- * Run: npx tsx scripts/synth-7day-fixture.ts   (writes fixtures/forecast-8001-7day-local.json)
+ * Run (from the package root, where node_modules/tsx is installed):
+ *   node --import tsx scripts/synth-7day-fixture.ts   (writes fixtures/forecast-8001-7day-local.json)
+ * Uses the package's own pinned `tsx` devDependency via Node's --import, not `npx`, so no
+ * unpinned tsx version can be fetched over the network.
  */
 
 import { writeFileSync } from "node:fs";

@@ -60,10 +60,11 @@ surfaces real signal rather than noise.
 
 ## Pending / follow-ups
 
-- [ ] Full paid sweep (`pnpm run eval` + `eval:judge`, ~13 models, est. $2-4) — separate,
-      explicit step after this PR is reviewed.
-- [ ] Cross-check estimated cost against OpenRouter's own Activity dashboard once the full
-      sweep runs (promptfoo's own cost field is confirmed empty for OpenRouter — see
+- [x] Full paid sweep (`pnpm run eval` + `eval:judge`, 13 models) — ran to completion after
+      this PR was reviewed: 462 scheduled calls, 0 API errors. Full breakdown:
+      `packages/meteoswiss-forecast-evals/docs/results/2026-07-09-forecast-json-comprehension.md`.
+- [x] Cross-checked estimated cost against OpenRouter's own account API (promptfoo's own cost
+      field is confirmed empty for OpenRouter — see
       `packages/meteoswiss-forecast-evals/docs/spec.md`).
-- [ ] Depending on the gate result: either merge #99 as-is, or tweak the local-time format /
-      tool description on #99 (or a stacked follow-up PR) before release.
+- [x] Gate result: **keep local-time labeling — do not switch PR #99 to UTC.** See the results
+      file above for the full evidence and verdict.
