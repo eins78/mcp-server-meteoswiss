@@ -15,13 +15,18 @@ cheap     local     18/18  100.0%      utc   9/18   50.0%
 tiny      local     25/27   92.6%      utc  12/27   44.4%
 ```
 
-Hour-level questions (exact-time/range lookups, argmax-time, the DST-offset trap) collapse to
-~0% under UTC in nearly every tier, **including frontier models** (opus-4.8, sonnet-5 both got
-0/2 on point-num and range-num under UTC). Day-level/boolean questions stay ~100% on both
-variants, every tier. Uniform-across-tiers-including-frontier is this doc's own signal for "format
-defect, not capability gap" — the effect is large and mechanistically exactly what you'd predict
-(hour lookups need a UTC→local conversion models don't reliably do; day-level questions don't
-need it and aren't affected).
+The cleanest, non-confounded evidence: **`point-num`/`range-num`** (exact-value and range-sum
+lookups at a specific local hour) score **100% local / 0% UTC in every tier, frontier included**
+(opus-4.8/sonnet-5 both 2/2 local, 0/2 UTC). `argmax-time` shows the same direction (0% cheap/
+tiny, 50% frontier — still a large drop from 100%). One family, `dst-trap`, is excluded from this
+count: it asks for the UTC offset itself, which is definitionally unanswerable from the UTC
+variant by design (the local JSON prints it literally; the UTC JSON structurally can't) — its 0%
+UTC score is expected, not a comprehension failure, so it's not used as evidence here even though
+it points the same direction. Day-level/boolean questions stay ~100% on both variants, every
+tier. Uniform-across-tiers-including-frontier on the non-rigged families is this doc's own signal
+for "format defect, not capability gap." Local format itself checked clean too: tiny tier's 2
+local misses (92.6%, not 100%) are scattered across different models and question families
+(a `point-bool` misread, a `range-num` off by 0.1mm) — ordinary noise, not a shared defect.
 
 **Cost: ~$0.32 actually spent**, verified via OpenRouter's own `/api/v1/auth/key` and
 `/api/v1/credits` endpoints (not promptfoo's internal cost field, which is confirmed non-
@@ -51,7 +56,12 @@ results"):
    past what the account can afford (gpt-5.2's 402 said "You requested up to 65536 tokens").
    **→ Fixed in this PR**: `promptfooconfig.yaml` now uses
    `passthrough.reasoning.effort: 'minimal'` for these four instead of `enabled: false`. Not yet
-   re-verified live (needs #1 resolved first).
+   re-verified live (needs #1 resolved first). **Caveat**: gpt-5.2's specific error ("requested
+   up to 65536 tokens") looks more like `max_tokens: 256` not being applied to that endpoint at
+   all than a reasoning-budget issue — adding credits will likely make the 402 disappear either
+   way, which would look like this fix worked without confirming it. On rerun, check gpt-5.2's
+   `tokenUsage.completion` in `generated/results.json` actually stays near 256 rather than just
+   checking the call succeeds.
 
 The judge slice (`pnpm run eval:judge`) was **not** run — its judge model (`opus-4.8`) already
 showed the same credit-exhaustion pattern in the programmatic sweep, so running it now would

@@ -338,6 +338,15 @@ bugs in the harness itself:
    these four `passthrough: { reasoning: { effort: 'minimal' } }` instead of `enabled: false` —
    the lowest reasoning budget these endpoints accept, rather than trying to disable reasoning
    entirely. Not yet re-verified against a live call (would need real credits — see #1).
+   **Caveat for the rerun**: gpt-5.2's error text ("requested up to 65536 tokens") looks less
+   like a reasoning-budget problem and more like `max_tokens: 256` not being applied to that
+   endpoint at all — 65536 reads like an unconstrained default ceiling, not a reasoning-effort
+   side effect. Once real credits are added, the 402 will likely disappear regardless (small
+   enough balance no longer being the binding constraint), which would make this *look* fixed
+   without confirming `max_tokens` actually caps gpt-5.2's completion length. On rerun, check
+   gpt-5.2's `tokenUsage.completion` in `generated/results.json` stays near 256, not just that
+   the call succeeds — otherwise this one provider could quietly cost far more per call than the
+   rest of the sweep.
 
 **The headline verdict, from the 7 providers that did complete cleanly** (all 3 tiers
 represented — frontier: opus-4.8, sonnet-5; cheap: haiku-4.5, gemini-3.1-flash-lite; tiny:
@@ -356,21 +365,38 @@ tiny      utc       12/27   44.4%
 
 By question family, the pattern is uniform across every tier — including frontier — which per
 this doc's own reporting rule ("a family missed uniformly across tiers is a format defect, not a
-capability gap") is a clean signal:
+capability gap") is a clean signal. One family needs to be pulled out before drawing that
+conclusion, though: `dst-trap` asks for the UTC offset at a specific local hour (`+02:00`), which
+the local-variant JSON prints literally and the UTC-variant JSON structurally omits — the prompt
+also forbids outside knowledge. That question is **definitionally unanswerable from the UTC
+variant by design** (see "Question set" above), so its 0% UTC score is expected and shouldn't be
+read as a comprehension failure on its own. Excluding it:
 
 - **Day-level / boolean-only questions** (`argmax-day`, `availability`, `cross-field`,
   `range-bool`) stay at or near 100% on **both** variants, every tier.
-- **Hour-level questions** (`point-num`, `range-num`, `argmax-time`, `dst-trap`) collapse to
-  **0%** on the UTC variant in nearly every tier x family cell — including `frontier/opus-4.8`
-  and `frontier/sonnet-5` getting `0/2` on `point-num` and `range-num` under UTC, despite 100% on
-  the same questions under local time. This is not a weak-model problem; even the strongest
-  models tested got the UTC→local hour conversion wrong essentially every time it was needed for
-  a precise lookup.
+- **`point-num` and `range-num`** (exact-value and range-sum lookups at a specific local hour) —
+  the cleanest, non-rigged evidence — score **100% local / 0% UTC in every single tier**,
+  frontier included (`opus-4.8`/`sonnet-5` both `2/2` local, `0/2` UTC). These questions are
+  fully answerable from either variant's JSON in principle; the only difference is whether the
+  model has to convert a UTC instant to the Europe/Zurich wall-clock hour before doing the
+  lookup, and it essentially never gets that conversion right.
+- **`argmax-time`** (which local hour had the most rain) shows the same direction, though less
+  absolute: `0/2` cheap and `0/3` tiny, but frontier only drops to `1/2` (50%) rather than `0/2`
+  — still a large regression from its 100% local score, just not as total as point-num/range-num.
+- `dst-trap`, once understood as structurally rigged rather than a capability signal, is
+  consistent with (not separate evidence for) the same story: local time survives because the
+  offset is printed; UTC can't, by construction.
 
-**Verdict: keep local-time labeling (PR #99 as shipped). Do not switch to UTC.** The effect is
-large (100%→50-61% aggregate, 100%→0% on hour-level lookups specifically), consistent across all
-three tiers including frontier, and concentrated exactly where the mechanism predicts (hour-level
-lookups need a UTC→local conversion step; day-level/boolean questions don't and are unaffected).
+Two distinct mechanisms are both at work here, worth keeping separate: local time removes an
+error-prone UTC→local conversion step from every hour-level *value* lookup (point-num,
+range-num, argmax-time), and separately makes the UTC offset itself directly readable rather
+than requiring calendar/DST knowledge the prompt explicitly disallows (dst-trap).
+
+**Verdict: keep local-time labeling (PR #99 as shipped). Do not switch to UTC.** The
+core evidence — point-num and range-num alone, ignoring the structurally-rigged dst-trap
+question entirely — already shows the effect at its cleanest: 100% local vs. 0% UTC, in **every
+tier including frontier**. This is not a weak-model problem; even the strongest models tested got
+the UTC→local hour conversion wrong essentially every time it was needed for a precise lookup.
 This is drawn from 7 of 13 configured providers (missing: gpt-5.2, gemini-3.1-pro, gpt-5-mini,
 gpt-5-nano, mistral-large, mistral-medium-3.1 — all excluded by the account/config issues above,
 not by the format being tested) — a full 13-provider rerun after Max adds credits would firm up
@@ -379,3 +405,10 @@ this large and this consistent across independent tiers. The judge slice (`pnpm 
 was not run — it uses `opus-4.8` as judge, which already showed the same credit-exhaustion
 pattern above, so running it now would mostly fail for the same reason; rerun once credits are
 added.
+
+**Local-format cleanliness check** (the suite's secondary purpose — catching defects in the
+*local* format before release, not just the UTC comparison): tiny tier scored 92.6% (25/27) on
+local, not 100%. The 2 misses are scattered, not a pattern — `ministral-8b` missed one
+`point-bool` question (misread a boolean), `llama-3.3-70b` missed one `range-num` sum by 0.1mm
+(`0.8` vs expected `0.9`) — different models, different families, no shared cause. Read as
+ordinary model noise, not a local-format defect worth acting on.
