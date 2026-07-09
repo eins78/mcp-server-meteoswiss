@@ -669,17 +669,24 @@ required, and disappears (or slightly reverses) for single-parameter lookups:
 
 ```
 family                       A      B
-ms-compound-argmax          20%    60%   (conditional argmax: 3x better on B)
+ms-compound-argmax          20%    60%   (conditional argmax: 1/5 -> 3/5 on B; n=5 per shape, small)
 ms-cross-field               87%   100%   (does the daily total match the hourly sum)
 ms-argmax (single-param)     93%    87%   (no shape benefit — nothing to cross-reference)
 ms-point-cross                67%    73%
 ms-existence                  80%    80%   (tied)
 ```
 
-Per-provider: `opus-4.8` 82%→100% (A→B), `gemini-2.5-flash-lite` 64%→91%, `haiku-4.5` tied 73%,
-`gemini-3.1-pro-preview` 100%/100% (see below), `gpt-5-nano` 64%→55% (the one exception — its
-shape-B misses are wrong-hour guesses of the same kind it makes on shape A, not shape-specific).
-4 of 5 providers score equal-or-better on Shape B.
+The overall 84% vs 76% margin is 46/55 vs 42/55 — a 4-question swing, not a landslide; treat "B
+wins" as directional, not statistically overwhelming, and read the family table as *where the
+mechanism shows up* (cross-parameter questions) rather than as independently conclusive per-cell.
+
+Per-provider: `opus-4.8` 82%→100% (A→B), `gemini-2.5-flash-lite` 64%→91% (7/11→10/11), `haiku-4.5`
+tied 73%, `gemini-3.1-pro-preview` 100%/100% (see below), `gpt-5-nano` 64%→55% (7/11→6/11, the one
+exception — its shape-B misses are wrong-hour guesses of the same kind it makes on shape A, not
+shape-specific). 4 of 5 providers score equal-or-better on Shape B, but **the two tiny-tier models
+split**: `gemini-2.5-flash-lite` strongly prefers B (+3 questions), `gpt-5-nano` slightly prefers A
+(-1 question). Net favors B, but this is worth stating plainly rather than folding into "4 of 5" —
+the tiny tier is the one the project cares most about, and it isn't unanimous.
 
 **`gemini-3.1-pro-preview`'s `max_tokens` fix confirmed working.** Gave this provider its own
 config (`max_tokens: 1024` instead of the shared 256) in `promptfooconfig.yaml` — see that
@@ -687,9 +694,15 @@ file's comment — after tracing its depressed local-fixture score in the full s
 token-budget truncation artifact, not a comprehension failure. Result: 100%/100% on both shapes
 here, 22 calls, 0 truncations. Fix confirmed, not just theorized.
 
-**Verdict: build the multi-series expansion as Shape B** (`hourly[]` of `{time, precip_mm,
-sunshine_minutes, wind_kmh}` objects), not Shape A (parallel per-parameter arrays). Posted as a
-comment on #101 alongside the full breakdown.
+**Recommendation: build the multi-series expansion as Shape B** (`hourly[]` of `{time, precip_mm,
+sunshine_minutes, wind_kmh}` objects), not Shape A (parallel per-parameter arrays) — on balance,
+not as an unqualified landslide. It's the low-regret pick: net-better-or-tied for 4 of 5 providers,
+no model dramatically worse, a mechanistically sensible story (Shape A's cost is index/timestamp
+alignment across separate arrays, which is exactly where its disadvantage concentrates), and it's
+the cleaner shape to extend to more series later. But the tiny tier split between the two shapes
+rather than moving in lockstep, so call this "B, with consistent theory support," not "conclusively
+B" — the n is real evidence, not proof beyond a reasonable doubt. Posted as a comment on #101
+alongside the full breakdown.
 
 ## Compact long-series representation (2026-07-09)
 
@@ -726,8 +739,14 @@ compact (sparse, 24 entries)   80%  (16/20)
 *identically* on both representations. The dominant recurring failure
 (`sevenday-afternoon-shower`, a 4-hour range-sum) persists almost unchanged across both — 3 of 4
 tiny models undershoot that sum by 0.1-0.3mm on full representation, and by a near-identical
-margin on compact. **This means the tiny-tier weak point on long series is multi-hour summation
-accuracy, not array length/sparsity** — compacting the array doesn't fix a summation error, it
+margin on compact. Looking at the actual wrong answers: the common miss is 1.2mm against an
+expected 1.3mm (0.2+0.6+0.4+0.1 over the 14:00-17:00 range) — dropping the 17:00 endpoint rather
+than a general arithmetic error, so this may be partly inclusive/exclusive range-boundary handling
+rather than pure summation accuracy. Either framing supports the same conclusion below (constant
+across both representations, so it doesn't change the full-vs-compact comparison), but if #101
+acts on "why tiny models miss this," the boundary-handling angle is worth checking too, not just
+raw addition. **This means the tiny-tier weak point on long series is (at least partly) multi-hour
+range/summation accuracy, not array length/sparsity** — compacting the array doesn't fix that, it
 just gives the model less irrelevant data to scan past on the way to the numbers it still adds
 up wrong. The original ~50% figure was mostly an artifact of a thin 2-question sample where that
 one hard question happened to dominate, not a broad "tiny models can't cope with long series"

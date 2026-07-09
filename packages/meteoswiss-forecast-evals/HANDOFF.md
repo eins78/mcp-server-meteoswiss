@@ -13,11 +13,14 @@ covering the full multi-series expansion (sunshine, wind, temperature hourly ser
    "Implement all hourly time series in getLocalForecast" — references #98/#99/#100, folds in
    #98's station-hourly-precipitation follow-up, and structures the work so evals run BEFORE
    implementation (step 1, already done — see the issue comment).
-2. **Made the multi-series Shape A vs B eval conclusive**: expanded from 5 to 11 questions,
+2. **Made the multi-series Shape A vs B eval more rigorous**: expanded from 5 to 11 questions,
    ran across 5 representative providers (110 calls, 0 errors). **Shape B (unified per-hour
-   objects) wins: 84% vs 76%**, with the advantage concentrated in cross-parameter questions
-   (`ms-compound-argmax`: 20%→60%) and no advantage on single-parameter lookups — exactly the
-   pattern you'd expect if Shape A's cost is index/timestamp alignment across separate arrays.
+   objects) wins on balance: 84% vs 76%** (46/55 vs 42/55), with the advantage concentrated in
+   cross-parameter questions (`ms-compound-argmax`: 1/5→3/5, small n) and no advantage on
+   single-parameter lookups — the pattern you'd expect if Shape A's cost is index/timestamp
+   alignment across separate arrays. Not unanimous, though: the two tiny-tier models split
+   (`gemini-2.5-flash-lite` +3 for B, `gpt-5-nano` -1 for B) — net favors B, but call it
+   "B, with consistent theory support," not "conclusively B."
 3. **Tested whether a compact/sparse 7-day representation rescues tiny-tier comprehension**
    (the full sweep found ~50% tiny-tier accuracy there). Honest finding after fixing a sample-
    size confound (expanded 2→5 questions, ran both representations apples-to-apples): only a
