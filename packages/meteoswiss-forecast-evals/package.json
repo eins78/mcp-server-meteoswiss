@@ -20,7 +20,7 @@
     "eval": "pnpm run generate && bash scripts/run.sh promptfooconfig.yaml -o generated/results.json",
     "eval:judge": "pnpm run generate && bash scripts/run.sh promptfooconfig.judge.yaml -o generated/results-judge.json",
     "summarize": "tsx src/summarize.ts",
-    "view": "npx promptfoo@0.121.18 view",
+    "view": "promptfoo view",
     "lint": "pnpm run lint:ts && pnpm run lint:eslint",
     "lint:ts": "tsc --noEmit",
     "lint:eslint": "eslint '{src,scripts}/**/*.ts'",
@@ -39,6 +39,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.4.0",
     "prettier": "^3.8.1",
+    "promptfoo": "0.121.18",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }

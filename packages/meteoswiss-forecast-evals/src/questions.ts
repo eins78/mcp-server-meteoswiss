@@ -41,8 +41,7 @@ export type LeafExpected =
   | { key: string; kind: "unavailable" };
 
 export type Expected =
-  | LeafExpected
-  | { kind: "compound"; parts: LeafExpected[] };
+  LeafExpected | { kind: "compound"; parts: LeafExpected[] };
 
 export type GeneratedQuestion = {
   id: string;

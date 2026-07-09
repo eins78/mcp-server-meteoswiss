@@ -80,20 +80,33 @@ Full writeup: PLAN.md "Q-A".
 
 ## PR Question B — promptfoo dependency bloat on `pnpm install`
 
-**Fixed.** `promptfoo` was never imported as a library — only invoked via already-pinned `npx
-promptfoo@0.121.18 ...` in `scripts/run.sh` and the `view` script. Removed the
-`"dependencies": { "promptfoo": "^0.121.18" }` entry from `package.json` entirely; regenerated
-the root `pnpm-lock.yaml` (confirmed `promptfoo` no longer appears anywhere in it). `optionalDependencies`
-and workspace-install exclusion were considered and rejected (both still add it to the lockfile
-in some form). Full writeup: PLAN.md "Q-B".
+**Revised after Max's review.** The first pass (running promptfoo via unpinned `npx
+promptfoo@0.121.18`) was correctly flagged as not reproducible — it only pins the top-level
+version, not promptfoo's own transitive tree (no integrity hashes, sub-deps resolve fresh each
+time). Investigated every pnpm mechanism that could keep it a normal workspace member with a
+real lockfile-pinned dependency, installed only on request: `optionalDependencies` (installed by
+default on any compatible platform — not opt-in), `--filter` (a per-invocation flag, not
+persistent), `shared-workspace-lockfile: false` (confirmed via a pnpm maintainer on GitHub —
+all-or-nothing for the *whole* workspace, not settable per-package), `dependenciesMeta` (doesn't
+cover this), a `.pnpmfile.cjs` conditional-strip hook (hacky, breaks frozen-lockfile installs).
+**None work.** The one approach that gives both real pinning and zero root-install footprint:
+this package is now excluded from the root workspace glob and has its own nested
+`pnpm-workspace.yaml` (`packages: ["."]`), making it an independent pnpm project with its own
+real, integrity-hashed `pnpm-lock.yaml` (`promptfoo` back in `devDependencies`, exact-pinned).
+Root `pnpm install` no longer sees this package at all — install it with
+`cd packages/meteoswiss-forecast-evals && pnpm install`. Trade-off: no longer covered by
+`pnpm -r lint/build/test` at the repo root (verify standalone instead) — acceptable since it was
+never in CI regardless. Full investigation + verification: PLAN.md "Q-B (revisited)".
 
 ## To resume the full sweep (after Max adds credits + optionally toggles the Mistral setting)
 
 ```bash
 cd packages/meteoswiss-forecast-evals
-pnpm run eval          # full programmatic sweep — should now complete cleanly for all 13
-pnpm run eval:judge    # judge slice
-pnpm run summarize     # prints the gate table from generated/results.json
+pnpm install           # standalone install (this package is no longer a workspace member —
+                        # only needed once, or after promptfoo/deps change)
+pnpm run eval           # full programmatic sweep — should now complete cleanly for all 13
+pnpm run eval:judge     # judge slice
+pnpm run summarize      # prints the gate table from generated/results.json
 ```
 
 Cross-check real spend against `curl -s https://openrouter.ai/api/v1/credits -H "Authorization:

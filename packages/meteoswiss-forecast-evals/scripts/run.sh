@@ -2,6 +2,12 @@
 # Run a promptfoo eval config, reading OPENROUTER_API_KEY from the macOS keychain at runtime.
 # The key is NEVER hardcoded, printed, or committed — see scripts/keychain-openrouter.sh.
 #
+# Uses the `promptfoo` binary from this package's OWN node_modules/.bin (a real, lockfile-
+# pinned devDependency — see package.json and PLAN.md "Q-B") rather than `npx promptfoo@X`,
+# which only pins the top-level version, not promptfoo's own transitive tree. `pnpm run`
+# puts node_modules/.bin on PATH for the whole script chain, so plain `promptfoo` here
+# resolves to that pinned install — run `pnpm install` in this directory first.
+#
 # Usage: scripts/run.sh <promptfooconfig.yaml> [extra promptfoo eval args...]
 # Called by the package.json scripts (dryrun/smoke/eval/eval:judge) — see README.md for the
 # full list and what each costs.
@@ -26,4 +32,4 @@ if [ "${OPENROUTER_API_KEY:-}" = "" ] && [[ "$*" != *"--filter-providers echo"* 
   export OPENROUTER_API_KEY
 fi
 
-npx --yes promptfoo@0.121.18 eval -c "$CONFIG" "$@"
+promptfoo eval -c "$CONFIG" "$@"

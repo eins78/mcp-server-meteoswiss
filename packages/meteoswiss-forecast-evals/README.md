@@ -9,6 +9,13 @@ for the full design and rationale. This is a standalone package: it does **not**
 **Not run in CI.** This is a manual, on-demand suite — run it when you're about to change the
 forecast JSON shape, or periodically to catch regressions in legibility as models change.
 
+**Not a pnpm workspace member.** This package is deliberately excluded from the root
+`pnpm-workspace.yaml` (`!packages/meteoswiss-forecast-evals`) and has its **own**
+`pnpm-workspace.yaml` + `pnpm-lock.yaml`, making it an independent, self-contained npm project
+nested inside the monorepo. See "Why this package isn't a workspace member" below for why, and
+run `pnpm install` **inside this directory**, not from the repo root — root `pnpm install`
+never touches it.
+
 ## The headline question
 
 Does labeling hourly timestamps in **local time with a UTC offset** (what PR #99 ships,
@@ -20,7 +27,8 @@ hourly-precipitation feature to PROD.
 ## Quick start
 
 ```bash
-pnpm install                 # from the repo root (or here — it's a normal pnpm workspace member)
+cd packages/meteoswiss-forecast-evals   # this package is NOT installed by a root `pnpm install`
+pnpm install                  # standalone install — own pnpm-lock.yaml, own node_modules
 pnpm run generate            # builds generated/tests.json + generated/judge-tests.json from fixtures/
 pnpm test                    # offline unit tests (ground truth + scorer), no network, no cost
 pnpm run dryrun               # promptfoo's built-in `echo` provider — validates the whole
@@ -88,6 +96,11 @@ scripts/
   run.sh                       wraps `promptfoo eval`, wiring in the key
 promptfooconfig.yaml           programmatic (lookup) slice — the primary eval
 promptfooconfig.judge.yaml     open-ended, Opus-judged slice — secondary quality check
+pnpm-workspace.yaml            makes this directory its OWN pnpm workspace root, independent
+                              of the repo root's — see "Why this package isn't a workspace
+                              member" below
+pnpm-lock.yaml                  this package's own lockfile, incl. promptfoo + its full
+                              transitive tree with real integrity hashes
 ```
 
 Every `.ts` file in `src/` and `scripts/` runs directly with no build step — including
@@ -121,18 +134,37 @@ faith from promptfoo's docs. Net effect: `scorer.ts` and `scoring-core.ts` run w
 step**, matching the rest of this monorepo's `tsx`-first convention, instead of needing to be
 hand-maintained in two module formats.
 
-## Why `promptfoo` isn't a declared dependency
+## Why this package isn't a workspace member
 
-`promptfoo` (the CLI) is large — pulling it in as a `dependency`/`devDependency` here would mean
-every `pnpm install` at the repo root installs it for every contributor, even ones who never
-touch this package, since pnpm workspaces install the full dependency graph of every member by
-default. This package never *imports* promptfoo as a library — every use is a CLI invocation
-(`scripts/run.sh`, the `view` script), already pinned to an exact version
-(`npx promptfoo@0.121.18 ...` / `npx --yes promptfoo@0.121.18`). So it's invoked via `npx`
-instead of declared as a dependency: `npx` fetches-and-caches the package outside the
-pnpm-managed dependency tree, giving this package a normal `pnpm-lock.yaml` entry (just its own
-small TS/lint/test devDependencies) while still pinning the exact promptfoo version everyone
-gets. First run per machine pays a one-time `npx` download; every run after that is cached.
-`optionalDependencies` and workspace-install exclusion were considered and rejected — both still
-add promptfoo to the lockfile/dependency graph in some form, which is exactly the bloat this
-avoids.
+`promptfoo` (the CLI) is large — pulling it in as a real `devDependency` of a normal workspace
+member would mean every `pnpm install` at the repo root installs its full transitive tree for
+every contributor, even ones who never touch this package, since pnpm workspaces install the
+full dependency graph of every workspace member by default.
+
+An earlier version of this fix ran promptfoo via `npx promptfoo@0.121.18` instead of declaring
+it — zero footprint on the root install, but only the top-level version was pinned. `npx`
+resolves promptfoo's own dependency tree fresh at run time (cached, but with no integrity hashes
+and no locked sub-dependency versions), which is not the reproducibility a real lockfile entry
+gives you. Max flagged this correctly in review.
+
+The actual fix: this package is **excluded from the root workspace glob**
+(`pnpm-workspace.yaml`: `"!packages/meteoswiss-forecast-evals"`) and has its **own**
+`pnpm-workspace.yaml` (`packages: ["."]`), which makes pnpm treat it as an independent,
+self-contained project — its own `pnpm-lock.yaml`, fully integrity-hashed, including
+`promptfoo` and its complete transitive tree, resolved and installed only when you run
+`pnpm install` **inside this directory**. Root `pnpm install` never sees it at all.
+
+Other options were investigated and rejected — see `PLAN.md` "Q-B (revisited)" for the full
+writeup with sources, but in short: `optionalDependencies` are installed by default in pnpm on
+any compatible platform (skipping them entirely requires a workspace-wide
+`ignoredOptionalDependencies` denylist, which isn't "opt-in when needed"); `--filter` exclusion
+is a per-invocation flag, not a persistent property of a package, so a plain `pnpm install` at
+the root would still install it; and `shared-workspace-lockfile: false` is an all-or-nothing
+setting for the *entire* workspace (confirmed by a pnpm maintainer) — there's no way to give just
+one package its own lockfile while the rest of the monorepo keeps sharing the root one, short of
+what this package now does: leaving the workspace and defining its own, nested one.
+
+**Trade-off**: this package is no longer covered by `pnpm -r lint` / `pnpm -r build` /
+`pnpm -r test` at the repo root — verify it standalone (`cd` in, then the usual `pnpm run lint`
+/ `build` / `test`). Acceptable here since it was never wired into CI anyway (this is a manual,
+on-demand suite — see the top of this README).

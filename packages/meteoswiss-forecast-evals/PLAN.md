@@ -272,7 +272,12 @@ them for real, and `promptfooconfig.yaml`'s `tests: file://generated/tests.json`
 `.ts` file in this monorepo. This matches the workspace's existing `tsx`-first convention instead
 of adding a second, CJS/ESM-mixed convention specific to this one package.
 
-## Q-B: why `promptfoo` isn't a declared dependency
+## Q-B: why `promptfoo` isn't a declared dependency (superseded — see "Q-B (revisited)" below)
+
+**Superseded 2026-07-09**: the `npx` approach below was correctly flagged in review as
+insufficiently reproducible (pins the top-level version only, not promptfoo's own transitive
+tree — no integrity hashes, sub-deps resolve fresh at run time). Kept here for the audit trail;
+the actual current implementation is in "Q-B (revisited)".
 
 Also raised in PR review: `promptfoo` is a large package (the CLI plus its own sizeable
 dependency tree). Declaring it as a `dependency`/`devDependency` of this package would mean
@@ -299,6 +304,71 @@ the `"view": "npx promptfoo@0.121.18 view"` script. So the `"dependencies": { "p
 regenerating `pnpm-lock.yaml` at the repo root (`promptfoo` no longer appears anywhere in it —
 checked with `grep -c promptfoo pnpm-lock.yaml` → `0`) and by re-running `pnpm run dryrun` from a
 clean state to confirm the suite still works end-to-end without it declared.
+
+## Q-B (revisited): making promptfoo lockfile-pinned without workspace-wide bloat
+
+Max's review objection to the `npx` approach above was correct: `npx promptfoo@0.121.18` only
+pins the *top-level* version tag. It resolves promptfoo's own dependency tree fresh at run time
+on every machine — cached by npm afterward, but with no integrity hashes and no locked
+sub-dependency versions. That's not what "pinned" means for the rest of this monorepo, where
+every other dependency is resolved through a real, integrity-hashed `pnpm-lock.yaml` entry. The
+task: find a way to keep `promptfoo` as a real, lockfile-pinned dependency, without that pulling
+its large transitive tree into every contributor's default `pnpm install` at the repo root.
+
+**Investigated, with sources, before implementing anything:**
+
+| Option | Finding | Verdict |
+|---|---|---|
+| `optionalDependencies` | pnpm installs `optionalDependencies` by default on any platform-compatible machine — "optional" means "don't fail the install if this can't build/resolve for the current OS/arch," not "skip unless requested." The only way to suppress one is a workspace-wide `ignoredOptionalDependencies` denylist (naming the package explicitly in the root config) — which would block it for *everyone*, including someone deliberately trying to use it, defeating "opt-in when actively used." | Rejected — confirmed, not a fit. |
+| `pnpm install --filter` / workspace-glob exclusion at invocation time | `--filter` is a per-invocation CLI flag, not a persistent property of a workspace member. A plain `pnpm install` at the repo root (no flag) still installs every package matched by `pnpm-workspace.yaml`'s `packages` glob. There is no "always skip this member on a default install, but let it opt in" workspace setting. | Rejected — confirmed, not a fit. |
+| `shared-workspace-lockfile: false` (per-package independent lockfile, rest of the workspace unaffected) | This looked promising on first read — it's exactly "give this one package its own lockfile." But it's an **all-or-nothing setting for the entire workspace**, not a per-package toggle. Direct quote from pnpm maintainer zkochan (GitHub Discussion [pnpm/pnpm#4632](https://github.com/orgs/pnpm/discussions/4632)): "You can try to set the shared-workspace-lockfile setting to false. But it will also create separate node_modules for every project." Flipping it would give *every* package in this monorepo (`meteoswiss-mcp`, `meteoswiss-skills` too) its own isolated lockfile — a much bigger, disruptive change nobody asked for, losing the benefits of a single shared lockfile for the packages that actually want one. | Rejected — confirmed, not a fit, but this is what pointed at the real answer (see below). |
+| `dependenciesMeta` (`injected`, etc.) | Covers workspace-package hard-linking (a local package's build output copied instead of symlinked) and similar concerns — nothing in it toggles "install this dependency only when the package is explicitly targeted." | Rejected — not applicable. |
+| `.pnpmfile.cjs` hook conditionally stripping the dependency at install time | Technically possible (a `readPackage` hook could delete `promptfoo` from `package.json` unless an env var is set), but a pnpm lockfile reflects one resolved dependency graph — it can't conditionally include/exclude an entry based on an env var at install time without breaking `--frozen-lockfile` / CI-style installs. Adds monorepo-wide install-hook complexity for one package's convenience. | Rejected — hacky, not genuinely clean. |
+| **Exclude the package from the workspace glob entirely; give it its own nested `pnpm-workspace.yaml` + `pnpm-lock.yaml`** | **Chosen — verified working.** pnpm resolves the *nearest* `pnpm-workspace.yaml` walking up from the current directory. Placing a minimal one (`packages: ["."]`) directly inside `packages/meteoswiss-forecast-evals/` makes pnpm treat that directory as its own, fully independent workspace root the moment you `cd` into it — a real, separate `pnpm-lock.yaml` gets created there with full integrity hashes for `promptfoo` and its entire transitive tree, and the root workspace (with `!packages/meteoswiss-forecast-evals` added to its `packages` glob) never sees or installs any of it. | **Implemented.** |
+
+**Conclusion confirmed empirically, not assumed:** there is no pnpm mechanism to keep a package
+as a normal workspace member while making its declared dependencies install-on-request rather
+than install-by-default. The nested-workspace approach is not a fallback — it's the only option
+that gives both real lockfile pinning *and* zero footprint on the root install.
+
+**What changed:**
+- `pnpm-workspace.yaml` (repo root): `packages` now excludes this directory
+  (`"!packages/meteoswiss-forecast-evals"`), with a comment pointing here.
+- `packages/meteoswiss-forecast-evals/pnpm-workspace.yaml` (new): `packages: ["."]` — makes this
+  its own workspace root.
+- `packages/meteoswiss-forecast-evals/pnpm-lock.yaml` (new, committed): a real, independent
+  lockfile — `promptfoo@0.121.18` resolves with a full `sha512` integrity hash and its complete
+  transitive dependency tree locked, same as any other dependency in this monorepo.
+- `package.json`: `promptfoo` moved back into `devDependencies` (exact-pinned: `"0.121.18"`, not
+  `^0.121.18`, matching how it was already pinned everywhere else in this suite).
+- `scripts/run.sh` / the `"view"` script: `npx --yes promptfoo@0.121.18 ...` → plain
+  `promptfoo ...`. `pnpm run <script>` puts this package's own `node_modules/.bin` on `PATH` for
+  the whole script chain (including the nested `bash scripts/run.sh` call), so this resolves to
+  the locally-installed, lockfile-pinned binary — no network fetch at run time at all once
+  installed once, unlike the `npx` approach which still checks/fetches from the registry.
+
+**Trade-off, now explicit** (Max already anticipated and accepted this): this package is no
+longer covered by `pnpm -r lint` / `pnpm -r build` / `pnpm -r test` run from the repo root —
+confirmed (`pnpm -r run lint` now reports "Scope: 2 of 3 workspace projects"). It must be
+verified standalone: `cd packages/meteoswiss-forecast-evals && pnpm install && pnpm run lint &&
+pnpm run build && pnpm test`. Acceptable since this suite was never wired into CI regardless (see
+README "Not run in CI") — it was always a manually-run, on-demand tool, just now also manually
+*installed*.
+
+**Verification performed:**
+1. `pnpm install` at the repo root: confirmed the eval package's importer entry is fully gone
+   from the root `pnpm-lock.yaml` (previously present with just its TS/lint devDependencies;
+   now absent entirely — `grep -n "meteoswiss-forecast-evals" pnpm-lock.yaml` → no matches) and
+   `promptfoo` still doesn't appear anywhere in it (`grep -c promptfoo pnpm-lock.yaml` → `0`).
+2. `cd packages/meteoswiss-forecast-evals && pnpm install`: created a fresh, independent
+   `pnpm-lock.yaml` in this directory (confirmed via `ls`), with `promptfoo@0.121.18` present
+   with a real integrity hash and full transitive tree (`grep -A3 "^  promptfoo@" pnpm-lock.yaml`).
+3. `pnpm run lint` / `build` / `test` / `dryrun` all pass standalone from inside this directory
+   (`dryrun` confirmed the locally-installed `promptfoo` binary resolves correctly via
+   `pnpm run`'s `PATH` injection — no `npx`, no network fetch).
+4. `pnpm -r run lint` / `pnpm -r run build` from the repo root confirmed scope is now "2 of 3
+   workspace projects" (`meteoswiss-mcp`, `meteoswiss-skills` only) — the eval package is fully
+   excluded, as intended.
 
 ## Full sweep results (2026-07-09)
 
