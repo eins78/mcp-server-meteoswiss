@@ -98,7 +98,10 @@ promptfooconfig.yaml           programmatic (lookup) slice — the primary eval
 promptfooconfig.judge.yaml     open-ended, Opus-judged slice — secondary quality check
 pnpm-workspace.yaml            makes this directory its OWN pnpm workspace root, independent
                               of the repo root's — see "Why this package isn't a workspace
-                              member" below
+                              member" below. Also allowlists promptfoo's native build scripts
+                              (esbuild, sharp, etc.) via `onlyBuiltDependencies` — pnpm blocks
+                              unapproved build scripts by default, and the previous `npx`-based
+                              run had no such gating
 pnpm-lock.yaml                  this package's own lockfile, incl. promptfoo + its full
                               transitive tree with real integrity hashes
 ```

@@ -369,6 +369,20 @@ README "Not run in CI") — it was always a manually-run, on-demand tool, just n
 4. `pnpm -r run lint` / `pnpm -r run build` from the repo root confirmed scope is now "2 of 3
    workspace projects" (`meteoswiss-mcp`, `meteoswiss-skills` only) — the eval package is fully
    excluded, as intended.
+5. **Build-script parity with the run that actually produced the verdict.** `npx` (the mechanism
+   used for the sweep in "Full sweep results" below) has no build-script gating, so promptfoo's
+   native postinstall scripts (esbuild, sharp, onnxruntime-node, @swc/core, protobufjs,
+   @playwright/browser-chromium) ran unconditionally. pnpm blocks unapproved build scripts by
+   default — the first standalone `pnpm install` silently skipped all six ("Ignored build
+   scripts", confirmed by reproducing it), which would have left a *different* promptfoo install
+   than the one already validated by the paid sweep. Fixed by adding an `onlyBuiltDependencies`
+   allowlist naming those six packages to
+   `packages/meteoswiss-forecast-evals/pnpm-workspace.yaml` (scoped to this nested workspace only
+   — doesn't touch the root's own `onlyBuiltDependencies: [esbuild]`) and re-running `pnpm
+   install`, confirmed clean (no "Ignored build scripts" warning, all six postinstall scripts ran
+   to completion). `pnpm-lock.yaml` was unaffected (build-script approval doesn't change dependency
+   resolution) — `git status` after showed only `pnpm-workspace.yaml` modified. Re-verified
+   `lint`/`test`/`dryrun` standalone afterward, still green.
 
 ## Full sweep results (2026-07-09)
 
