@@ -1,4 +1,11 @@
 packages:
   - "packages/*"
+  # Deliberately NOT a workspace member — see packages/meteoswiss-forecast-evals/docs/spec.md "Q-B"
+  # for why: it needs promptfoo as a real, lockfile-pinned dependency, but pnpm has no
+  # mechanism to keep a package IN the workspace while excluding its deps from the default
+  # root `pnpm install`. Isolating it as a standalone npm project (own pnpm-lock.yaml, `cd`
+  # + `pnpm install` before use) is the only way to get both. Run it standalone:
+  #   cd packages/meteoswiss-forecast-evals && pnpm install && pnpm run eval
+  - "!packages/meteoswiss-forecast-evals"
 onlyBuiltDependencies:
   - esbuild

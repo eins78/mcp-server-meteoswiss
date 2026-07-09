@@ -1,0 +1,46 @@
+{
+  "name": "meteoswiss-forecast-evals",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Eval suite measuring how well LLMs understand meteoswissLocalForecast JSON, especially the hourly precipitation time-series (PR #99)",
+  "author": "Max Albrecht <1@178.is>",
+  "license": "CC0-1.0",
+  "type": "module",
+  "homepage": "https://github.com/eins78/meteoswiss-llm-tools",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eins78/meteoswiss-llm-tools.git",
+    "directory": "packages/meteoswiss-forecast-evals"
+  },
+  "scripts": {
+    "generate": "tsx src/generate-tests.ts",
+    "test": "pnpm run generate && node --import tsx --test src/*.test.ts",
+    "dryrun": "pnpm run generate && bash scripts/run.sh promptfooconfig.yaml --no-cache -o generated/results-dryrun.json --filter-providers echo",
+    "smoke": "pnpm run generate && bash scripts/run.sh promptfooconfig.yaml -o generated/results-smoke.json --filter-providers 'gemini-2.5-flash-lite'",
+    "eval": "pnpm run generate && bash scripts/run.sh promptfooconfig.yaml -o generated/results.json",
+    "eval:judge": "pnpm run generate && bash scripts/run.sh promptfooconfig.judge.yaml -o generated/results-judge.json",
+    "summarize": "tsx src/summarize.ts",
+    "view": "promptfoo view",
+    "lint": "pnpm run lint:ts && pnpm run lint:eslint",
+    "lint:ts": "tsc --noEmit",
+    "lint:eslint": "eslint '{src,scripts}/**/*.ts'",
+    "fix": "eslint '{src,scripts}/**/*.ts' --fix",
+    "build": "tsc",
+    "format": "prettier --write '{src,scripts}/**/*.ts' '*.yaml'"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
+    "promptfoo": "0.121.18",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

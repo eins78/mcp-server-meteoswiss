@@ -1,0 +1,52 @@
+# Open-ended judge slice — small, LLM-rubric-graded, see docs/spec.md "Open-ended judge slice".
+# Kept deliberately tiny (4 prompts x 3 models = 12 graded calls) to control cost: this is a
+# secondary quality check on top of the deterministic programmatic slice
+# (promptfooconfig.yaml), not a replacement for it. Each test case's `assert` (baked into
+# generated/judge-tests.json by src/generate-tests.ts) already pins the grading provider to
+# Opus and encodes the ground-truth facts the rubric checks against — so no defaultTest here.
+#
+# Run: `pnpm run eval:judge` (after `pnpm run eval` has established the programmatic result,
+# or standalone — the two slices are independent).
+
+description: 'meteoswissLocalForecast JSON comprehension — open-ended judge slice'
+
+prompts:
+  - |
+    You are given a JSON weather forecast object, as returned by a Swiss weather tool
+    (MeteoSwiss "getLocalForecast"). Use ONLY the JSON provided to answer — do not use outside
+    weather knowledge, and do not guess.
+
+    FORECAST JSON:
+    {{json_blob}}
+
+    {{question}}
+
+providers:
+  # One model per tier — same tiering as promptfooconfig.yaml, kept small on purpose.
+  - id: openrouter:anthropic/claude-opus-4.8
+    label: frontier/opus-4.8
+    config:
+      temperature: 0.3
+      max_tokens: 500
+  - id: openrouter:anthropic/claude-haiku-4.5
+    label: cheap/haiku-4.5
+    config:
+      temperature: 0.3
+      max_tokens: 500
+  - id: openrouter:openai/gpt-5-nano
+    label: tiny/gpt-5-nano
+    config:
+      temperature: 0.3
+      max_tokens: 500
+      # gpt-5-nano rejects reasoning.enabled:false outright (400 "Reasoning is mandatory for
+      # this endpoint and cannot be disabled") -- same root cause documented for the
+      # programmatic slice in promptfooconfig.yaml / docs/results/2026-07-09-forecast-json-
+      # comprehension.md "Full sweep results". Lowest
+      # accepted budget instead of trying to disable reasoning entirely.
+      passthrough:
+        reasoning:
+          effort: minimal
+
+tests: file://generated/judge-tests.json
+
+outputPath: generated/results-judge.json
