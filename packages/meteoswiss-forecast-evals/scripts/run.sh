@@ -8,7 +8,7 @@
 # here just makes run.sh's own check see it too.
 #
 # Uses the `promptfoo` binary from this package's OWN node_modules/.bin (a real, lockfile-
-# pinned devDependency — see package.json and PLAN.md "Q-B") rather than `npx promptfoo@X`,
+# pinned devDependency — see package.json and ../docs/spec.md "Q-B") rather than `npx promptfoo@X`,
 # which only pins the top-level version, not promptfoo's own transitive tree. `pnpm run`
 # puts node_modules/.bin on PATH for the whole script chain, so plain `promptfoo` here
 # resolves to that pinned install — run `pnpm install` in this directory first.

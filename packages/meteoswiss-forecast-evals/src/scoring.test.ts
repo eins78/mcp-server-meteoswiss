@@ -29,7 +29,7 @@ describe("extractJson", () => {
     );
   });
 
-  test("recovers the trailing answer object when reasoning leaks an earlier brace (real gpt-5.2 shape, see PLAN.md)", () => {
+  test("recovers the trailing answer object when reasoning leaks an earlier brace (real gpt-5.2 shape, see docs/results/2026-07-09-forecast-json-comprehension.md)", () => {
     const raw =
       'Thinking: I should return {"mm": 0.3} based on the data.\n\n{"mm":0.3}';
     // A naive first-`{`-to-last-`}` slice spans BOTH objects and fails to parse — this must

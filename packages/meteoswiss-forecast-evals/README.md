@@ -2,19 +2,17 @@
 
 Eval suite measuring how well LLMs **understand** the JSON returned by `meteoswissLocalForecast`
 — especially the new `precipitation.hourly` time-series added in
-[PR #99](https://github.com/eins78/meteoswiss-llm-tools/pull/99). See [`PLAN.md`](./PLAN.md)
-for the full design and rationale. This is a standalone package: it does **not** depend on
-`meteoswiss-mcp`'s source, only on a static JSON sample captured from it (see `fixtures/`).
+[PR #99](https://github.com/eins78/meteoswiss-llm-tools/pull/99). See
+[`docs/spec.md`](./docs/spec.md) for the full design and methodology. This is a standalone
+package: it does **not** depend on `meteoswiss-mcp`'s source, only on a static JSON sample
+captured from it (see `fixtures/`).
 
 **Not run in CI.** This is a manual, on-demand suite — run it when you're about to change the
 forecast JSON shape, or periodically to catch regressions in legibility as models change.
 
-**Not a pnpm workspace member.** This package is deliberately excluded from the root
-`pnpm-workspace.yaml` (`!packages/meteoswiss-forecast-evals`) and has its **own**
-`pnpm-workspace.yaml` + `pnpm-lock.yaml`, making it an independent, self-contained npm project
-nested inside the monorepo. See "Why this package isn't a workspace member" below for why, and
-run `pnpm install` **inside this directory**, not from the repo root — root `pnpm install`
-never touches it.
+**Not a pnpm workspace member.** This package has its own `pnpm-workspace.yaml` +
+`pnpm-lock.yaml`, independent of the repo root's (see "Why this package isn't a workspace member"
+below). Run `pnpm install` **inside this directory**, not from the repo root.
 
 ## The headline question
 
@@ -24,12 +22,13 @@ e.g. `"2026-03-28T09:00:00+01:00"`) vs **UTC** (`"2026-03-28T08:00:00Z"`) change
 local-time questions about the forecast. That result gates merging PR #99 / releasing the
 hourly-precipitation feature to PROD.
 
-**Answer, from a complete 13-provider sweep + judge slice (2026-07-09, see PLAN.md "Full sweep
-results, complete"): keep local-time labeling. Do not switch to UTC.** The cleanest evidence
+**Answer, from a complete 13-provider sweep + judge slice — see the
+[2026-07-09 results](./docs/results/2026-07-09-forecast-json-comprehension.md) "Full sweep
+results, complete": keep local-time labeling. Do not switch to UTC.** The cleanest evidence
 (`point-num`/`range-num` — exact-value lookups at a specific local hour) scores 100% local vs.
 ~0% UTC in every tier, every model tested (one single-row exception: `gpt-5.2` correctly converted
-one UTC timestamp out of 13 — see PLAN.md "Copilot review fixes" — which doesn't change the
-direction or the verdict).
+one UTC timestamp out of 13 — see that file's "Copilot review fixes" section — which doesn't
+change the direction or the verdict).
 
 ## Quick start
 
@@ -42,7 +41,7 @@ pnpm run dryrun               # promptfoo's built-in `echo` provider — validat
                               # pipeline (fixtures -> prompts -> scorer -> results file) for $0
 pnpm run smoke                # ONE cheap model, real OpenRouter spend (~1-2 cents) — sanity
                               # check before committing to a full paid run
-pnpm run eval                 # FULL programmatic sweep across all configured models (~$2-3, see PLAN.md)
+pnpm run eval                 # FULL programmatic sweep across all configured models (~$2-3)
 pnpm run eval:judge            # small open-ended judge slice (~$1-2)
 pnpm run summarize             # prints the gate table from the most recent generated/results.json
 pnpm run view                  # opens promptfoo's local web UI over past runs
@@ -75,8 +74,9 @@ a message pointing back here.
 
 Pass `--rescore` (`pnpm run summarize -- --rescore [path]`) to recompute every row's grade from
 its raw stored response using the *current* scorer instead of trusting what promptfoo graded at
-run time — useful after a scorer bug fix, at zero additional API spend (see PLAN.md "Copilot
-review fixes" for how this was used to reconcile the committed gate numbers after such a fix).
+run time — useful after a scorer bug fix, at zero additional API spend (see the
+[2026-07-09 results](./docs/results/2026-07-09-forecast-json-comprehension.md) "Copilot review
+fixes" for how this was used to reconcile the committed gate numbers after such a fix).
 
 ### Known limitation: promptfoo's own cost field is empty for OpenRouter
 
@@ -90,99 +90,46 @@ $10 ceiling, especially after OpenRouter re-prices any model.
 ## Package layout
 
 ```
-fixtures/                    committed, static, captured-or-hand-authored JSON samples
-generated/                   committed: exact prompts/expected-answers (reviewable in the PR)
-                              gitignored: results*.json (run outputs — may contain model text)
-src/
-  types.ts                   forecast JSON shape (duplicated from meteoswiss-mcp on purpose —
-                              see PLAN.md "why this package doesn't depend on #99's code")
-  fixture.ts                 load fixtures; derive the UTC variant from the LOCAL one
-  ground-truth.ts            canonical per-hour readings + answer functions, single source of truth
-  questions.ts                the 10-question programmatic set (primary + 7-day + station)
-  multiseries.ts              secondary track: shape A vs shape B mock
-  generate-tests.ts           ties it together -> generated/{tests,judge-tests}.json
-  scoring-core.ts              lenient parsing + comparison (plain TypeScript, unit-tested directly)
-  scorer.ts                    promptfoo javascript-assertion entrypoint (plain TypeScript — see
-                              its header comment for why no build step is needed)
-  summarize.ts                 the gate table + cost report
-  *.test.ts                    offline unit tests (node:test), run via `pnpm test`
-scripts/
-  synth-7day-fixture.ts        one-off, deterministic generator for the 7-day fixture
-  run.sh                       wraps `promptfoo eval`; sources .env, checks OPENROUTER_API_KEY
-promptfooconfig.yaml           programmatic (lookup) slice — the primary eval
-promptfooconfig.judge.yaml     open-ended, Opus-judged slice — secondary quality check
-pnpm-workspace.yaml            makes this directory its OWN pnpm workspace root, independent
-                              of the repo root's — see "Why this package isn't a workspace
-                              member" below. Also allowlists promptfoo's native build scripts
-                              (esbuild, sharp, etc.) via `onlyBuiltDependencies` — pnpm blocks
-                              unapproved build scripts by default, and the previous `npx`-based
-                              run had no such gating
-pnpm-lock.yaml                  this package's own lockfile, incl. promptfoo + its full
-                              transitive tree with real integrity hashes
+fixtures/         committed, static, captured-or-hand-authored JSON samples
+generated/        committed prompts/expected-answers; gitignored run outputs (results*.json)
+src/              fixture/ground-truth/question generation, scorer, summarize — see docs/spec.md
+scripts/          run.sh (wraps `promptfoo eval`), synth-7day-fixture.ts
+promptfooconfig.yaml         programmatic (lookup) slice — the primary eval
+promptfooconfig.judge.yaml   open-ended, Opus-judged slice — secondary quality check
+pnpm-workspace.yaml, pnpm-lock.yaml   this package's own, independent pnpm project
 ```
 
-Every `.ts` file in `src/` and `scripts/` runs directly with no build step — including
-`scorer.ts`, which promptfoo itself dynamically imports at grading time. See "Why plain
-TypeScript, no `.mjs`/`.cjs`" below.
+Full annotated layout, including what each `src/` file does and why every `.ts` file here runs
+with no build step: [`docs/spec.md`](./docs/spec.md) "Package layout".
 
 ## Extending this suite
 
 - **New question**: add it to `src/questions.ts` (or `src/multiseries.ts` for the secondary
   track), computing `expected` from `src/ground-truth.ts` — never hand-type an expected value.
 - **New fixture**: capture real tool output the way `fixtures/forecast-8001-2day-local.json`
-  was captured (see PLAN.md "Fixture & the two variants" for the exact gotcha to avoid), or
-  follow `scripts/synth-7day-fixture.ts`'s pattern for a synthesized one (deterministic, no
-  `Math.random`/`Date.now`, documented provenance in a header comment).
+  was captured (see [`docs/spec.md`](./docs/spec.md) "Fixture & the two variants" for the exact
+  gotcha to avoid), or follow `scripts/synth-7day-fixture.ts`'s pattern for a synthesized one
+  (deterministic, no `Math.random`/`Date.now`, documented provenance in a header comment).
 - **New model**: add a provider block to `promptfooconfig.yaml`, following the existing
   `tier/short-name` label convention — `summarize.ts` derives the tier from that prefix.
+- **New run**: any rerun's dated findings go in a new file under `docs/results/`
+  (`YYYY-MM-DD-<slug>.md`) — see [`docs/spec.md`](./docs/spec.md) for why results files are
+  immutable and dated rather than one file that gets rewritten.
 
 ## Why plain TypeScript, no `.mjs`/`.cjs`
 
-promptfoo's own docs say external assertion files must be pre-transpiled JS ("if transpiling
-TypeScript, point promptfoo to the transpiled output"), which is why this suite originally
-shipped `scorer.cjs` / `scoring-core.mjs`. That turned out to be unnecessary: promptfoo just
-does a plain dynamic `import()`/`require()` on the `file://` path it's given. On this repo's
-pinned Node version (24.18, see `.nvmrc`; every CI workflow pins `node-version: 24`), that
-resolves through Node's own native TypeScript support — type-stripping for "erasable" syntax,
-on by default since Node 23.6. This repo already forbids the handful of TS constructs that
-*aren't* erasable (enums, namespaces, parameter properties — see the root `CLAUDE.md`), so
-every file here was already inside that subset. Verified empirically (a throwaway `.ts` scorer
-against promptfoo's free `echo` provider, before converting the real files) rather than taken on
-faith from promptfoo's docs. Net effect: `scorer.ts` and `scoring-core.ts` run with **no build
-step**, matching the rest of this monorepo's `tsx`-first convention, instead of needing to be
-hand-maintained in two module formats.
+promptfoo's docs recommend pre-transpiling assertion files, but that turned out to be just a
+recommendation — promptfoo does a plain dynamic `import()` on whatever path it's given, and this
+repo's pinned Node version already resolves `.ts` natively. Full investigation, including how
+this was verified empirically rather than taken on faith:
+[`docs/spec.md`](./docs/spec.md) "Q-A: why plain TypeScript, not `.mjs`/`.cjs`".
 
 ## Why this package isn't a workspace member
 
-`promptfoo` (the CLI) is large — pulling it in as a real `devDependency` of a normal workspace
-member would mean every `pnpm install` at the repo root installs its full transitive tree for
-every contributor, even ones who never touch this package, since pnpm workspaces install the
-full dependency graph of every workspace member by default.
-
-An earlier version of this fix ran promptfoo via `npx promptfoo@0.121.18` instead of declaring
-it — zero footprint on the root install, but only the top-level version was pinned. `npx`
-resolves promptfoo's own dependency tree fresh at run time (cached, but with no integrity hashes
-and no locked sub-dependency versions), which is not the reproducibility a real lockfile entry
-gives you. Max flagged this correctly in review.
-
-The actual fix: this package is **excluded from the root workspace glob**
-(`pnpm-workspace.yaml`: `"!packages/meteoswiss-forecast-evals"`) and has its **own**
-`pnpm-workspace.yaml` (`packages: ["."]`), which makes pnpm treat it as an independent,
-self-contained project — its own `pnpm-lock.yaml`, fully integrity-hashed, including
-`promptfoo` and its complete transitive tree, resolved and installed only when you run
-`pnpm install` **inside this directory**. Root `pnpm install` never sees it at all.
-
-Other options were investigated and rejected — see `PLAN.md` "Q-B (revisited)" for the full
-writeup with sources, but in short: `optionalDependencies` are installed by default in pnpm on
-any compatible platform (skipping them entirely requires a workspace-wide
-`ignoredOptionalDependencies` denylist, which isn't "opt-in when needed"); `--filter` exclusion
-is a per-invocation flag, not a persistent property of a package, so a plain `pnpm install` at
-the root would still install it; and `shared-workspace-lockfile: false` is an all-or-nothing
-setting for the *entire* workspace (confirmed by a pnpm maintainer) — there's no way to give just
-one package its own lockfile while the rest of the monorepo keeps sharing the root one, short of
-what this package now does: leaving the workspace and defining its own, nested one.
-
-**Trade-off**: this package is no longer covered by `pnpm -r lint` / `pnpm -r build` /
-`pnpm -r test` at the repo root — verify it standalone (`cd` in, then the usual `pnpm run lint`
-/ `build` / `test`). Acceptable here since it was never wired into CI anyway (this is a manual,
-on-demand suite — see the top of this README).
+`promptfoo` is large; declaring it as a normal `devDependency` would install its full transitive
+tree for every contributor on a root `pnpm install`. This package instead excludes itself from
+the root workspace glob and defines its own nested `pnpm-workspace.yaml`, giving it a real,
+integrity-hashed lockfile that only installs when you `cd` in — after several other pnpm
+mechanisms were investigated and ruled out. Trade-off: no longer covered by `pnpm -r lint/build/
+test` at the repo root; verify standalone instead. Full investigation, with sources:
+[`docs/spec.md`](./docs/spec.md) "Q-B (revisited)".

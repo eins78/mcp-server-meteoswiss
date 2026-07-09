@@ -156,7 +156,8 @@ function main(): void {
     ),
   );
 
-  // --- 7-day fixture (secondary, longer-horizon track; see PLAN.md). ---
+  // --- 7-day fixture (secondary, longer-horizon track; see ../docs/spec.md "Secondary track:
+  // 7-day fixture"). ---
   const sevenDayLocal = loadFixture("forecast-8001-7day-local.json");
   const sevenDayReadings = canonicalReadings(sevenDayLocal);
   const sevenDayQs = sevenDayQuestions(sevenDayReadings);
@@ -167,8 +168,9 @@ function main(): void {
       tests.push(toTestCase(variant, "sevenday", jsonBlob, q));
   }
 
-  // --- 7-day COMPACT representation (secondary; see PLAN.md "Compact long-series
-  // representation" + src/compact-representation.ts). Same questions, same ground truth,
+  // --- 7-day COMPACT representation (secondary; see src/compact-representation.ts for the
+  // design and ../docs/results/2026-07-09-forecast-json-comprehension.md "Compact long-series
+  // representation" for the results). Same questions, same ground truth,
   // local-only (this ablates representation density, not time-labeling) -- isolates whether a
   // sparse hourly array rescues the tiny-tier drop seen on the full-representation fixture. ---
   const sevenDayCompact = compactSevenDayFixture(sevenDayLocal);
@@ -179,7 +181,8 @@ function main(): void {
   for (const q of sevenDayQs)
     tests.push(toTestCase("local", "sevenday-compact", sevenDayCompactBlob, q));
 
-  // --- Multi-series mock (secondary; shape A vs shape B, see PLAN.md + src/multiseries.ts). ---
+  // --- Multi-series mock (secondary; shape A vs shape B, see ../docs/spec.md "Secondary track:
+  // multi-series mock (shape A vs shape B)" + src/multiseries.ts). ---
   const shapeA = shapeAFixture();
   const shapeB = shapeBFixture();
   const shapeAJson = writeFixtureJson("multiseries-a-parallel-arrays", shapeA);
@@ -195,7 +198,7 @@ function main(): void {
     `${JSON.stringify(tests, null, 2)}\n`,
   );
 
-  // --- Judge slice: small, open-ended prompts graded by an Opus rubric (see PLAN.md
+  // --- Judge slice: small, open-ended prompts graded by an Opus rubric (see ../docs/spec.md
   // "Open-ended judge slice"). Rubric facts are pulled from the same ground-truth functions
   // as the programmatic questions, not hand-typed, so the rubric can't drift from the fixture.
   const morningRain = sumRange(primaryReadings, day1, 7, 10);

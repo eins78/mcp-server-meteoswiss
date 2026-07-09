@@ -1,5 +1,5 @@
 /**
- * The programmatic (lookup) question set. See PLAN.md "Question set" for the full table
+ * The programmatic (lookup) question set. See ../docs/spec.md "Question set" for the full table
  * and rationale. Every `expected` value here is DERIVED from the same fixture the model is
  * shown (via src/ground-truth.ts) — nothing is hand-typed — so ground truth cannot drift
  * from the data.
@@ -199,15 +199,17 @@ export function stationQuestion(
 }
 
 /**
- * Secondary, longer-horizon track (advisor recommendation, see PLAN.md): tests whether
- * legibility holds up over a full week (~168 hourly entries) rather than the 1.5-day primary
- * fixture — a proxy for "will consumers still cope once we add more time-series over more
- * days" (the next feature this eval is meant to derisk). Subordinate to the UTC-vs-local gate.
+ * Secondary, longer-horizon track (advisor recommendation, see ../docs/spec.md "Secondary
+ * track: 7-day fixture"): tests whether legibility holds up over a full week (~168 hourly
+ * entries) rather than the 1.5-day primary fixture — a proxy for "will consumers still cope
+ * once we add more time-series over more days" (the next feature this eval is meant to
+ * derisk). Subordinate to the UTC-vs-local gate.
  *
- * Originally 2 questions; expanded to 5 (see PLAN.md "Compact long-series representation")
- * when Max asked whether a more compact hourly representation rescues tiny-tier comprehension
- * on this fixture (tiny tier scored ~50% here in the full sweep, vs. ~86-100% on the shorter
- * primary fixture). These 5 questions are run UNCHANGED against both the full-representation
+ * Originally 2 questions; expanded to 5 (see
+ * ../docs/results/2026-07-09-forecast-json-comprehension.md "Compact long-series
+ * representation") when Max asked whether a more compact hourly representation rescues
+ * tiny-tier comprehension on this fixture (tiny tier scored ~50% here in the full sweep, vs.
+ * ~86-100% on the shorter primary fixture). These 5 questions are run UNCHANGED against both the full-representation
  * fixture (fixtureLabel "sevenday") and the compact one (fixtureLabel "sevenday-compact", see
  * src/compact-representation.ts) — same ground truth either way, so the only variable is the
  * hourly representation's density, isolating that ablation the same way fixture.ts isolates

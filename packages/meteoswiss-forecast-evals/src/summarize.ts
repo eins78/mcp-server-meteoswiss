@@ -1,17 +1,19 @@
 /**
  * Reads a promptfoo results JSON file (from `pnpm run eval` / `eval:judge` / `smoke`) and
  * prints the GATE TABLE: accuracy broken down by tier x variant x question family (see
- * PLAN.md "Reporting -> the gate"). This is deliberately NOT a per-model leaderboard — the
+ * ../docs/spec.md "Reporting -> the gate"). This is deliberately NOT a per-model leaderboard — the
  * eval's purpose is judging FORMAT legibility, so the discriminating view is:
  *   - A question missed UNIFORMLY across tiers -> format defect (actionable schema tweak).
  *   - A question missed only by weak models, scaling with capability -> not a format problem.
  * The `tiny x {local, utc}` block is printed first and separately: that's the block gating
  * merging PR #99 / releasing to PROD.
  *
- * Row shape below was confirmed against a real promptfoo output file (see PLAN.md
- * "Verification" — the free `echo` dry-run), not guessed from docs alone.
+ * Row shape below was confirmed against a real promptfoo output file (see
+ * ../docs/results/2026-07-09-forecast-json-comprehension.md "Verification performed during the
+ * build" — the free `echo` dry-run), not guessed from docs alone.
  *
- * IMPORTANT COST CAVEAT, found during the smoke test (see PLAN.md "Verification"): promptfoo's
+ * IMPORTANT COST CAVEAT, found during the smoke test (see ../docs/spec.md "Cost tracking
+ * caveat"): promptfoo's
  * own `cost` field comes back as 0 for every OpenRouter row — confirmed against a real paid
  * call (gemini-2.5-flash-lite, 33 real calls, `row.cost === 0` on all of them despite
  * `tokenUsage` being populated correctly). promptfoo's OpenRouter provider docs don't mention
@@ -26,7 +28,8 @@
  *
  * --rescore: recompute success/score/outcome for every row from its RAW response.output +
  * vars.expectedJson using the CURRENT scoring-core.ts, instead of trusting the grade promptfoo
- * stored at run time. Use this after fixing a scorer bug (see PLAN.md "Copilot review fixes") to
+ * stored at run time. Use this after fixing a scorer bug (see
+ * ../docs/results/2026-07-09-forecast-json-comprehension.md "Copilot review fixes") to
  * see what the committed results *would* have graded as, at ZERO additional API spend — the raw
  * model responses are already on disk, nothing gets re-sent to OpenRouter.
  */

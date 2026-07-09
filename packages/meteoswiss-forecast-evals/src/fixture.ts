@@ -1,6 +1,6 @@
 /**
  * Load committed fixtures and derive the UTC-vs-local format variants that are the
- * headline A/B ablation of this eval suite (see PLAN.md).
+ * headline A/B ablation of this eval suite (see ../docs/spec.md).
  *
  * Both variants encode the exact same instants — only the `hourly[].time` string
  * representation differs:

@@ -5,7 +5,7 @@
  * WHY THIS EXISTS: meteoswiss-mcp's test fixtures (packages/meteoswiss-mcp/test/__fixtures__)
  * only cover ~1.5 days of hourly data, which is what forecast-8001-2day-local.json (the
  * *real*, captured-from-the-tool primary fixture) is built from. There is no fixture data
- * long enough to *capture* a realistic 7-day forecast the same way. Per PLAN.md ("Fixture &
+ * long enough to *capture* a realistic 7-day forecast the same way. Per ../docs/spec.md ("Fixture &
  * the two variants"), a longer-horizon fixture is needed to test whether legibility holds up
  * over a longer series (a proxy for "will consumers still cope once we add more time-series
  * over more days") — so this day's data is synthesized instead of captured.

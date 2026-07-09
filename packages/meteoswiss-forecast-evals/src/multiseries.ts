@@ -1,16 +1,18 @@
 /**
- * Secondary track (per PLAN.md "Multi-series mock"): a hand-authored MOCK of a *hypothetical*
- * future forecast shape that combines hourly precipitation + sunshine + wind — the next
- * features on the roadmap (see CLAUDE.md "Open Tasks"). This does NOT reflect anything
- * `meteoswiss-mcp` emits today; it exists purely to compare two candidate container shapes
- * before that feature is built, so the shape choice has evidence behind it.
+ * Secondary track (per ../docs/spec.md "Secondary track: multi-series mock (shape A vs shape
+ * B)"): a hand-authored MOCK of a *hypothetical* future forecast shape that combines hourly
+ * precipitation + sunshine + wind — the next features on the roadmap (see CLAUDE.md "Open
+ * Tasks"). This does NOT reflect anything `meteoswiss-mcp` emits today; it exists purely to
+ * compare two candidate container shapes before that feature is built, so the shape choice has
+ * evidence behind it.
  *
  * Kept clearly subordinate to the UTC-vs-local gate: one day, one small hourly table, run
  * across a small model slice — not folded into the primary question set. Originally 5
- * questions; expanded to 11 (see PLAN.md "Multi-series eval, expanded") once Max asked for
- * a conclusive Shape A vs B verdict ahead of the full multi-series feature (tracked in a new
- * GitHub issue) — the extra questions stress deeper cross-series reasoning (conditional
- * argmax, existence checks, more field combinations) that the original 5 didn't cover.
+ * questions; expanded to 11 (see ../docs/results/2026-07-09-forecast-json-comprehension.md
+ * "Multi-series eval, expanded") once Max asked for a conclusive Shape A vs B verdict ahead of
+ * the full multi-series feature (tracked in a new GitHub issue) — the extra questions stress
+ * deeper cross-series reasoning (conditional argmax, existence checks, more field combinations)
+ * that the original 5 didn't cover.
  *
  * Both shapes below are rendered from the SAME canonical HOURLY table, so their ground truth
  * is identical by construction — only the container shape differs:
@@ -217,8 +219,8 @@ export type MultiseriesQuestion = {
 };
 
 /** The 11 cross-series questions (5 original + 6 added for the Max-directed "make it
- * conclusive" expansion, see PLAN.md "Multi-series eval, expanded"), run identically against
- * both shapes. */
+ * conclusive" expansion, see ../docs/results/2026-07-09-forecast-json-comprehension.md
+ * "Multi-series eval, expanded"), run identically against both shapes. */
 export function multiseriesQuestions(): MultiseriesQuestion[] {
   const gt = multiseriesGroundTruth;
   return [

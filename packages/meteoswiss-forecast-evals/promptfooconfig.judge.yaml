@@ -1,4 +1,4 @@
-# Open-ended judge slice — small, LLM-rubric-graded, see PLAN.md "Open-ended judge slice".
+# Open-ended judge slice — small, LLM-rubric-graded, see docs/spec.md "Open-ended judge slice".
 # Kept deliberately tiny (4 prompts x 3 models = 12 graded calls) to control cost: this is a
 # secondary quality check on top of the deterministic programmatic slice
 # (promptfooconfig.yaml), not a replacement for it. Each test case's `assert` (baked into
@@ -40,7 +40,8 @@ providers:
       max_tokens: 500
       # gpt-5-nano rejects reasoning.enabled:false outright (400 "Reasoning is mandatory for
       # this endpoint and cannot be disabled") -- same root cause documented for the
-      # programmatic slice in promptfooconfig.yaml / PLAN.md "Full sweep results". Lowest
+      # programmatic slice in promptfooconfig.yaml / docs/results/2026-07-09-forecast-json-
+      # comprehension.md "Full sweep results". Lowest
       # accepted budget instead of trying to disable reasoning entirely.
       passthrough:
         reasoning:

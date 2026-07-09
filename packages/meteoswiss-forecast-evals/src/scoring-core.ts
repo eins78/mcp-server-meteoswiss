@@ -3,8 +3,9 @@
  * loaded directly by promptfoo at grading time — see that file's header for how a plain .ts
  * file works there with no build step) and by the offline unit tests (scoring.test.ts).
  *
- * "Lenient" per PLAN.md: a tiny model that answers correctly but wraps the JSON in prose, or
- * uses a markdown fence, must NOT be scored as wrong for that — that would measure JSON-
+ * "Lenient" per ../docs/spec.md "Question set": a tiny model that answers correctly but wraps
+ * the JSON in prose, or uses a markdown fence, must NOT be scored as wrong for that — that
+ * would measure JSON-
  * formatting compliance, not forecast comprehension. We separate three outcomes:
  *   - correct   (parsed and matches ground truth)
  *   - wrong     (parsed but does not match ground truth)
@@ -16,7 +17,8 @@ import type { Expected, LeafExpected } from "./questions.js";
 
 /**
  * Scan a string for every top-level balanced {...} block (brace depth returns to 0). A
- * reasoning-leaking model (see gemini-3.1-pro-preview / gpt-5.2 in PLAN.md) can emit braces in
+ * reasoning-leaking model (see gemini-3.1-pro-preview / gpt-5.2 in
+ * ../docs/results/2026-07-09-forecast-json-comprehension.md) can emit braces in
  * its prose ("I'll return {\"mm\": 0.3}.") BEFORE the real trailing answer object — a naive
  * first-`{`-to-last-`}` slice spans both and fails to parse either. Returns blocks in the order
  * found; callers should prefer the LAST one, since the answer trails the reasoning.

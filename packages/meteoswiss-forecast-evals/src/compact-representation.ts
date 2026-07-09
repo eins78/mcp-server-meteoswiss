@@ -1,10 +1,13 @@
 /**
- * Candidate optimization for long series (secondary track, see PLAN.md "Compact long-series
- * representation"): tests whether a SPARSE hourly representation -- listing only hours with
- * measurable precipitation, with a note explaining that omitted hours were 0mm -- rescues
- * tiny-tier comprehension on the 7-day fixture, where the full ~168-entry hourly array (144 of
- * them zero) dragged tiny-tier accuracy to ~50% in the full sweep (see PLAN.md "Full sweep
- * results, complete"). This does NOT reflect anything `meteoswiss-mcp` emits today -- it's a
+ * Candidate optimization for long series (secondary track, see ../docs/spec.md "Secondary
+ * track: 7-day fixture" for the design and
+ * ../docs/results/2026-07-09-forecast-json-comprehension.md "Compact long-series
+ * representation" for the results): tests whether a SPARSE hourly representation -- listing
+ * only hours with measurable precipitation, with a note explaining that omitted hours were 0mm
+ * -- rescues tiny-tier comprehension on the 7-day fixture, where the full ~168-entry hourly
+ * array (144 of them zero) dragged tiny-tier accuracy to ~50% in the full sweep (see
+ * ../docs/results/2026-07-09-forecast-json-comprehension.md "Full sweep results, complete").
+ * This does NOT reflect anything `meteoswiss-mcp` emits today -- it's a
  * hypothetical alternative representation, evaluated before deciding whether it's worth
  * building into the multi-series expansion.
  *

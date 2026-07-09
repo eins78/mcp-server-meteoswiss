@@ -15,7 +15,7 @@
  * loading a `.ts` file directly isn't promptfoo transpiling anything — it's Node doing what it
  * already does for every other file in this monorepo. This matches the workspace default (full
  * TypeScript via tsx / native execution, no build step) instead of the previous CJS/ESM plain-
- * JS workaround. See PLAN.md "Q-A" for the full writeup.
+ * JS workaround. See ../docs/spec.md "Q-A" for the full writeup.
  *
  * promptfoo calls this file's default export as `(output, context) => GradingResult`
  * (may return a Promise — promptfoo awaits it):

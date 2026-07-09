@@ -30,7 +30,7 @@ break).
 Full design rationale, the fixture-capture gotcha (ESM import hoisting silently defeating a
 `USE_TEST_FIXTURES=true` env-var set at the top of a script), the day-grouping-vs-local-date
 subtlety found in `ogd-local-forecast.ts`, and the promptfoo-cost-field limitation found during
-validation are all documented in `packages/meteoswiss-forecast-evals/PLAN.md`.
+validation are all documented in `packages/meteoswiss-forecast-evals/docs/spec.md`.
 
 ## What shipped
 
@@ -63,6 +63,7 @@ surfaces real signal rather than noise.
 - [ ] Full paid sweep (`pnpm run eval` + `eval:judge`, ~13 models, est. $2-4) — separate,
       explicit step after this PR is reviewed.
 - [ ] Cross-check estimated cost against OpenRouter's own Activity dashboard once the full
-      sweep runs (promptfoo's own cost field is confirmed empty for OpenRouter — see PLAN.md).
+      sweep runs (promptfoo's own cost field is confirmed empty for OpenRouter — see
+      `packages/meteoswiss-forecast-evals/docs/spec.md`).
 - [ ] Depending on the gate result: either merge #99 as-is, or tweak the local-time format /
       tool description on #99 (or a stacked follow-up PR) before release.
