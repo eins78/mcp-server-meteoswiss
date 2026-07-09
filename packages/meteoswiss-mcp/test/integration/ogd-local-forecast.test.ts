@@ -83,6 +83,13 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(day1.precipitation.total).toBe(summed);
     expect(day1.precipitation.total).toBe(1.7);
 
+    // Every hourly entry's local calendar date must match the day it's nested
+    // under. UTC 202603282300 is local 2026-03-29T00:00:00+01:00 — it must be
+    // attributed to day2, not day1, even though its raw timestamp says "28".
+    for (const h of day1.precipitation.hourly) {
+      expect(h.time.slice(0, 10)).toBe('2026-03-28');
+    }
+
     // Fixture crosses the CET->CEST spring-forward (2026-03-29, 02:00 local).
     // Day 2 must contain readings on both sides of the DST boundary.
     const day2 = data.forecast.find((d: { date: string }) => d.date === '2026-03-29');
@@ -92,6 +99,14 @@ describe('meteoswissLocalForecast Tool', () => {
     );
     expect(offsets.has('+01:00')).toBe(true);
     expect(offsets.has('+02:00')).toBe(true);
+    for (const h of day2.precipitation.hourly) {
+      expect(h.time.slice(0, 10)).toBe('2026-03-29');
+    }
+    // The UTC 23:00-on-the-28th reading (local midnight of the 29th) must land here.
+    expect(day2.precipitation.hourly).toContainEqual({
+      time: '2026-03-29T00:00:00+01:00',
+      value: 0.0,
+    });
     expect(day2.precipitation.hourly).toContainEqual({
       time: '2026-03-29T01:00:00+01:00',
       value: 0.0,

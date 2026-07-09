@@ -32,6 +32,7 @@ export type HourlyPrecip = {
 
 /** Daily forecast summary for one day */
 export type DailyForecast = {
+  /** Local Europe/Zurich calendar date (YYYY-MM-DD) for postal codes/mountain points; the station data source's native daily date for weather stations. */
   date: string;
   weather: string | null;
   weather_icon_url: string | null;
@@ -40,9 +41,11 @@ export type DailyForecast = {
     total: number | null;
     unit: string;
     /**
-     * Per-hour precipitation breakdown, local Europe/Zurich time.
-     * `null` when not available for this location's point type (currently: weather stations).
-     * An empty array means the breakdown is available but no rain fell.
+     * Per-hour precipitation breakdown, keyed to the local Europe/Zurich calendar
+     * day this `date` represents (each entry's `time` always falls within this day).
+     * `null` when not available for this location's point type (currently: weather
+     * stations). A dry day still returns a non-empty array — 0mm hours are kept, not
+     * omitted; an empty array means no hourly readings were available for the day at all.
      */
     hourly: HourlyPrecip[] | null;
   };

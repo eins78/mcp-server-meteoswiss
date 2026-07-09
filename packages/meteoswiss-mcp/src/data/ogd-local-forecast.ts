@@ -63,11 +63,9 @@ const zurichFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 /**
- * Convert a MeteoSwiss UTC timestamp (YYYYMMDDhhmm) to an ISO 8601 string in
- * local Europe/Zurich time with UTC offset, DST-correct
- * (e.g. "202603280800" -> "2026-03-28T09:00:00+01:00").
+ * Render a UTC timestamp's local Europe/Zurich date and wall-clock time, DST-correct.
  */
-function utcTimestampToZurichIso(ts: string): string {
+function zurichParts(ts: string): { date: string; time: string; offset: string } {
   const utcMs = Date.UTC(
     Number(ts.slice(0, 4)),
     Number(ts.slice(4, 6)) - 1,
@@ -77,8 +75,21 @@ function utcTimestampToZurichIso(ts: string): string {
   );
   const parts = zurichFormatter.formatToParts(new Date(utcMs));
   const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
-  const offset = get('timeZoneName').replace('GMT', '');
-  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}${offset}`;
+  return {
+    date: `${get('year')}-${get('month')}-${get('day')}`,
+    time: `${get('hour')}:${get('minute')}:${get('second')}`,
+    offset: get('timeZoneName').replace('GMT', ''),
+  };
+}
+
+/**
+ * Convert a MeteoSwiss UTC timestamp (YYYYMMDDhhmm) to its local Europe/Zurich
+ * calendar date (YYYY-MM-DD), DST-correct. Used to bucket hourly readings into
+ * days that match the local wall-clock times we surface, so a day's `hourly`
+ * entries never spill across the local midnight boundary into a neighboring day.
+ */
+function utcTimestampToZurichDate(ts: string): string {
+  return zurichParts(ts).date;
 }
 
 /**
@@ -137,13 +148,15 @@ function buildStationForecast(
 }
 
 /**
- * Group hourly values by date.
+ * Group hourly values by local Europe/Zurich date. Non-station forecasts are
+ * bucketed by local day (not the raw UTC date) so that a day's data matches the
+ * local-time labels we surface elsewhere (see `utcTimestampToZurichDate`).
  */
 function groupByDate(hourlyMap: Map<string, number | null>): Map<string, number[]> {
   const byDate = new Map<string, number[]>();
   for (const [ts, val] of hourlyMap.entries()) {
     if (val === null) continue;
-    const date = timestampToDate(ts);
+    const date = utcTimestampToZurichDate(ts);
     const existing = byDate.get(date) ?? [];
     existing.push(val);
     byDate.set(date, existing);
@@ -152,9 +165,10 @@ function groupByDate(hourlyMap: Map<string, number | null>): Map<string, number[
 }
 
 /**
- * Group hourly precipitation values by UTC date, converting each timestamp to
- * local Europe/Zurich time. Within each day, entries are sorted chronologically
- * and null/missing readings are skipped (zero-mm hours are kept).
+ * Group hourly precipitation values by local Europe/Zurich date — the same day
+ * boundary used for `groupByDate` — so every entry's `time` falls within the day
+ * it's nested under. Within each day, entries are sorted chronologically and
+ * null/missing readings are skipped (zero-mm hours are kept).
  */
 function groupPrecipByDate(hourlyMap: Map<string, number | null>): Map<string, HourlyPrecip[]> {
   const byDate = new Map<string, HourlyPrecip[]>();
@@ -162,9 +176,9 @@ function groupPrecipByDate(hourlyMap: Map<string, number | null>): Map<string, H
   for (const ts of sortedTimestamps) {
     const val = hourlyMap.get(ts) ?? null;
     if (val === null) continue;
-    const date = timestampToDate(ts);
+    const { date, time, offset } = zurichParts(ts);
     const existing = byDate.get(date) ?? [];
-    existing.push({ time: utcTimestampToZurichIso(ts), value: val });
+    existing.push({ time: `${date}T${time}${offset}`, value: val });
     byDate.set(date, existing);
   }
   return byDate;
@@ -172,6 +186,7 @@ function groupPrecipByDate(hourlyMap: Map<string, number | null>): Map<string, H
 
 /**
  * Pick the most representative weather icon for a day.
+ * `date` is a local Europe/Zurich calendar date (see `utcTimestampToZurichDate`).
  * Prefers midday hours (09-15 local, ~07-13 UTC) for daytime representation.
  * Falls back to the most frequent icon code if no midday data.
  */
@@ -179,7 +194,7 @@ function pickDaytimeIcon(entries: Map<string, number | null>, date: string): num
   const dayEntries: Array<{ hour: number; code: number }> = [];
   for (const [ts, val] of entries.entries()) {
     if (val === null) continue;
-    if (timestampToDate(ts) !== date) continue;
+    if (utcTimestampToZurichDate(ts) !== date) continue;
     const hour = Number(ts.slice(8, 10));
     dayEntries.push({ hour, code: val });
   }
