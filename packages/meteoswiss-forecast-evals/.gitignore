@@ -1,0 +1,10 @@
+# Build output
+dist/
+
+# promptfoo local cache / share DB (not the generated test specs — those are committed)
+.promptfoo/
+
+# Result files from real runs (contain model outputs, token counts, may be large) — not committed.
+# generated/tests.json, generated/judge-tests.json and generated/fixtures/* ARE committed
+# (they're the reviewable, deterministic inputs); only run *outputs* are ignored here.
+generated/results*.json

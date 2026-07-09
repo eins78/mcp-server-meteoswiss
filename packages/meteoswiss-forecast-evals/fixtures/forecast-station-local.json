@@ -1,0 +1,45 @@
+{
+  "location": {
+    "name": "Napf",
+    "type": "station",
+    "elevation": 1404,
+    "coordinates": {
+      "lat": 47.004667,
+      "lon": 7.940117
+    }
+  },
+  "generated": "2026-03-28T04:00:36.263451Z",
+  "forecast": [
+    {
+      "date": "2026-03-26",
+      "weather": "very cloudy, intermittent snow",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/19.svg",
+      "temperature": {
+        "min": -6.7,
+        "max": -3.7,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 11.3,
+        "unit": "mm",
+        "hourly": null
+      }
+    },
+    {
+      "date": "2026-03-27",
+      "weather": "sunny intervals, snow showers",
+      "weather_icon_url": "https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/8.svg",
+      "temperature": {
+        "min": -7.5,
+        "max": -3.8,
+        "unit": "°C"
+      },
+      "precipitation": {
+        "total": 1.4,
+        "unit": "mm",
+        "hourly": null
+      }
+    }
+  ],
+  "source": "MeteoSwiss Open Data"
+}
