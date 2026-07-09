@@ -38,7 +38,7 @@ validation are all documented in `packages/meteoswiss-forecast-evals/PLAN.md`.
   synthesized 7-day, 1 synthesized multi-series mock in two candidate shapes), ground-truth
   computation, question generation, a lenient scorer (unit-tested), promptfoo configs for the
   programmatic and judge slices, a gate-table summarizer, and run scripts that read the
-  OpenRouter key from the macOS keychain at runtime.
+  OpenRouter key from the environment at runtime.
 - 29 offline unit tests (ground truth against real fixture values, DST math, scorer behavior
   across every leaf kind) — no network, not gated on API keys.
 - Validated end-to-end with a $0 `echo`-provider dry run and a ~$0.01 real smoke test (1 cheap

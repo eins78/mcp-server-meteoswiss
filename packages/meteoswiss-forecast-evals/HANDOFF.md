@@ -131,14 +131,15 @@ verification: PLAN.md "Q-B (revisited)".
 cd packages/meteoswiss-forecast-evals
 pnpm install            # standalone install (this package is not a workspace member) — only
                          # needed once, or after promptfoo/deps change
+cp .env.example .env    # then fill in OPENROUTER_API_KEY (get one at https://openrouter.ai/keys)
 pnpm run eval            # full programmatic sweep, all 13 providers
 pnpm run eval:judge      # judge slice
 pnpm run summarize       # prints the gate table from generated/results.json
 ```
 
 Cross-check real spend against `curl -s https://openrouter.ai/api/v1/credits -H "Authorization:
-Bearer $(security find-generic-password -s OPENROUTER_API_KEY_EVALS -w)"` — promptfoo's own cost
-field is confirmed non-functional for OpenRouter.
+Bearer $OPENROUTER_API_KEY"` — promptfoo's own cost field is confirmed non-functional for
+OpenRouter.
 
 ## Not yet done
 

@@ -46,14 +46,18 @@ pnpm run summarize             # prints the gate table from the most recent gene
 pnpm run view                  # opens promptfoo's local web UI over past runs
 ```
 
-`pnpm run eval` / `smoke` / `eval:judge` all read the OpenRouter API key from the macOS
-keychain at runtime (`scripts/keychain-openrouter.sh`) — **never hardcode or commit it**:
+`pnpm run eval` / `smoke` / `eval:judge` all read the OpenRouter API key from the
+`OPENROUTER_API_KEY` environment variable — **never hardcode or commit it**. Set it however you
+like, or copy `.env.example` to `.env` (gitignored) and fill it in:
 
 ```bash
-security find-generic-password -s OPENROUTER_API_KEY_EVALS -w
+cp .env.example .env
+# edit .env, set OPENROUTER_API_KEY=sk-or-... (get a key at https://openrouter.ai/keys)
 ```
 
-If that lookup fails, set `OPENROUTER_API_KEY` in the environment yourself before running.
+`scripts/run.sh` sources `.env` automatically if present, and `promptfoo` itself also loads
+`.env`. If `OPENROUTER_API_KEY` is still unset when a paid run starts, `run.sh` fails fast with
+a message pointing back here.
 
 ## Reading the output
 
@@ -97,8 +101,7 @@ src/
   *.test.ts                    offline unit tests (node:test), run via `pnpm test`
 scripts/
   synth-7day-fixture.ts        one-off, deterministic generator for the 7-day fixture
-  keychain-openrouter.sh       prints the OpenRouter key from the keychain
-  run.sh                       wraps `promptfoo eval`, wiring in the key
+  run.sh                       wraps `promptfoo eval`; sources .env, checks OPENROUTER_API_KEY
 promptfooconfig.yaml           programmatic (lookup) slice — the primary eval
 promptfooconfig.judge.yaml     open-ended, Opus-judged slice — secondary quality check
 pnpm-workspace.yaml            makes this directory its OWN pnpm workspace root, independent

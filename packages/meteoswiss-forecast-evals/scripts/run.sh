@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Run a promptfoo eval config, reading OPENROUTER_API_KEY from the macOS keychain at runtime.
-# The key is NEVER hardcoded, printed, or committed — see scripts/keychain-openrouter.sh.
+# Run a promptfoo eval config. Reads OPENROUTER_API_KEY from the environment — the standard
+# OpenRouter/promptfoo variable. The key is NEVER hardcoded, printed, or committed.
+#
+# For local convenience, sources a gitignored .env at the package root if present (see
+# .env.example) before checking the variable — so this pre-check doesn't false-negative on a
+# freshly-populated .env in the same run. promptfoo also auto-loads .env on its own; sourcing
+# here just makes run.sh's own check see it too.
 #
 # Uses the `promptfoo` binary from this package's OWN node_modules/.bin (a real, lockfile-
 # pinned devDependency — see package.json and PLAN.md "Q-B") rather than `npx promptfoo@X`,
@@ -21,15 +26,20 @@ fi
 CONFIG="$1"
 shift
 
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 # promptfoo's `echo` provider (used by `pnpm run dryrun`) needs no API key at all — skip the
-# keychain lookup entirely for that path so the wiring can be validated with zero setup.
+# check entirely for that path so the wiring can be validated with zero setup.
 if [ "${OPENROUTER_API_KEY:-}" = "" ] && [[ "$*" != *"--filter-providers echo"* ]]; then
-  if ! OPENROUTER_API_KEY="$(bash scripts/keychain-openrouter.sh 2>/dev/null)"; then
-    echo "error: OPENROUTER_API_KEY not set and not found in keychain (service OPENROUTER_API_KEY_EVALS)." >&2
-    echo "  Set it with: security add-generic-password -s OPENROUTER_API_KEY_EVALS -a <account> -w <key>" >&2
-    exit 1
-  fi
-  export OPENROUTER_API_KEY
+  echo "error: OPENROUTER_API_KEY is not set." >&2
+  echo "  Set it in your environment, or copy .env.example to .env and fill it in." >&2
+  echo "  Get a key at https://openrouter.ai/keys" >&2
+  exit 1
 fi
 
 promptfoo eval -c "$CONFIG" "$@"

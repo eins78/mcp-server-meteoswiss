@@ -31,8 +31,9 @@ The UTC-vs-local result on that tier **gates merging #99 / releasing to PROD.**
   source; `fixtures/` holds static JSON captured from a real run of the #99 tool (see below).
 - Package: `packages/meteoswiss-forecast-evals`, a normal pnpm workspace member (no
   `pnpm-workspace.yaml` change needed — it's covered by the existing `packages/*` glob).
-- **Not in CI.** Manual, documented reruns. OpenRouter key read from the macOS keychain at
-  runtime, never hardcoded: `security find-generic-password -s OPENROUTER_API_KEY_EVALS -w`.
+- **Not in CI.** Manual, documented reruns. OpenRouter key read from the `OPENROUTER_API_KEY`
+  environment variable (or a gitignored `.env`, see `.env.example`), never hardcoded or
+  committed.
 - Scoring: mostly **programmatic** (ground truth computed in TS from the same JSON the model
   sees) + a small **Opus judge** slice for open-ended quality. Lenient parsing separates
   "unparseable" from "wrong" so tiny models aren't penalized for JSON-formatting slips.

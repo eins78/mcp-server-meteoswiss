@@ -20,7 +20,7 @@
 # rather than trying to disable reasoning entirely.
 #
 # Run: `pnpm run smoke` (1 cheap model, sanity check) then `pnpm run eval` (full sweep).
-# API key: scripts/run.sh reads it from the macOS keychain — see README.md.
+# API key: set OPENROUTER_API_KEY (env or .env) — see README.md.
 
 description: 'meteoswissLocalForecast JSON comprehension — programmatic lookup slice'
 
