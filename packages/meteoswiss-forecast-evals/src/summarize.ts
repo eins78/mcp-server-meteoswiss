@@ -21,10 +21,19 @@
  * full run if OpenRouter re-prices). Still cross-check the total against OpenRouter's own
  * generation/activity API before trusting it against the $10 ceiling.
  *
- * Usage: pnpm run summarize [path/to/results.json]   (defaults to generated/results.json)
+ * Usage: pnpm run summarize [path/to/results.json] [--rescore]
+ *   (path defaults to generated/results.json)
+ *
+ * --rescore: recompute success/score/outcome for every row from its RAW response.output +
+ * vars.expectedJson using the CURRENT scoring-core.ts, instead of trusting the grade promptfoo
+ * stored at run time. Use this after fixing a scorer bug (see PLAN.md "Copilot review fixes") to
+ * see what the committed results *would* have graded as, at ZERO additional API spend — the raw
+ * model responses are already on disk, nothing gets re-sent to OpenRouter.
  */
 
 import { readFileSync } from "node:fs";
+import { scoreResponse } from "./scoring-core.js";
+import type { Expected } from "./questions.js";
 
 /** $ per million tokens, checked against openrouter.ai/api/v1/models when this suite was built.
  * Keyed by the exact provider id used in promptfooconfig*.yaml. */
@@ -92,6 +101,7 @@ type PromptfooResultRow = {
     completionDetails?: { reasoning?: number };
   };
   gradingResult?: { reason?: string } | null;
+  response?: { output?: unknown } | null;
 };
 
 type PromptfooOutputFile = {
@@ -103,6 +113,31 @@ function isPromptfooOutputFile(value: unknown): value is PromptfooOutputFile {
   const results = (value as { results?: unknown }).results;
   if (typeof results !== "object" || results === null) return false;
   return Array.isArray((results as { results?: unknown }).results);
+}
+
+/**
+ * Recompute success/score/gradingResult.reason for one row from its raw response.output +
+ * vars.expectedJson, using the CURRENT scoring-core.ts — in place, mutating the row so every
+ * downstream stat (gate table, family table, etc.) reflects the fixed scorer without any new
+ * API call. Rows the debug/echo provider produced, or rows promptfoo never got a response for
+ * (hard errors), are left untouched — echo rows are filtered out separately (see main()), and an
+ * errored row has no response.output to re-score from anyway.
+ */
+function rescoreRow(row: PromptfooResultRow): void {
+  const expectedJson = row.vars["expectedJson"];
+  if (typeof expectedJson !== "string") return;
+  let expected: unknown;
+  try {
+    expected = JSON.parse(expectedJson);
+  } catch {
+    return;
+  }
+  // `expected` came from our own generate-tests.ts output (generated/tests.json), not from
+  // model or user input, so trusting its shape here is safe — same reasoning as scorer.ts.
+  const result = scoreResponse(row.response?.output, expected as Expected);
+  row.success = result.pass;
+  row.score = result.score;
+  row.gradingResult = { reason: `[${result.outcome}] ${result.detail}` };
 }
 
 /** Our scorer always prefixes gradingResult.reason with "[outcome] ..." — see scoring-core.ts. */
@@ -186,7 +221,9 @@ function tierOf(row: PromptfooResultRow): string {
 }
 
 function main(): void {
-  const path = process.argv[2] ?? "generated/results.json";
+  const args = process.argv.slice(2);
+  const rescore = args.includes("--rescore");
+  const path = args.find((a) => a !== "--rescore") ?? "generated/results.json";
   const raw: unknown = JSON.parse(readFileSync(path, "utf-8"));
   if (!isPromptfooOutputFile(raw)) {
     throw new Error(
@@ -196,6 +233,14 @@ function main(): void {
 
   // Exclude the zero-cost debug/echo provider (see promptfooconfig.yaml) from real reporting.
   const rows = raw.results.results.filter((r) => tierOf(r) !== "debug");
+
+  if (rescore) {
+    for (const row of rows) rescoreRow(row);
+    console.log(
+      `--rescore: recomputed success/score for ${rows.length} rows from raw response.output ` +
+        `using the CURRENT scoring-core.ts (zero API calls made).`,
+    );
+  }
 
   console.log(
     `Loaded ${rows.length} graded rows from ${path} (excluding debug/echo rows).`,

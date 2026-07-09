@@ -2,7 +2,30 @@
 
 Status as of 2026-07-09: **complete 13-provider sweep + judge slice, all clean (0 API errors),
 verdict confirmed. All open questions from earlier partial runs are resolved. Follow-up:
-multi-series shape + compact-representation evals run and posted to new issue #101.**
+multi-series shape + compact-representation evals run and posted to new issue #101. Follow-up:
+6 Copilot review comments on PR #100 addressed, gate numbers reconciled at $0.**
+
+## Follow-up: Copilot review fixes (see PLAN.md "Copilot review fixes" for full detail)
+
+GitHub Copilot left 6 review comments on PR #100. All fixed on this branch, not merged:
+
+1. **`extractJson` multi-block recovery** (score-affecting) — a reasoning-leaking model's earlier
+   brace could span the parse and swallow a real trailing answer object. Fixed with a
+   balanced-brace scanner (last block first). Reconciled the 3 affected rows (all `gpt-5.2`) via
+   a new `summarize.ts --rescore` mode that re-grades every row from its raw stored response with
+   the fixed scorer, at **$0** — no re-run. Frontier UTC (primary) moves 25/45→26/45 (55.6%→57.8%);
+   `point-num` UTC moves 0%→8% (1/13). **Verdict unchanged**; tiny-tier gate untouched (no
+   `gpt-5.2` there); the multi-series Shape A/B and compact-representation numbers above are from
+   separate 5-provider runs with no `gpt-5.2` and are unaffected.
+2. **`unavailable` hallucination check** and **3. `coerceHour` ISO-timestamp safety** — both
+   provably score-neutral (verified against every real response on disk: 0 rows flip either way).
+3. **Fail-fast on missing ground truth** in `questions.ts` (`dst-offset`/`availability-day2` no
+   longer silently default) — score-neutral, confirmed via a byte-identical `generated/tests.json`
+   before/after.
+4. **Root `pnpm-lock.yaml`** — reverted unrelated `@swc/core` churn from when the eval package was
+   briefly a workspace member.
+5. **PR #100 description** — was stale (said the full paid sweep hadn't run); reconciled via
+   `gh pr edit` to match the README/PLAN verdict.
 
 ## Follow-up: multi-series Shape A/B + compact representation (see PLAN.md for full detail)
 
@@ -40,14 +63,19 @@ all 13 configured providers (462 scheduled calls, 0 API errors):
 
 ```
 tier      variant   accuracy
-frontier  local     42/45   93.3%      utc  25/45   55.6%
+frontier  local     42/45   93.3%      utc  26/45   57.8%
 cheap     local     36/36  100.0%      utc  19/36   52.8%
 tiny      local     31/36   86.1%      utc  16/36   44.4%
 ```
 
+(Frontier UTC corrected from 25/45 to 26/45 after a Copilot-review scorer fix rescued one
+`gpt-5.2` row — see "Follow-up: Copilot review fixes" below. Zero-spend offline re-score, no new
+API calls; doesn't change the verdict.)
+
 The cleanest, non-confounded evidence: **`point-num`/`range-num`** (exact-value and range-sum
-lookups at a specific local hour) score **100% local / 0% UTC in every tier**, across the full
-13-provider, n=13-per-cell sample (previously a 7-provider partial sample — now complete).
+lookups at a specific local hour) score **100% local / ~0% UTC in every tier** (`point-num` UTC is
+8%, i.e. 1/13 — one `gpt-5.2` row correctly converted; `range-num` UTC stays a flat 0%), across the
+full 13-provider, n=13-per-cell sample (previously a 7-provider partial sample — now complete).
 `argmax-time` collapses the same way (100% → 15%). `dst-trap` is excluded from this count as
 before: it asks for the UTC offset itself, definitionally unanswerable from the UTC variant by
 design. New nuance visible only with the full sample: `argmax-day` and `range-bool` show **no
@@ -151,3 +179,6 @@ OpenRouter.
 - #101's Step 2+ (confirming actual OGD param codes for hourly sunshine/wind, station-hourly
   precip, schema/implementation) — not started, deliberately: #101 is structured so evals come
   first (done) and implementation is a separate, later effort.
+- The 6 Copilot review comments on PR #100 are DONE — fixed, tested, gate numbers reconciled via
+  a zero-spend offline re-score, PR description reconciled, root lockfile reverted. See
+  "Follow-up: Copilot review fixes" above.

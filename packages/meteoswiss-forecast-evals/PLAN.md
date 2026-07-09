@@ -512,7 +512,7 @@ tier      variant   n    score
 cheap     local     36   100%  [correct:36]
 cheap     utc       36    54%  [correct:19 wrong:15 unparseable:1 partial:1]
 frontier  local     45    93%  [correct:42 unparseable:3]
-frontier  utc       45    56%  [wrong:17 correct:25 unparseable:3]
+frontier  utc       45    58%  [wrong:17 correct:26 unparseable:2]
 tiny      local     36    86%  [wrong:5 correct:31]
 tiny      utc       36    46%  [wrong:19 correct:16 partial:1]
 ```
@@ -528,15 +528,18 @@ availability     92%    88%
 cross-field     100%    88%
 dst-trap         85%    15%   (structurally unanswerable from UTC by design — see below)
 point-bool       85%    69%
-point-num       100%     0%
+point-num       100%     8%
 range-bool      100%   100%   (coarse yes/no across a labeled range — robust either way)
 range-num        85%     0%
 ```
 
 The full sample confirms and sharpens the partial-run finding. **`point-num` and `range-num`**
 remain the cleanest, non-confounded evidence — exact-value and range-sum lookups at a specific
-local hour — now at **100% local / 0% UTC across the complete 13-provider, n=13-per-cell sample**,
-not just a 7-provider subset. `argmax-time` shows the same collapse (100% → 15%). `dst-trap`
+local hour — now at **100% local / ~0% UTC across the complete 13-provider, n=13-per-cell sample**,
+not just a 7-provider subset. (`point-num` UTC is 8%, not a flat 0% — one `gpt-5.2` response out of
+13 correctly converted 08:00 local to 07:00 UTC and answered right; see "Copilot review fixes"
+below for how this single-row correction was found and verified. `range-num` UTC stays a flat 0%,
+untouched by that fix.) `argmax-time` shows the same collapse (100% → 15%). `dst-trap`
 stays excluded from the headline claim for the same reason as before: it asks for the UTC offset
 itself, which the local-variant JSON prints literally and the UTC-variant JSON structurally
 cannot express — its near-zero UTC score is expected by construction, not new comprehension
@@ -557,7 +560,7 @@ claude-haiku-4.5                   100%    44%
 gemini-3.1-pro-preview              67%    22%   (see caveat below — inflated by a truncation bug)
 gemini-3.1-flash-lite               100%    56%
 gemini-2.5-flash-lite               100%    44%
-gpt-5.2                             100%    67%
+gpt-5.2                             100%    78%
 gpt-5-mini                          100%    56%
 gpt-5-nano                          67%    44%
 mistral-large-2512                  100%    67%
@@ -587,7 +590,7 @@ future PR, not something to patch mid-report.
 
 No other provider — including both previously-blocked Mistral models — shows any anomaly relative
 to the rest of its tier. The Mistral models track their tier peers closely (`mistral-large-2512`
-100%/67% local/utc, right in line with `opus-4.8`/`gpt-5.2`; `mistral-medium-3.1` 100%/56%, in
+100%/67% local/utc, right in line with `opus-4.8`; `mistral-medium-3.1` 100%/56%, in
 line with `haiku-4.5`/`gpt-5-mini`; `ministral-8b-2512` 89%/33%, in line with the other tiny-tier
 models) — the earlier 404 guardrail block was purely an account setting, not a sign these models
 handle the format differently.
@@ -603,7 +606,11 @@ planning an 08:00 commute"), not just the programmatic lookup slice.
   cell — small enough that the flat tiny-tier result is plausibly noise, not a contradiction).
 - Multi-series mock (shape A vs shape B, secondary design input for a *future* sunshine/wind
   feature, not this PR's gate): shape B slightly ahead of shape A in cheap/tiny tiers (88%/72%
-  vs 85%/77%), roughly even in frontier (76% vs 78%) — a mild signal, not a strong one either way.
+  vs 85%/77%), roughly even in frontier (80% vs 82% — corrected from 76%/78% after the
+  `extractJson` fix below rescued a `gpt-5.2` row on each shape; still a mild signal, not a
+  strong one either way). **Superseded by a conclusive run — see "Multi-series eval, expanded"
+  below**, which does not share this data point (different, dedicated 5-provider run, no
+  `gpt-5.2`) and is unaffected by this fix.
 
 **Cost — actual, verified against OpenRouter's own account API** (not promptfoo's internal cost
 field, confirmed non-functional for OpenRouter): account usage before this rerun was
@@ -618,7 +625,9 @@ estimate isn't wildly off.
 **Verdict: keep local-time labeling (PR #99 as shipped). Do not switch to UTC. Confirmed, not
 just carried over, by the complete 13-provider rerun.** The core, non-confounded evidence
 (`point-num`/`range-num`) is unchanged in direction and now covers the full sample: 100% local /
-0% UTC, every tier, every one of the 13 real models included. No provider — including the two
+~0% UTC (one single-row exception on `point-num`, see "Copilot review fixes" below — does not
+change the direction or the verdict), every tier, every one of the 13 real models included. No
+provider — including the two
 previously-blocked Mistral endpoints — bucks the trend. The one apparent outlier
 (`gemini-3.1-pro-preview`'s depressed local score) traces to an eval-harness token-budget
 artifact, not a comprehension counterexample, and correcting for it would strengthen rather than
@@ -631,6 +640,71 @@ on local this run, similar to the partial run's 92.6%. Failures are `wrong:5`, s
 across different models/families per the per-model table above (no single model or question
 family dominates tiny-tier local failures) — read as ordinary model noise at the tiny-tier
 capability floor, not a local-format defect worth acting on before release.
+
+## Copilot review fixes (2026-07-09)
+
+GitHub Copilot left 6 review comments on PR #100, covering three scorer-correctness bugs, a
+fail-fast/determinism gap in ground-truth generation, a stale PR description, and unrelated
+root-lockfile churn. All six are fixed on this branch. Two of the three scorer fixes are provably
+**score-neutral** against every real response already on disk; one is not, and its effect on the
+committed tables above is reconciled here at **zero additional API spend**.
+
+- **`extractJson` multi-block recovery** (`src/scoring-core.ts`) — SCORE-AFFECTING. The old
+  first-`{`-to-last-`}` slice spans multiple JSON-ish blocks and fails to parse when a model's
+  response contains more than one (e.g. a reasoning leak with a brace in prose, followed by the
+  real trailing answer). Replaced with a balanced-brace scanner that tries each top-level block,
+  last-first. This is a strict superset of the old attempts, so no currently-passing row can
+  regress — verified against every failing row in every committed `generated/results*.json`: only
+  3 rows flip, all `gpt-5.2`, all fail→pass (`generated/results.json`: `val-0800` UTC, and
+  `ms-argmax-sunshine` on both multiseries shapes — see below for the exact effect on each table).
+- **`unavailable` hallucination check** (`src/scoring-core.ts`) — score-neutral. Now requires an
+  explicit decline (`hourly_available: false`) AND no fabricated `mm`, rejecting both
+  `{"hourly_available": true, "mm": 2}` (already rejected) and the two cases that previously slipped
+  through: `{"mm": 2}` (bare fabrication, no flag at all) and `{"hourly_available": false, "mm": 2}`
+  (mixed signal). Verified against all 13 real `station-null` responses in `generated/results.json`:
+  every one was a clean `{"hourly_available": false}` — 0 rows flip.
+- **`coerceHour` ISO-timestamp safety** (`src/scoring-core.ts`) — score-neutral. Now prefers a
+  clock (`HH:MM`) pattern over a bare 1-2 digit run, so a full ISO timestamp (e.g.
+  `"2026-03-28T09:00:00+01:00"`) coerces to `9`, not `20` (the year's first two digits). Verified
+  against every real `argmax-time` response: none used an ISO timestamp — 0 rows flip.
+- **Fail-fast on missing ground truth** (`src/questions.ts`) — score-neutral. `dst-offset` and
+  `availability-day2` used to fall back to a default (`?? "+02:00"`, `day2Rained` defaulting to
+  `true`) when the fixture was missing the relevant reading/day, silently producing wrong ground
+  truth instead of failing loudly. Now throws, matching the existing `day1Obj` pattern. Verified
+  dead-code on the committed primary fixture (`pnpm run generate` before/after this change
+  produces a byte-identical `generated/tests.json` — confirmed via `git diff --stat`) and locked
+  with a new ground-truth test asserting the guard's preconditions hold.
+- **Root `pnpm-lock.yaml` churn** — `@swc/core` (+60 platform variants) had been concretely
+  resolved as an optional peer of `ts-node` from when the eval package was briefly a root
+  workspace member; reverted via a clean `pnpm install` at the repo root (the eval package stays
+  excluded — see `pnpm-workspace.yaml`), dropping `@swc/core` references back to the same
+  unresolved-optional-peer count as `main`.
+- **PR description reconciliation** — the PR #100 body's "What's validated vs. not run yet"
+  section was stale (written before the full paid sweep in "Full sweep results, complete" above
+  ran); updated via `gh pr edit` to state the full sweep + judge slice ran and the verdict stands.
+
+**Reconciling the one score-affecting fix, at $0**: the raw model responses for every completed
+run are already committed/available in `generated/results*.json` (`response.output`), so instead
+of a paid re-run, `src/summarize.ts` gained a `--rescore` mode (`pnpm run summarize -- --rescore
+[path]`) that recomputes `success`/`score`/`outcome` for every row from its raw output using the
+*current* scorer, then reuses all the existing gate/family/cost tables — no new OpenRouter calls.
+Run across every committed results file:
+
+- `generated/results.json` (full 13-provider sweep): **exactly 3 rows flip**, all `gpt-5.2`, all
+  unparseable→correct — `val-0800` (primary, UTC variant) and `ms-argmax-sunshine` on both
+  multiseries shapes (the OLD embedded 5-question multiseries track this file predates the
+  expansion for — see "Multi-series eval, expanded" below, which is a separate run and unaffected).
+  Every other row across all 429 graded rows in this file is bit-identical before/after. The
+  figures above (gate table, all-tiers table, family table, per-model table, the old multiseries
+  mention) have been updated to match; the **tiny-tier gate is untouched** (no `gpt-5.2` in that
+  tier) and the **verdict is unchanged** — local time still strictly dominates UTC everywhere,
+  `point-num` UTC moves from a flat 0% to 8% (1/13, still overwhelmingly one-sided).
+- `generated/results-multiseries.json`, `results-compact.json`,
+  `results-sevenday-full-baseline.json` (the dedicated 5-provider tracks used for "Multi-series
+  eval, expanded" and "Compact long-series representation" below, neither of which includes
+  `gpt-5.2`): **zero rows flip** — those sections' numbers stand exactly as reported.
+- `generated/results-judge.json`: not applicable — the judge slice uses `llm-rubric` (Opus-graded),
+  not this scorer; `--rescore` is a no-op on it by design (skips rows without `vars.expectedJson`).
 
 ## Multi-series eval, expanded (2026-07-09)
 

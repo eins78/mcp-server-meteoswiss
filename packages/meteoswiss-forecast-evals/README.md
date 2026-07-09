@@ -26,8 +26,10 @@ hourly-precipitation feature to PROD.
 
 **Answer, from a complete 13-provider sweep + judge slice (2026-07-09, see PLAN.md "Full sweep
 results, complete"): keep local-time labeling. Do not switch to UTC.** The cleanest evidence
-(`point-num`/`range-num` — exact-value lookups at a specific local hour) scores 100% local vs. 0%
-UTC in every tier, every model tested, no exceptions.
+(`point-num`/`range-num` — exact-value lookups at a specific local hour) scores 100% local vs.
+~0% UTC in every tier, every model tested (one single-row exception: `gpt-5.2` correctly converted
+one UTC timestamp out of 13 — see PLAN.md "Copilot review fixes" — which doesn't change the
+direction or the verdict).
 
 ## Quick start
 
@@ -70,6 +72,11 @@ a message pointing back here.
 4. Secondary tracks: the 7-day longer-horizon fixture, and the multi-series mock (shape A vs
    shape B, a design input for the *next* feature — sunshine/wind time-series).
 5. Estimated cost per provider (see the caveat below).
+
+Pass `--rescore` (`pnpm run summarize -- --rescore [path]`) to recompute every row's grade from
+its raw stored response using the *current* scorer instead of trusting what promptfoo graded at
+run time — useful after a scorer bug fix, at zero additional API spend (see PLAN.md "Copilot
+review fixes" for how this was used to reconcile the committed gate numbers after such a fix).
 
 ### Known limitation: promptfoo's own cost field is empty for OpenRouter
 

@@ -15,9 +15,38 @@
 import type { Expected, LeafExpected } from "./questions.js";
 
 /**
+ * Scan a string for every top-level balanced {...} block (brace depth returns to 0). A
+ * reasoning-leaking model (see gemini-3.1-pro-preview / gpt-5.2 in PLAN.md) can emit braces in
+ * its prose ("I'll return {\"mm\": 0.3}.") BEFORE the real trailing answer object — a naive
+ * first-`{`-to-last-`}` slice spans both and fails to parse either. Returns blocks in the order
+ * found; callers should prefer the LAST one, since the answer trails the reasoning.
+ */
+function balancedJsonBlocks(raw: string): string[] {
+  const blocks: string[] = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (c === "{") {
+      if (depth === 0) start = i;
+      depth += 1;
+    } else if (c === "}") {
+      if (depth > 0) {
+        depth -= 1;
+        if (depth === 0 && start !== -1) {
+          blocks.push(raw.slice(start, i + 1));
+          start = -1;
+        }
+      }
+    }
+  }
+  return blocks;
+}
+
+/**
  * Try to recover a JSON object from a raw model response: strict parse first, then strip
- * markdown code fences, then fall back to extracting the first balanced-looking {...} block.
- * Returns `undefined` if nothing parseable was found.
+ * markdown code fences, then fall back to each individually-balanced {...} block (last first —
+ * see balancedJsonBlocks). Returns `undefined` if nothing parseable was found.
  */
 export function extractJson(raw: unknown): Record<string, unknown> | undefined {
   if (typeof raw !== "string") return undefined;
@@ -26,11 +55,7 @@ export function extractJson(raw: unknown): Record<string, unknown> | undefined {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenced?.[1]) attempts.push(fenced[1].trim());
 
-  const firstBrace = raw.indexOf("{");
-  const lastBrace = raw.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    attempts.push(raw.slice(firstBrace, lastBrace + 1).trim());
-  }
+  attempts.push(...balancedJsonBlocks(raw).reverse());
 
   for (const candidate of attempts) {
     try {
@@ -65,13 +90,23 @@ function coerceNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-/** Accepts "09:00", "9:00", 9, "9", "hour 9" -> 9. */
+/**
+ * Accepts "09:00", "9:00", 9, "9", "hour 9" -> 9. Prefers a clock ("HH:MM") pattern over a bare
+ * digit run — a model that answers with a full ISO timestamp (e.g.
+ * "2026-03-28T09:00:00+01:00", instead of the requested "HH:00") would otherwise have its FIRST
+ * 1-2 digit run ("20", from the year) grabbed instead of the actual hour ("09"), incorrectly
+ * marking a correct answer wrong. The bare-digit fallback below excludes digits that are part of
+ * a longer run (e.g. the "20" / "26" in "2026") via lookaround, so it doesn't fall into the same
+ * trap when no clock pattern is present.
+ */
 function coerceHour(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value))
     return Math.trunc(value);
   if (typeof value === "string") {
-    const match = value.match(/(\d{1,2})(?::\d{2})?/);
-    if (match?.[1]) return Number(match[1]);
+    const clock = value.match(/(\d{1,2}):\d{2}/);
+    if (clock?.[1]) return Number(clock[1]);
+    const bare = value.match(/(?<!\d)(\d{1,2})(?!\d)/);
+    if (bare?.[1]) return Number(bare[1]);
   }
   return undefined;
 }
@@ -106,16 +141,20 @@ function scoreLeaf(
 
   if (leaf.kind === "unavailable") {
     const bool = coerceBool(raw);
-    // Correct iff the model explicitly declined (key coerces to false). Missing key
-    // (model didn't even attempt the key) is also treated as "did not fabricate a number"
-    // and counts as correct, since the schema allows omitting `mm` entirely when declining.
-    const pass = bool === false || (raw === undefined && parsed !== undefined);
+    // Correct iff the model EXPLICITLY declined (key coerces to false) AND did not also
+    // fabricate a number under the schema's other key ("mm" — see stationQuestion's schema:
+    // {"hourly_available": true, "mm": <number>} or {"hourly_available": false}). Omitting the
+    // flag entirely (raw === undefined) is NOT treated as a decline — that previously let
+    // `{"mm": 2}` (a bare fabrication with no flag at all) pass, defeating the hallucination
+    // check this question exists to enforce.
+    const fabricatedNumber = coerceNumber(parsed ? parsed["mm"] : undefined);
+    const pass = bool === false && fabricatedNumber === undefined;
     return {
       pass,
       score: pass ? 1 : 0,
       reason: pass
         ? "declined as expected"
-        : `fabricated value: ${JSON.stringify(raw)}`,
+        : `fabricated or unclear: ${JSON.stringify(raw)}${fabricatedNumber !== undefined ? ` (also gave mm=${fabricatedNumber})` : ""}`,
     };
   }
 

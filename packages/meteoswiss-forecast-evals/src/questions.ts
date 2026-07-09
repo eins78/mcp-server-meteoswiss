@@ -64,6 +64,8 @@ export function primaryQuestions(ctx: PrimaryQuestionCtx): GeneratedQuestion[] {
   const { readings, fixture, day1, day2 } = ctx;
   const day1Obj = dayObjectFor(fixture, day1);
   if (!day1Obj) throw new Error(`No day object for ${day1} in fixture`);
+  const day2Obj = dayObjectFor(fixture, day2);
+  if (!day2Obj) throw new Error(`No day object for ${day2} in fixture`);
 
   const dry2200 = isDryAt(readings, day1, 22);
   const val0800 = valueAt(readings, day1, 8);
@@ -73,20 +75,24 @@ export function primaryQuestions(ctx: PrimaryQuestionCtx): GeneratedQuestion[] {
   const dailyTotalDeclared = day1Obj.precipitation.total;
   const dst = offsetAt(readings, day2, 8);
 
-  const day2Obj = dayObjectFor(fixture, day2);
-  const day2Available = day2Obj ? day2Obj.precipitation.hourly !== null : false;
-  const day2Rained = day2Obj ? (day2Obj.precipitation.total ?? 0) > 0 : true;
-
+  // Every value consumed below must be fixture-derived, never a silent default — an eval whose
+  // ground truth can degrade to a guess when a fixture changes would no longer be trustworthy.
+  // (Previously `dst` fell back to `?? "+02:00"` and day2Available/day2Rained fell back to
+  // `false`/`true` when day2Obj/dst were missing — masking a bad fixture instead of failing.)
   if (
     dry2200 === null ||
     val0800 === null ||
     argmax === null ||
-    dailyTotalDeclared === null
+    dailyTotalDeclared === null ||
+    dst === null
   ) {
     throw new Error(
       "Ground truth computation failed for primary fixture — check fixture data",
     );
   }
+
+  const day2Available = day2Obj.precipitation.hourly !== null;
+  const day2Rained = (day2Obj.precipitation.total ?? 0) > 0;
 
   return [
     {
@@ -159,7 +165,7 @@ export function primaryQuestions(ctx: PrimaryQuestionCtx): GeneratedQuestion[] {
       family: "dst-trap",
       fixtureLabel: "primary",
       promptText: `What UTC offset applies to local time at 08:00 on ${day2} for this location? ${ANSWER_INSTRUCTION} Schema: {"utc_offset": "+HH:00" or "-HH:00"}`,
-      expected: { key: "utc_offset", kind: "offset", value: dst ?? "+02:00" },
+      expected: { key: "utc_offset", kind: "offset", value: dst },
     },
     {
       id: "availability-day2",

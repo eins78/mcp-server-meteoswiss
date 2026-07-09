@@ -11,6 +11,7 @@ import {
   argmaxHour,
   canonicalReadings,
   dailyTotal,
+  dayObjectFor,
   isDryAt,
   localDatesInOrder,
   offsetAt,
@@ -57,6 +58,19 @@ describe("primary fixture (forecast-8001-2day-local.json) — real captured DST-
 
   test("DST: 01:00 on day2 is still CET, offset +01:00 (before the spring-forward jump)", () => {
     assert.equal(offsetAt(readings, day2 as string, 1), "+01:00");
+  });
+
+  // Locks the preconditions `primaryQuestions()` relies on to fail-fast rather than fall back
+  // to a default (see questions.ts — dst-offset and availability-day2 both throw instead of
+  // silently defaulting if day2Obj/dst are missing). Combined with the "offset +02:00" test
+  // above (dst is non-null), this test is what should break FIRST if this fixture ever changes
+  // such that day2's declared day object disappears — not a silently-wrong default flowing
+  // into the gate table.
+  test("day2's declared day object exists, has a populated hourly[], and is dry (total 0)", () => {
+    const day2Obj = dayObjectFor(fixture, day2 as string);
+    assert.ok(day2Obj, "expected a day object for day2 in the primary fixture");
+    assert.notEqual(day2Obj?.precipitation.hourly, null);
+    assert.equal(day2Obj?.precipitation.total, 0);
   });
 });
 

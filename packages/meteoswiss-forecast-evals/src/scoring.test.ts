@@ -28,6 +28,19 @@ describe("extractJson", () => {
       undefined,
     );
   });
+
+  test("recovers the trailing answer object when reasoning leaks an earlier brace (real gpt-5.2 shape, see PLAN.md)", () => {
+    const raw =
+      'Thinking: I should return {"mm": 0.3} based on the data.\n\n{"mm":0.3}';
+    // A naive first-`{`-to-last-`}` slice spans BOTH objects and fails to parse — this must
+    // recover the real (last) object instead of returning undefined.
+    assert.deepEqual(extractJson(raw), { mm: 0.3 });
+  });
+
+  test("prefers the LAST balanced block when reasoning and answer disagree", () => {
+    const raw = 'I initially thought {"mm": 1} but on reflection {"mm": 0.3}';
+    assert.deepEqual(extractJson(raw), { mm: 0.3 });
+  });
 });
 
 describe("scoreResponse — leaf kinds", () => {
@@ -79,6 +92,26 @@ describe("scoreResponse — leaf kinds", () => {
     );
     assert.equal(
       scoreResponse('{"hour":9}', { key: "hour", kind: "hour", value: 9 }).pass,
+      true,
+    );
+  });
+
+  test("hour: a full ISO timestamp coerces to the actual hour, not the year (real gpt-5.2 failure mode)", () => {
+    const r = scoreResponse('{"hour":"2026-03-28T09:00:00+01:00"}', {
+      key: "hour",
+      kind: "hour",
+      value: 9,
+    });
+    assert.equal(r.pass, true);
+  });
+
+  test('hour: "hour 9" (no colon) still coerces via the bare-digit fallback', () => {
+    assert.equal(
+      scoreResponse('{"hour":"hour 9"}', {
+        key: "hour",
+        kind: "hour",
+        value: 9,
+      }).pass,
       true,
     );
   });
@@ -135,6 +168,30 @@ describe("scoreResponse — leaf kinds", () => {
       kind: "unavailable",
     });
     assert.equal(r.pass, false);
+  });
+
+  test("unavailable: omitting the flag entirely but fabricating a number is wrong (bare fabrication)", () => {
+    const r = scoreResponse('{"mm": 2}', {
+      key: "hourly_available",
+      kind: "unavailable",
+    });
+    assert.equal(r.pass, false);
+  });
+
+  test("unavailable: declining the flag but ALSO fabricating a number is wrong (mixed signal)", () => {
+    const r = scoreResponse('{"hourly_available": false, "mm": 2}', {
+      key: "hourly_available",
+      kind: "unavailable",
+    });
+    assert.equal(r.pass, false);
+  });
+
+  test("unavailable: declining with no other keys at all is still correct", () => {
+    const r = scoreResponse('{"hourly_available": false}', {
+      key: "hourly_available",
+      kind: "unavailable",
+    });
+    assert.equal(r.pass, true);
   });
 });
 
