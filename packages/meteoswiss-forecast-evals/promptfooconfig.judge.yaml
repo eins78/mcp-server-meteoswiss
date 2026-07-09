@@ -38,9 +38,13 @@ providers:
     config:
       temperature: 0.3
       max_tokens: 500
+      # gpt-5-nano rejects reasoning.enabled:false outright (400 "Reasoning is mandatory for
+      # this endpoint and cannot be disabled") -- same root cause documented for the
+      # programmatic slice in promptfooconfig.yaml / PLAN.md "Full sweep results". Lowest
+      # accepted budget instead of trying to disable reasoning entirely.
       passthrough:
         reasoning:
-          enabled: false
+          effort: minimal
 
 tests: file://generated/judge-tests.json
 
