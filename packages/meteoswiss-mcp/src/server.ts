@@ -161,9 +161,17 @@ Coverage: ~6000 Swiss locations (all postal codes + weather stations + mountain 
 Forecast horizon: up to 9 days. Updated hourly.
 
 For postal codes and mountain points, each day also includes an hourly precipitation
-breakdown (precipitation.hourly, local Europe/Zurich time) — useful for judging *when*
-rain is expected, not just the daily total. Not yet available for weather stations
-(precipitation.hourly is null there).`,
+breakdown (precipitation.hourly) — useful for judging *when* rain is expected, not just
+the daily total:
+- Each entry's "time" is already local wall-clock time for the location (Europe/Zurich),
+  with the UTC offset included, e.g. "2026-07-09T14:00:00+02:00". It is NOT UTC — do not
+  convert it.
+- A dry hour is reported as value: 0, not omitted. A fully dry day is still a full array
+  of zero-value hours, not an empty array.
+- precipitation.hourly is null when no hourly breakdown exists for this location at all
+  (weather stations only have a daily total, precipitation.total).
+- precipitation.hourly is [] (empty array) only for postal codes/mountain points where
+  hourly readings are missing for that specific day (a data gap) — distinct from null.`,
     GetLocalForecastParamsSchema.shape,
     async (params: GetLocalForecastParams) => {
       const _t0 = performance.now();
