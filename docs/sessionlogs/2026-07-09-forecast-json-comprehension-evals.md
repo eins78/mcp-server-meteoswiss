@@ -68,3 +68,58 @@ surfaces real signal rather than noise.
       `packages/meteoswiss-forecast-evals/docs/spec.md`).
 - [x] Gate result: **keep local-time labeling — do not switch PR #99 to UTC.** See the results
       file above for the full evidence and verdict.
+
+## Full sweep, PR Q&A, and review cycles (later in the same session)
+
+Everything below happened after the checklist above, within the same overall session (multiple
+context compactions occurred along the way — see `git log infra/forecast-json-evals` for the
+full commit sequence).
+
+- **Full paid sweep executed**: all 13 providers, 462 calls, 0 API errors (after Max added
+  OpenRouter credits and disabled a ZDR/data-policy setting that had been blocking 2 Mistral
+  models). Verdict: keep local-time labeling — confirmed across every tier and every model, no
+  exceptions. Full breakdown:
+  `packages/meteoswiss-forecast-evals/docs/results/2026-07-09-forecast-json-comprehension.md`.
+- **PR Question A (`.mjs`/`.cjs` vs TypeScript) resolved**: promptfoo's docs recommend
+  pre-transpiling assertion files, but that turned out to be just a recommendation — verified
+  empirically with a throwaway `.ts` scorer against promptfoo's free `echo` provider before
+  converting the real files. `scorer.cjs`/`scoring-core.mjs`/`synth-7day-fixture.mjs` became
+  plain `.ts`, relying on Node's native TypeScript type-stripping (default since Node 23.6) —
+  no build step needed. Full writeup: `packages/meteoswiss-forecast-evals/docs/spec.md` "Q-A".
+- **PR Question B (promptfoo dependency bloat) resolved**: an initial `npx`-based approach was
+  correctly flagged in review as not reproducible (pins only the top-level version, no lockfile
+  integrity hashes). Investigated 5 pnpm mechanisms for "install this dependency only when
+  explicitly used" (`optionalDependencies`, `--filter`, `shared-workspace-lockfile: false`,
+  `dependenciesMeta`, a `.pnpmfile.cjs` hook) — all rejected with sources. The fix: exclude the
+  eval package from the root pnpm workspace glob and give it its own nested
+  `pnpm-workspace.yaml`, making it an independent, lockfile-pinned install. Full investigation:
+  `packages/meteoswiss-forecast-evals/docs/spec.md` "Q-B (revisited)".
+- **6 GitHub Copilot review comments addressed** (commit `bac829f`): 3 scorer-correctness bugs
+  (one — a JSON-extraction multi-block recovery bug — actually moved committed pass-rate
+  numbers, reconciled via a new zero-spend `summarize.ts --rescore` mode instead of a paid
+  re-run), a fail-fast/determinism fix in ground-truth generation, a stale PR description, and a
+  `pnpm-lock.yaml` regression revert.
+- **Docs restructured** (commit `36f9c76`): the original `README.md` + `PLAN.md` (841 lines,
+  mixing timeless methodology with dated findings) + `HANDOFF.md` (185-line recap) were split
+  into a concise `README.md` entry point, `packages/meteoswiss-forecast-evals/docs/spec.md`
+  (timeless methodology), and an immutable, dated
+  `docs/results/2026-07-09-forecast-json-comprehension.md` — dated per Max's explicit request so
+  a future rerun adds a new file instead of rewriting one and invalidating its inbound links.
+  ~20 cross-references fixed across the codebase.
+- **3 more Copilot review comments addressed** (commit `fa9d6e1`): a root `pnpm-lock.yaml`
+  drift (2 orphaned `@swc/core` transitive deps plus 2 unrelated `semver` bumps, missed by the
+  first surgical cleanup), this file's stale "Pending / follow-ups" checklist (fixed above), and
+  an unpinned `npx tsx` shebang on the 7-day fixture generator script (switched to
+  `node --import tsx`, matching the package's already-pinned `tsx` devDependency).
+
+**Gotcha worth remembering**: diffing a long-lived feature branch against "main" for
+PR-review-triage purposes must use `origin/main`, not a local `main` ref — local `main` was
+~15 merged Renovate PRs stale, which initially made a real ~20-line lockfile diff look like a
+1300-line one and nearly led to a much more invasive (and wrong) fix. Caught by comparing
+`git rev-parse main origin/main` before trusting the diff.
+
+## Final state
+
+PR #100 has all 9 Copilot review comments addressed (6 in round 1, 3 in round 2), the full paid
+sweep complete with a recorded verdict, and docs restructured. **Not merged** — that decision
+belongs to Max. Latest commit on `infra/forecast-json-evals`: `fa9d6e1`.
