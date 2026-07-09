@@ -17,6 +17,7 @@ import type {
   GetLocalForecastParams,
   LocalForecastResponse,
   DailyForecast,
+  HourlyPrecip,
 } from '../schemas/ogd-local-forecast.js';
 import type { StacItem } from '../schemas/ogd-shared.js';
 
@@ -42,6 +43,53 @@ function findLatestAssetKey(item: StacItem, param: string): string | null {
  */
 function timestampToDate(ts: string): string {
   return `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}`;
+}
+
+/**
+ * Formatter that renders a UTC instant as local Europe/Zurich wall-clock time
+ * plus its UTC offset (DST-aware). Reused across calls since constructing an
+ * `Intl.DateTimeFormat` repeatedly is comparatively expensive.
+ */
+const zurichFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Zurich',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+  timeZoneName: 'longOffset',
+});
+
+/**
+ * Render a UTC timestamp's local Europe/Zurich date and wall-clock time, DST-correct.
+ */
+function zurichParts(ts: string): { date: string; time: string; offset: string } {
+  const utcMs = Date.UTC(
+    Number(ts.slice(0, 4)),
+    Number(ts.slice(4, 6)) - 1,
+    Number(ts.slice(6, 8)),
+    Number(ts.slice(8, 10)),
+    Number(ts.slice(10, 12))
+  );
+  const parts = zurichFormatter.formatToParts(new Date(utcMs));
+  const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
+  return {
+    date: `${get('year')}-${get('month')}-${get('day')}`,
+    time: `${get('hour')}:${get('minute')}:${get('second')}`,
+    offset: get('timeZoneName').replace('GMT', ''),
+  };
+}
+
+/**
+ * Convert a MeteoSwiss UTC timestamp (YYYYMMDDhhmm) to its local Europe/Zurich
+ * calendar date (YYYY-MM-DD), DST-correct. Used to bucket hourly readings into
+ * days that match the local wall-clock times we surface, so a day's `hourly`
+ * entries never spill across the local midnight boundary into a neighboring day.
+ */
+function utcTimestampToZurichDate(ts: string): string {
+  return zurichParts(ts).date;
 }
 
 /**
@@ -92,19 +140,23 @@ function buildStationForecast(
       precipitation: {
         total: dateKeyed.get('rka150d0')?.get(date) ?? null,
         unit: 'mm',
+        // Stations use daily params (rka150d0) — hourly precip isn't fetched for them yet.
+        hourly: null,
       },
     };
   });
 }
 
 /**
- * Group hourly values by date.
+ * Group hourly values by local Europe/Zurich date. Non-station forecasts are
+ * bucketed by local day (not the raw UTC date) so that a day's data matches the
+ * local-time labels we surface elsewhere (see `utcTimestampToZurichDate`).
  */
 function groupByDate(hourlyMap: Map<string, number | null>): Map<string, number[]> {
   const byDate = new Map<string, number[]>();
   for (const [ts, val] of hourlyMap.entries()) {
     if (val === null) continue;
-    const date = timestampToDate(ts);
+    const date = utcTimestampToZurichDate(ts);
     const existing = byDate.get(date) ?? [];
     existing.push(val);
     byDate.set(date, existing);
@@ -113,7 +165,28 @@ function groupByDate(hourlyMap: Map<string, number | null>): Map<string, number[
 }
 
 /**
+ * Group hourly precipitation values by local Europe/Zurich date — the same day
+ * boundary used for `groupByDate` — so every entry's `time` falls within the day
+ * it's nested under. Within each day, entries are sorted chronologically and
+ * null/missing readings are skipped (zero-mm hours are kept).
+ */
+function groupPrecipByDate(hourlyMap: Map<string, number | null>): Map<string, HourlyPrecip[]> {
+  const byDate = new Map<string, HourlyPrecip[]>();
+  const sortedTimestamps = [...hourlyMap.keys()].sort();
+  for (const ts of sortedTimestamps) {
+    const val = hourlyMap.get(ts) ?? null;
+    if (val === null) continue;
+    const { date, time, offset } = zurichParts(ts);
+    const existing = byDate.get(date) ?? [];
+    existing.push({ time: `${date}T${time}${offset}`, value: val });
+    byDate.set(date, existing);
+  }
+  return byDate;
+}
+
+/**
  * Pick the most representative weather icon for a day.
+ * `date` is a local Europe/Zurich calendar date (see `utcTimestampToZurichDate`).
  * Prefers midday hours (09-15 local, ~07-13 UTC) for daytime representation.
  * Falls back to the most frequent icon code if no midday data.
  */
@@ -121,7 +194,7 @@ function pickDaytimeIcon(entries: Map<string, number | null>, date: string): num
   const dayEntries: Array<{ hour: number; code: number }> = [];
   for (const [ts, val] of entries.entries()) {
     if (val === null) continue;
-    if (timestampToDate(ts) !== date) continue;
+    if (utcTimestampToZurichDate(ts) !== date) continue;
     const hour = Number(ts.slice(8, 10));
     dayEntries.push({ hour, code: val });
   }
@@ -163,7 +236,7 @@ function buildHourlyAggregatedForecast(
   const hourlyIcon = paramData.get('jww003i0') ?? new Map<string, number | null>();
 
   const tempByDate = groupByDate(hourlyTemp);
-  const precipByDate = groupByDate(hourlyPrecip);
+  const precipByDate = groupPrecipByDate(hourlyPrecip);
 
   const today = todayUtc();
   const dates = [...tempByDate.keys()]
@@ -172,9 +245,11 @@ function buildHourlyAggregatedForecast(
     .slice(0, days);
   return dates.map((date) => {
     const temps = tempByDate.get(date) ?? [];
-    const precips = precipByDate.get(date) ?? [];
+    // Derive both the daily total and the hourly series from the same list so
+    // they cannot disagree with each other.
+    const hourly = precipByDate.get(date) ?? [];
     const precipTotal =
-      precips.length > 0 ? Math.round(precips.reduce((a, b) => a + b, 0) * 10) / 10 : null;
+      hourly.length > 0 ? Math.round(hourly.reduce((sum, h) => sum + h.value, 0) * 10) / 10 : null;
     const iconCode = pickDaytimeIcon(hourlyIcon, date);
 
     return {
@@ -184,7 +259,7 @@ function buildHourlyAggregatedForecast(
         max: temps.length > 0 ? Math.max(...temps) : null,
         unit: '\u00B0C',
       },
-      precipitation: { total: precipTotal, unit: 'mm' },
+      precipitation: { total: precipTotal, unit: 'mm', hourly },
       weather: iconCode !== null ? weatherIconDescription(iconCode) : null,
       weather_icon_url: iconCode !== null ? weatherIconUrl(iconCode) : null,
     };
