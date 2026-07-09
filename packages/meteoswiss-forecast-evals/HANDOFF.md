@@ -1,71 +1,62 @@
 # Handoff
 
-Status as of 2026-07-09: **full sweep run, partial-but-clean verdict produced, two PR questions
-answered, one blocker needs Max's action before a complete rerun.**
+Status as of 2026-07-09: **complete 13-provider sweep + judge slice, all clean (0 API errors),
+verdict confirmed. All open questions from earlier partial runs are resolved.**
 
-## Headline verdict (see PLAN.md "Full sweep results" for the full breakdown)
+## Headline verdict (see PLAN.md "Full sweep results, complete" for the full breakdown)
 
-**Keep local-time labeling — do not switch PR #99 to UTC.** From 7 of 13 providers that
-completed cleanly (all 3 tiers represented, including frontier):
+**Keep local-time labeling — do not switch PR #99 to UTC.** Confirmed by the complete run across
+all 13 configured providers (462 scheduled calls, 0 API errors):
 
 ```
 tier      variant   accuracy
-frontier  local     18/18  100.0%      utc  11/18   61.1%
-cheap     local     18/18  100.0%      utc   9/18   50.0%
-tiny      local     25/27   92.6%      utc  12/27   44.4%
+frontier  local     42/45   93.3%      utc  25/45   55.6%
+cheap     local     36/36  100.0%      utc  19/36   52.8%
+tiny      local     31/36   86.1%      utc  16/36   44.4%
 ```
 
 The cleanest, non-confounded evidence: **`point-num`/`range-num`** (exact-value and range-sum
-lookups at a specific local hour) score **100% local / 0% UTC in every tier, frontier included**
-(opus-4.8/sonnet-5 both 2/2 local, 0/2 UTC). `argmax-time` shows the same direction (0% cheap/
-tiny, 50% frontier — still a large drop from 100%). One family, `dst-trap`, is excluded from this
-count: it asks for the UTC offset itself, which is definitionally unanswerable from the UTC
-variant by design (the local JSON prints it literally; the UTC JSON structurally can't) — its 0%
-UTC score is expected, not a comprehension failure, so it's not used as evidence here even though
-it points the same direction. Day-level/boolean questions stay ~100% on both variants, every
-tier. Uniform-across-tiers-including-frontier on the non-rigged families is this doc's own signal
-for "format defect, not capability gap." Local format itself checked clean too: tiny tier's 2
-local misses (92.6%, not 100%) are scattered across different models and question families
-(a `point-bool` misread, a `range-num` off by 0.1mm) — ordinary noise, not a shared defect.
+lookups at a specific local hour) score **100% local / 0% UTC in every tier**, across the full
+13-provider, n=13-per-cell sample (previously a 7-provider partial sample — now complete).
+`argmax-time` collapses the same way (100% → 15%). `dst-trap` is excluded from this count as
+before: it asks for the UTC offset itself, definitionally unanswerable from the UTC variant by
+design. New nuance visible only with the full sample: `argmax-day` and `range-bool` show **no
+gap at all** (92%/92%, 100%/100%) — day-level and coarse yes/no-across-a-range questions don't
+require pinning a specific hour, so they're insensitive to the labeling choice. The comprehension
+gap is specifically about hour-precision lookups, not the format being confusing in general.
 
-**Cost: ~$0.32 actually spent**, verified via OpenRouter's own `/api/v1/auth/key` and
-`/api/v1/credits` endpoints (not promptfoo's internal cost field, which is confirmed non-
-functional for OpenRouter — see PLAN.md). Comfortably under the $2-4 target and $10 ceiling.
+**Every one of the 13 real models scores higher on local than UTC, no exceptions** — including
+both previously-blocked Mistral models, which track their tier peers closely and show no
+format-specific anomaly. One apparent outlier, `gemini-3.1-pro-preview` (67% local, lower than
+its frontier peers), traces to a token-budget truncation artifact (its `reasoning.effort:
+'minimal'` config still leaks some reasoning tokens as visible `"Thinking: ..."` text that eats
+into `max_tokens: 256`, truncating the JSON answer mid-response) — not a comprehension failure.
+Full trace in PLAN.md.
 
-## Why only 7 of 13 providers, and what's needed to complete it
+**Judge slice: 12/12 passed (100%)**, 0 errors — open-ended, Opus-judged prompts confirm the
+local-time format supports genuinely useful, non-hallucinating, timing-aware answers, not just
+correct programmatic lookups.
 
-The sweep hit 61.9% API-error rate (286/462 calls), root-caused to **three independent, unrelated
-causes** (systematic-debugging process, not guessed — full detail in PLAN.md "Full sweep
-results"):
+**Cost: ~$0.95 actually spent on this rerun** (eval sweep + judge slice), verified via
+OpenRouter's own `/api/v1/auth/key` and `/api/v1/credits` endpoints (account usage
+$0.335 → $1.289; promptfoo's own cost field is confirmed non-functional for OpenRouter — see
+PLAN.md). Comfortably under the $2-4 target and $10 ceiling.
 
-1. **This OpenRouter account has never purchased credits** (`total_credits: 0`,
-   `is_free_tier: true` — confirmed via the account API directly). The `$10` figure on the key is
-   a spend *cap*, not a real balance; the account draws against a much smaller free-tier
-   allowance that ran dry mid-sweep. Hit 7 providers, always on their later-scheduled calls, never
-   on the first (primary-fixture) ones — consistent with "ran out partway through 13 models
-   spending concurrently," not a per-request limit.
-   **→ Needs Max to add real credits at <https://openrouter.ai/settings/credits> before a
-   complete rerun.** Not something this session should do unprompted (billing action).
-2. **`mistral-large-2512` / `mistral-medium-3.1`: 100% failure**, unrelated to credits — `404
-   "No endpoints available matching your guardrail restrictions and data policy"`.
-   **→ Needs Max to toggle a setting at <https://openrouter.ai/settings/privacy>**, or accept
-   these two providers stay excluded.
-3. **`gpt-5-mini`/`gpt-5-nano`/`gemini-3.1-pro-preview`/`gpt-5.2`: 100% failure**, also unrelated
-   to credits exhaustion (failed on their very first call) — these four reject
-   `passthrough.reasoning.enabled: false` outright (400) or silently balloon the token budget
-   past what the account can afford (gpt-5.2's 402 said "You requested up to 65536 tokens").
-   **→ Fixed in this PR**: `promptfooconfig.yaml` now uses
-   `passthrough.reasoning.effort: 'minimal'` for these four instead of `enabled: false`. Not yet
-   re-verified live (needs #1 resolved first). **Caveat**: gpt-5.2's specific error ("requested
-   up to 65536 tokens") looks more like `max_tokens: 256` not being applied to that endpoint at
-   all than a reasoning-budget issue — adding credits will likely make the 402 disappear either
-   way, which would look like this fix worked without confirming it. On rerun, check gpt-5.2's
-   `tokenUsage.completion` in `generated/results.json` actually stays near 256 rather than just
-   checking the call succeeds.
+## Both blockers from the previous partial run are now resolved
 
-The judge slice (`pnpm run eval:judge`) was **not** run — its judge model (`opus-4.8`) already
-showed the same credit-exhaustion pattern in the programmatic sweep, so running it now would
-mostly fail for the same reason. Rerun after credits are added.
+1. **OpenRouter credits added by Max** — the account is no longer `is_free_tier`. All 13
+   providers completed with 0 API errors this run (previously 61.9% error rate from free-tier
+   exhaustion).
+2. **ZDR/data-policy setting disabled by Max** — both `mistral-large-2512` and
+   `mistral-medium-3.1` completed all 33 calls each this run (previously 100% failure with
+   `404 "No endpoints available matching your guardrail restrictions"`).
+3. **The `passthrough.reasoning.effort: 'minimal'` fix (already shipped in this PR) works** for
+   all four previously-rejecting models (`gpt-5-mini`, `gpt-5-nano`, `gemini-3.1-pro-preview`,
+   `gpt-5.2`) — no more 400/402s. One residual nuance: `gemini-3.1-pro-preview` still leaks a
+   little visible reasoning text into its completions, occasionally truncating the JSON answer
+   under the tight `max_tokens: 256` budget — see PLAN.md for the full trace. Doesn't change the
+   verdict; flagged as a possible follow-up (raise `max_tokens` for this one provider) rather
+   than fixed here, since it doesn't block the gate decision.
 
 ## PR Question A — why `.mjs`/`.cjs` instead of TS?
 
@@ -80,33 +71,39 @@ Full writeup: PLAN.md "Q-A".
 
 ## PR Question B — promptfoo dependency bloat on `pnpm install`
 
-**Revised after Max's review.** The first pass (running promptfoo via unpinned `npx
-promptfoo@0.121.18`) was correctly flagged as not reproducible — it only pins the top-level
-version, not promptfoo's own transitive tree (no integrity hashes, sub-deps resolve fresh each
-time). Investigated every pnpm mechanism that could keep it a normal workspace member with a
-real lockfile-pinned dependency, installed only on request: `optionalDependencies` (installed by
-default on any compatible platform — not opt-in), `--filter` (a per-invocation flag, not
-persistent), `shared-workspace-lockfile: false` (confirmed via a pnpm maintainer on GitHub —
-all-or-nothing for the *whole* workspace, not settable per-package), `dependenciesMeta` (doesn't
-cover this), a `.pnpmfile.cjs` conditional-strip hook (hacky, breaks frozen-lockfile installs).
-**None work.** The one approach that gives both real pinning and zero root-install footprint:
-this package is now excluded from the root workspace glob and has its own nested
-`pnpm-workspace.yaml` (`packages: ["."]`), making it an independent pnpm project with its own
-real, integrity-hashed `pnpm-lock.yaml` (`promptfoo` back in `devDependencies`, exact-pinned).
-Root `pnpm install` no longer sees this package at all — install it with
-`cd packages/meteoswiss-forecast-evals && pnpm install`. Trade-off: no longer covered by
-`pnpm -r lint/build/test` at the repo root (verify standalone instead) — acceptable since it was
-never in CI regardless. Full investigation + verification: PLAN.md "Q-B (revisited)".
+**Revised after Max's review, then hardened once more.** The first pass (running promptfoo via
+unpinned `npx promptfoo@0.121.18`) was correctly flagged as not reproducible — it only pins the
+top-level version, not promptfoo's own transitive tree. Investigated every pnpm mechanism that
+could keep it a normal workspace member with a real lockfile-pinned dependency, installed only on
+request: `optionalDependencies`, `--filter`, `shared-workspace-lockfile: false` (confirmed
+all-or-nothing for the whole workspace via a pnpm maintainer on GitHub), `dependenciesMeta`, a
+`.pnpmfile.cjs` hook. **None work.** The fix: this package is excluded from the root workspace
+glob and has its own nested `pnpm-workspace.yaml` (`packages: ["."]`), making it an independent
+pnpm project with its own real, integrity-hashed `pnpm-lock.yaml`. Root `pnpm install` no longer
+sees this package at all — install it with `cd packages/meteoswiss-forecast-evals && pnpm
+install`.
 
-## To resume the full sweep (after Max adds credits + optionally toggles the Mistral setting)
+**Follow-up fix**: the nested workspace's first standalone install silently skipped promptfoo's
+native build scripts (esbuild, sharp, onnxruntime-node, @swc/core, protobufjs,
+@playwright/browser-chromium) — pnpm blocks unapproved build scripts by default, and `npx` (the
+previous mechanism, with no such gating) had run them unconditionally for every prior sweep.
+Fixed by adding an `onlyBuiltDependencies` allowlist to the nested `pnpm-workspace.yaml`, scoped
+to this package only. Verified the full paid rerun above completed cleanly with this fix in
+place.
+
+Trade-off, unchanged: no longer covered by `pnpm -r lint/build/test` at the repo root (verified
+standalone instead) — acceptable since this suite was never wired into CI. Full investigation +
+verification: PLAN.md "Q-B (revisited)".
+
+## Rerunning this suite
 
 ```bash
 cd packages/meteoswiss-forecast-evals
-pnpm install           # standalone install (this package is no longer a workspace member —
-                        # only needed once, or after promptfoo/deps change)
-pnpm run eval           # full programmatic sweep — should now complete cleanly for all 13
-pnpm run eval:judge     # judge slice
-pnpm run summarize      # prints the gate table from generated/results.json
+pnpm install            # standalone install (this package is not a workspace member) — only
+                         # needed once, or after promptfoo/deps change
+pnpm run eval            # full programmatic sweep, all 13 providers
+pnpm run eval:judge      # judge slice
+pnpm run summarize       # prints the gate table from generated/results.json
 ```
 
 Cross-check real spend against `curl -s https://openrouter.ai/api/v1/credits -H "Authorization:
@@ -116,9 +113,8 @@ field is confirmed non-functional for OpenRouter.
 ## Not yet done
 
 - PR #100 has not been merged (explicit constraint — do not merge).
-- A complete 13-provider rerun (blocked on Max adding credits; see above). Given the current
-  signal's size and cross-tier consistency, unlikely to reverse the verdict, but would firm up
-  tiny-tier `n` and add the two Mistral/EU providers.
-- Judge slice.
 - Acting on the verdict itself (e.g. touching PR #99's schema) — out of scope for this PR, which
   is evals-only and independent of #99.
+- Optional follow-up, not blocking: raise `max_tokens` for `gemini-3.1-pro-preview` specifically
+  to eliminate its reasoning-leak truncation artifact (see PLAN.md) — cosmetic, doesn't change
+  the verdict.

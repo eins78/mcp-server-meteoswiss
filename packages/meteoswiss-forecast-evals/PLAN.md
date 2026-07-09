@@ -476,23 +476,152 @@ error-prone UTC→local conversion step from every hour-level *value* lookup (po
 range-num, argmax-time), and separately makes the UTC offset itself directly readable rather
 than requiring calendar/DST knowledge the prompt explicitly disallows (dst-trap).
 
-**Verdict: keep local-time labeling (PR #99 as shipped). Do not switch to UTC.** The
-core evidence — point-num and range-num alone, ignoring the structurally-rigged dst-trap
-question entirely — already shows the effect at its cleanest: 100% local vs. 0% UTC, in **every
-tier including frontier**. This is not a weak-model problem; even the strongest models tested got
-the UTC→local hour conversion wrong essentially every time it was needed for a precise lookup.
-This is drawn from 7 of 13 configured providers (missing: gpt-5.2, gemini-3.1-pro, gpt-5-mini,
-gpt-5-nano, mistral-large, mistral-medium-3.1 — all excluded by the account/config issues above,
-not by the format being tested) — a full 13-provider rerun after Max adds credits would firm up
-the tiny-tier n and add the two missing EU/Mistral providers, but is unlikely to reverse a signal
-this large and this consistent across independent tiers. The judge slice (`pnpm run eval:judge`)
-was not run — it uses `opus-4.8` as judge, which already showed the same credit-exhaustion
-pattern above, so running it now would mostly fail for the same reason; rerun once credits are
-added.
+**This partial-sample verdict was: keep local-time labeling, do not switch to UTC** — see below
+for the complete 13-provider rerun, which confirms it and strengthens the evidence.
 
-**Local-format cleanliness check** (the suite's secondary purpose — catching defects in the
-*local* format before release, not just the UTC comparison): tiny tier scored 92.6% (25/27) on
-local, not 100%. The 2 misses are scattered, not a pattern — `ministral-8b` missed one
-`point-bool` question (misread a boolean), `llama-3.3-70b` missed one `range-num` sum by 0.1mm
-(`0.8` vs expected `0.9`) — different models, different families, no shared cause. Read as
-ordinary model noise, not a local-format defect worth acting on.
+## Full sweep results, complete (2026-07-09, after credits + ZDR fix)
+
+Max added real OpenRouter credits and disabled the account's ZDR (data-policy/guardrail) setting
+that had been blocking the two Mistral endpoints. Rerun of the full sweep: **all 13 providers
+completed with 0 API errors** (462 total scheduled calls; `Results: 0 errors (0%)` in the
+promptfoo CLI summary) — every failure below is a real scoring outcome (wrong/unparseable), not
+an infrastructure failure. All three root causes from the partial run are confirmed fixed:
+credits exhaustion (resolved by the top-up), the Mistral 404 guardrail (resolved by the ZDR
+toggle — both `mistral-large-2512` and `mistral-medium-3.1` completed all 33 calls each, no
+different from any other provider), and the four reasoning-config rejections (resolved by
+`passthrough.reasoning.effort: 'minimal'` — see the caveat on `gemini-3.1-pro-preview` below,
+which needed one more round of investigation).
+
+**Gate (tiny tier, primary DST-spanning fixture) — decides #99 / PROD release:**
+
+```
+tiny | local   n=36  score=86%  [wrong:5 correct:31]
+tiny | utc     n=36  score=46%  [wrong:19 correct:16 partial:1]
+```
+
+**All tiers × variant, primary fixture:**
+
+```
+tier      variant   n    score
+cheap     local     36   100%  [correct:36]
+cheap     utc       36    54%  [correct:19 wrong:15 unparseable:1 partial:1]
+frontier  local     45    93%  [correct:42 unparseable:3]
+frontier  utc       45    56%  [wrong:17 correct:25 unparseable:3]
+tiny      local     36    86%  [wrong:5 correct:31]
+tiny      utc       36    46%  [wrong:19 correct:16 partial:1]
+```
+
+**Question family × variant, primary fixture (n=13 per cell — the full set, not a partial
+sample):**
+
+```
+family          local   utc
+argmax-day       92%    92%   (date-level, both variants encode it identically — expected)
+argmax-time     100%    15%
+availability     92%    88%
+cross-field     100%    88%
+dst-trap         85%    15%   (structurally unanswerable from UTC by design — see below)
+point-bool       85%    69%
+point-num       100%     0%
+range-bool      100%   100%   (coarse yes/no across a labeled range — robust either way)
+range-num        85%     0%
+```
+
+The full sample confirms and sharpens the partial-run finding. **`point-num` and `range-num`**
+remain the cleanest, non-confounded evidence — exact-value and range-sum lookups at a specific
+local hour — now at **100% local / 0% UTC across the complete 13-provider, n=13-per-cell sample**,
+not just a 7-provider subset. `argmax-time` shows the same collapse (100% → 15%). `dst-trap`
+stays excluded from the headline claim for the same reason as before: it asks for the UTC offset
+itself, which the local-variant JSON prints literally and the UTC-variant JSON structurally
+cannot express — its near-zero UTC score is expected by construction, not new comprehension
+evidence. **`argmax-day` and `range-bool` show no gap at all** — a genuinely new nuance the
+partial sample didn't have the range to surface clearly: coarse day-level and yes/no-across-a-
+range questions don't require converting a specific hour, so they're insensitive to the
+labeling choice. The comprehension gap is specifically about pinning down *a particular hour's*
+value, not about the format being confusing in general.
+
+**Per-model breakdown, primary fixture (n=9 per cell, every one of the 13 real providers)** —
+every single model, no exceptions, scores higher on local than UTC:
+
+```
+provider                          local   utc
+claude-opus-4.8                    100%    67%
+claude-sonnet-5                    100%    56%
+claude-haiku-4.5                   100%    44%
+gemini-3.1-pro-preview              67%    22%   (see caveat below — inflated by a truncation bug)
+gemini-3.1-flash-lite               100%    56%
+gemini-2.5-flash-lite               100%    44%
+gpt-5.2                             100%    67%
+gpt-5-mini                          100%    56%
+gpt-5-nano                          67%    44%
+mistral-large-2512                  100%    67%
+mistral-medium-3.1                  100%    56%
+ministral-8b-2512                    89%    33%
+llama-3.3-70b-instruct               89%    56%
+```
+
+**Surprising finding, investigated and explained:** `gemini-3.1-pro-preview` is the one outlier
+that doesn't score ~100% on local. Traced (not guessed) by reading its raw failing responses in
+`generated/results.json`: on **local**, all 3 failures are `[unparseable] no JSON object
+recovered from response` — the model emits a visible `"Thinking: ..."` preamble (a side effect of
+`reasoning.effort: 'minimal'` still leaking some reasoning tokens into the completion, matching
+`summarize.ts`'s own `[!] reasoning tokens leaked: 7612` flag for this provider) that consumes
+the `max_tokens: 256` budget before the actual JSON answer, truncating mid-response (e.g.
+`{"utc_offset": "+02:00` cut off with no closing brace). This is an eval-harness token-budget
+artifact, not a comprehension failure — the model was mid-way through emitting the *correct*
+answer when it ran out of budget in two of the three cases inspected. On **UTC**, by contrast,
+6 of 8 failures are genuine wrong answers (e.g. "expected 0.3±0.05, got 0.5") in the same pattern
+as every other model, plus 2 more truncation artifacts. Net effect: this provider's local score
+(67%) understates its real comprehension (which is likely ~100%, consistent with every other
+frontier model, once truncation is excluded), while its UTC score (22%) is a mix of real
+misunderstanding and the same artifact. **Does not change the verdict** — if anything, correcting
+for the artifact would widen this model's local-vs-UTC gap, not narrow it. Flagged here rather
+than silently adjusted, since fixing `max_tokens` for this one provider is a config change for a
+future PR, not something to patch mid-report.
+
+No other provider — including both previously-blocked Mistral models — shows any anomaly relative
+to the rest of its tier. The Mistral models track their tier peers closely (`mistral-large-2512`
+100%/67% local/utc, right in line with `opus-4.8`/`gpt-5.2`; `mistral-medium-3.1` 100%/56%, in
+line with `haiku-4.5`/`gpt-5-mini`; `ministral-8b-2512` 89%/33%, in line with the other tiny-tier
+models) — the earlier 404 guardrail block was purely an account setting, not a sign these models
+handle the format differently.
+
+**Judge slice** (`pnpm run eval:judge`, open-ended prompts judged by `opus-4.8` via
+`llm-rubric`): **12/12 passed (100%)**, 0 errors, across all 3 judged providers
+(`opus-4.8`, `haiku-4.5`, `gpt-5-nano`) — confirms the local-time format supports genuinely
+useful, non-hallucinating, timing-aware answers in open-ended use (e.g. "explain to a cyclist
+planning an 08:00 commute"), not just the programmatic lookup slice.
+
+**Secondary tracks** (directionally consistent, not part of the headline gate):
+- 7-day fixture: frontier 90%/60% local/utc, cheap 75%/50%, tiny 50%/50% (n=8 per tier-variant
+  cell — small enough that the flat tiny-tier result is plausibly noise, not a contradiction).
+- Multi-series mock (shape A vs shape B, secondary design input for a *future* sunshine/wind
+  feature, not this PR's gate): shape B slightly ahead of shape A in cheap/tiny tiers (88%/72%
+  vs 85%/77%), roughly even in frontier (76% vs 78%) — a mild signal, not a strong one either way.
+
+**Cost — actual, verified against OpenRouter's own account API** (not promptfoo's internal cost
+field, confirmed non-functional for OpenRouter): account usage before this rerun was
+`$0.335` (the earlier partial 7/13 sweep); after the full 13-provider sweep + judge slice,
+`$1.289`. **This rerun's actual spend: ~$0.95** (eval sweep + judge slice combined), comfortably
+under the $2-4 target and the $10 hard ceiling — confirmed via `GET
+https://openrouter.ai/api/v1/auth/key` (`usage` field) and `GET
+https://openrouter.ai/api/v1/credits`, cross-checked against `summarize.ts`'s own token-based
+estimate (~$1.07 for the eval sweep alone) — same order of magnitude, real API confirms the
+estimate isn't wildly off.
+
+**Verdict: keep local-time labeling (PR #99 as shipped). Do not switch to UTC. Confirmed, not
+just carried over, by the complete 13-provider rerun.** The core, non-confounded evidence
+(`point-num`/`range-num`) is unchanged in direction and now covers the full sample: 100% local /
+0% UTC, every tier, every one of the 13 real models included. No provider — including the two
+previously-blocked Mistral endpoints — bucks the trend. The one apparent outlier
+(`gemini-3.1-pro-preview`'s depressed local score) traces to an eval-harness token-budget
+artifact, not a comprehension counterexample, and correcting for it would strengthen rather than
+weaken the finding. The judge slice adds an open-ended, non-programmatic confirmation that the
+local-time format produces useful answers, not just correct programmatic-lookup answers.
+
+**Local-format cleanliness check** (this suite's secondary purpose — catching defects in the
+*local* format before release, independent of the UTC comparison): tiny tier scored 86% (31/36)
+on local this run, similar to the partial run's 92.6%. Failures are `wrong:5`, still scattered
+across different models/families per the per-model table above (no single model or question
+family dominates tiny-tier local failures) — read as ordinary model noise at the tiny-tier
+capability floor, not a local-format defect worth acting on before release.

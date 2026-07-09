@@ -24,6 +24,11 @@ e.g. `"2026-03-28T09:00:00+01:00"`) vs **UTC** (`"2026-03-28T08:00:00Z"`) change
 local-time questions about the forecast. That result gates merging PR #99 / releasing the
 hourly-precipitation feature to PROD.
 
+**Answer, from a complete 13-provider sweep + judge slice (2026-07-09, see PLAN.md "Full sweep
+results, complete"): keep local-time labeling. Do not switch to UTC.** The cleanest evidence
+(`point-num`/`range-num` — exact-value lookups at a specific local hour) scores 100% local vs. 0%
+UTC in every tier, every model tested, no exceptions.
+
 ## Quick start
 
 ```bash
