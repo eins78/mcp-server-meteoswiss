@@ -77,18 +77,22 @@ src/
   questions.ts                the 10-question programmatic set (primary + 7-day + station)
   multiseries.ts              secondary track: shape A vs shape B mock
   generate-tests.ts           ties it together -> generated/{tests,judge-tests}.json
-  scoring-core.mjs            lenient parsing + comparison (plain ESM, unit-tested directly)
-  scorer.cjs                  promptfoo javascript-assertion entrypoint (CJS, see file header
-                              for why it's not the same module format as scoring-core.mjs)
+  scoring-core.ts              lenient parsing + comparison (plain TypeScript, unit-tested directly)
+  scorer.ts                    promptfoo javascript-assertion entrypoint (plain TypeScript — see
+                              its header comment for why no build step is needed)
   summarize.ts                 the gate table + cost report
   *.test.ts                    offline unit tests (node:test), run via `pnpm test`
 scripts/
-  synth-7day-fixture.mjs       one-off, deterministic generator for the 7-day fixture
+  synth-7day-fixture.ts        one-off, deterministic generator for the 7-day fixture
   keychain-openrouter.sh       prints the OpenRouter key from the keychain
   run.sh                       wraps `promptfoo eval`, wiring in the key
 promptfooconfig.yaml           programmatic (lookup) slice — the primary eval
 promptfooconfig.judge.yaml     open-ended, Opus-judged slice — secondary quality check
 ```
+
+Every `.ts` file in `src/` and `scripts/` runs directly with no build step — including
+`scorer.ts`, which promptfoo itself dynamically imports at grading time. See "Why plain
+TypeScript, no `.mjs`/`.cjs`" below.
 
 ## Extending this suite
 
@@ -96,7 +100,39 @@ promptfooconfig.judge.yaml     open-ended, Opus-judged slice — secondary quali
   track), computing `expected` from `src/ground-truth.ts` — never hand-type an expected value.
 - **New fixture**: capture real tool output the way `fixtures/forecast-8001-2day-local.json`
   was captured (see PLAN.md "Fixture & the two variants" for the exact gotcha to avoid), or
-  follow `scripts/synth-7day-fixture.mjs`'s pattern for a synthesized one (deterministic, no
+  follow `scripts/synth-7day-fixture.ts`'s pattern for a synthesized one (deterministic, no
   `Math.random`/`Date.now`, documented provenance in a header comment).
 - **New model**: add a provider block to `promptfooconfig.yaml`, following the existing
   `tier/short-name` label convention — `summarize.ts` derives the tier from that prefix.
+
+## Why plain TypeScript, no `.mjs`/`.cjs`
+
+promptfoo's own docs say external assertion files must be pre-transpiled JS ("if transpiling
+TypeScript, point promptfoo to the transpiled output"), which is why this suite originally
+shipped `scorer.cjs` / `scoring-core.mjs`. That turned out to be unnecessary: promptfoo just
+does a plain dynamic `import()`/`require()` on the `file://` path it's given. On this repo's
+pinned Node version (24.18, see `.nvmrc`; every CI workflow pins `node-version: 24`), that
+resolves through Node's own native TypeScript support — type-stripping for "erasable" syntax,
+on by default since Node 23.6. This repo already forbids the handful of TS constructs that
+*aren't* erasable (enums, namespaces, parameter properties — see the root `CLAUDE.md`), so
+every file here was already inside that subset. Verified empirically (a throwaway `.ts` scorer
+against promptfoo's free `echo` provider, before converting the real files) rather than taken on
+faith from promptfoo's docs. Net effect: `scorer.ts` and `scoring-core.ts` run with **no build
+step**, matching the rest of this monorepo's `tsx`-first convention, instead of needing to be
+hand-maintained in two module formats.
+
+## Why `promptfoo` isn't a declared dependency
+
+`promptfoo` (the CLI) is large — pulling it in as a `dependency`/`devDependency` here would mean
+every `pnpm install` at the repo root installs it for every contributor, even ones who never
+touch this package, since pnpm workspaces install the full dependency graph of every member by
+default. This package never *imports* promptfoo as a library — every use is a CLI invocation
+(`scripts/run.sh`, the `view` script), already pinned to an exact version
+(`npx promptfoo@0.121.18 ...` / `npx --yes promptfoo@0.121.18`). So it's invoked via `npx`
+instead of declared as a dependency: `npx` fetches-and-caches the package outside the
+pnpm-managed dependency tree, giving this package a normal `pnpm-lock.yaml` entry (just its own
+small TS/lint/test devDependencies) while still pinning the exact promptfoo version everyone
+gets. First run per machine pays a one-time `npx` download; every run after that is cached.
+`optionalDependencies` and workspace-install exclusion were considered and rejected — both still
+add promptfoo to the lockfile/dependency graph in some form, which is exactly the bloat this
+avoids.

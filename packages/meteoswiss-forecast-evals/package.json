@@ -23,13 +23,10 @@
     "view": "npx promptfoo@0.121.18 view",
     "lint": "pnpm run lint:ts && pnpm run lint:eslint",
     "lint:ts": "tsc --noEmit",
-    "lint:eslint": "eslint 'src/**/*.{ts,mjs,cjs}'",
-    "fix": "eslint 'src/**/*.{ts,mjs,cjs}' --fix",
+    "lint:eslint": "eslint '{src,scripts}/**/*.ts'",
+    "fix": "eslint '{src,scripts}/**/*.ts' --fix",
     "build": "tsc",
-    "format": "prettier --write 'src/**/*.{ts,mjs,cjs}' '*.yaml'"
-  },
-  "dependencies": {
-    "promptfoo": "^0.121.18"
+    "format": "prettier --write '{src,scripts}/**/*.ts' '*.yaml'"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S npx tsx
 /**
  * One-off, deterministic generator for fixtures/forecast-8001-7day-local.json.
  *
@@ -20,27 +20,39 @@
  * edge case is already exercised by forecast-8001-2day-local.json; this fixture's job is
  * series *length*, not DST.
  *
- * Run: node scripts/synth-7day-fixture.mjs   (writes fixtures/forecast-8001-7day-local.json)
+ * Run: npx tsx scripts/synth-7day-fixture.ts   (writes fixtures/forecast-8001-7day-local.json)
  */
 
-import { writeFileSync } from 'node:fs';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { writeFileSync } from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import type { DailyForecast, LocalForecastResponse } from "../src/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT_PATH = path.resolve(__dirname, '../fixtures/forecast-8001-7day-local.json');
+const OUT_PATH = path.resolve(
+  __dirname,
+  "../fixtures/forecast-8001-7day-local.json",
+);
 
-const START_DATE = '2026-04-06'; // Monday, constant +02:00 (CEST) throughout the week
-const OFFSET = '+02:00';
+const START_DATE = "2026-04-06"; // Monday, constant +02:00 (CEST) throughout the week
+const OFFSET = "+02:00";
+
+type HourlyProfile = number[];
 
 // Hourly rain profiles (mm), one per 24-hour day, index = hour 0-23. Hand-picked, not random.
-const DRY = new Array(24).fill(0);
-const MORNING_DRIZZLE = DRY.map((_, h) => (h >= 6 && h <= 8 ? [0.1, 0.2, 0.1][h - 6] : 0));
-const AFTERNOON_SHOWER = DRY.map((_, h) => (h >= 14 && h <= 17 ? [0.2, 0.6, 0.4, 0.1][h - 14] : 0));
-const ALL_DAY_RAIN = DRY.map((_, h) => (h >= 5 && h <= 21 ? 0.3 : 0));
+const DRY: HourlyProfile = new Array(24).fill(0);
+const MORNING_DRIZZLE: HourlyProfile = DRY.map((_, h) =>
+  h >= 6 && h <= 8 ? [0.1, 0.2, 0.1][h - 6]! : 0,
+);
+const AFTERNOON_SHOWER: HourlyProfile = DRY.map((_, h) =>
+  h >= 14 && h <= 17 ? [0.2, 0.6, 0.4, 0.1][h - 14]! : 0,
+);
+const ALL_DAY_RAIN: HourlyProfile = DRY.map((_, h) =>
+  h >= 5 && h <= 21 ? 0.3 : 0,
+);
 
 // One profile per day of the week (Mon..Sun), chosen for variety incl. a clear single wettest day.
-const DAY_PROFILES = [
+const DAY_PROFILES: HourlyProfile[] = [
   DRY, // Mon 04-06
   MORNING_DRIZZLE, // Tue 04-07
   DRY, // Wed 04-08
@@ -50,50 +62,57 @@ const DAY_PROFILES = [
   DRY, // Sun 04-12
 ];
 
-const WEATHER_BY_PROFILE = new Map([
-  [DRY, { weather: 'sunny', icon: 1 }],
-  [MORNING_DRIZZLE, { weather: 'rain showers', icon: 25 }],
-  [ALL_DAY_RAIN, { weather: 'rain', icon: 22 }],
-  [AFTERNOON_SHOWER, { weather: 'sunny intervals, rain showers', icon: 25 }],
+const WEATHER_BY_PROFILE = new Map<
+  HourlyProfile,
+  { weather: string; icon: number }
+>([
+  [DRY, { weather: "sunny", icon: 1 }],
+  [MORNING_DRIZZLE, { weather: "rain showers", icon: 25 }],
+  [ALL_DAY_RAIN, { weather: "rain", icon: 22 }],
+  [AFTERNOON_SHOWER, { weather: "sunny intervals, rain showers", icon: 25 }],
 ]);
 
-function addDays(dateStr, n) {
+function addDays(dateStr: string, n: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
-function round1(n) {
+function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-const forecast = DAY_PROFILES.map((profile, dayIndex) => {
+const forecast: DailyForecast[] = DAY_PROFILES.map((profile, dayIndex) => {
   const date = addDays(START_DATE, dayIndex);
   const hourly = profile.map((value, hour) => ({
-    time: `${date}T${String(hour).padStart(2, '0')}:00:00${OFFSET}`,
+    time: `${date}T${String(hour).padStart(2, "0")}:00:00${OFFSET}`,
     value,
   }));
   const total = round1(profile.reduce((a, b) => a + b, 0));
-  const { weather, icon } = WEATHER_BY_PROFILE.get(profile);
+  const meta = WEATHER_BY_PROFILE.get(profile);
+  if (!meta)
+    throw new Error(
+      "unreachable: every profile has a WEATHER_BY_PROFILE entry",
+    );
   return {
     date,
-    weather,
-    weather_icon_url: `https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/${icon}.svg`,
-    temperature: { min: 6 + dayIndex, max: 16 + dayIndex, unit: '°C' },
-    precipitation: { total, unit: 'mm', hourly },
+    weather: meta.weather,
+    weather_icon_url: `https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/${meta.icon}.svg`,
+    temperature: { min: 6 + dayIndex, max: 16 + dayIndex, unit: "°C" },
+    precipitation: { total, unit: "mm", hourly },
   };
 });
 
-const fixture = {
+const fixture: LocalForecastResponse = {
   location: {
-    name: 'Zürich',
-    type: 'postal_code',
+    name: "Zürich",
+    type: "postal_code",
     elevation: 409,
     coordinates: { lat: 47.372289, lon: 8.542189 },
   },
   generated: `${START_DATE}T04:00:00.000000Z`,
   forecast,
-  source: 'MeteoSwiss Open Data',
+  source: "MeteoSwiss Open Data",
 };
 
 writeFileSync(OUT_PATH, `${JSON.stringify(fixture, null, 2)}\n`);

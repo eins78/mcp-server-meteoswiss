@@ -70,7 +70,7 @@ describe("fixture.ts toUtcIso — same instant, different label", () => {
   });
 });
 
-describe("7-day fixture (synthesized, deterministic — see scripts/synth-7day-fixture.mjs)", () => {
+describe("7-day fixture (synthesized, deterministic — see scripts/synth-7day-fixture.ts)", () => {
   const fixture = loadFixture("forecast-8001-7day-local.json");
   const readings = canonicalReadings(fixture);
 

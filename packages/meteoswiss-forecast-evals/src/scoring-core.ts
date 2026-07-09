@@ -1,7 +1,7 @@
 /**
- * Lenient parsing + comparison, shared by the promptfoo `javascript` assertion (scorer.mjs,
- * loaded at grading time by promptfoo — plain JS, no TS project) and by summarize.ts (which
- * imports this same module for an offline unit test — see src/scoring.test.ts).
+ * Lenient parsing + comparison, shared by the promptfoo `javascript` assertion (scorer.ts,
+ * loaded directly by promptfoo at grading time — see that file's header for how a plain .ts
+ * file works there with no build step) and by the offline unit tests (scoring.test.ts).
  *
  * "Lenient" per PLAN.md: a tiny model that answers correctly but wraps the JSON in prose, or
  * uses a markdown fence, must NOT be scored as wrong for that — that would measure JSON-
@@ -12,17 +12,19 @@
  * `summarize.ts` reports these as three distinct buckets.
  */
 
+import type { Expected, LeafExpected } from "./questions.js";
+
 /**
  * Try to recover a JSON object from a raw model response: strict parse first, then strip
  * markdown code fences, then fall back to extracting the first balanced-looking {...} block.
  * Returns `undefined` if nothing parseable was found.
  */
-export function extractJson(raw) {
+export function extractJson(raw: unknown): Record<string, unknown> | undefined {
   if (typeof raw !== "string") return undefined;
   const attempts = [raw.trim()];
 
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced) attempts.push(fenced[1].trim());
+  if (fenced?.[1]) attempts.push(fenced[1].trim());
 
   const firstBrace = raw.indexOf("{");
   const lastBrace = raw.lastIndexOf("}");
@@ -32,9 +34,10 @@ export function extractJson(raw) {
 
   for (const candidate of attempts) {
     try {
-      const parsed = JSON.parse(candidate);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
-        return parsed;
+      const parsed: unknown = JSON.parse(candidate);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
     } catch {
       // try the next candidate
     }
@@ -42,7 +45,7 @@ export function extractJson(raw) {
   return undefined;
 }
 
-function coerceBool(value) {
+function coerceBool(value: unknown): boolean | undefined {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value !== 0;
   if (typeof value === "string") {
@@ -53,7 +56,7 @@ function coerceBool(value) {
   return undefined;
 }
 
-function coerceNumber(value) {
+function coerceNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
     const match = value.match(/-?\d+(\.\d+)?/);
@@ -63,40 +66,42 @@ function coerceNumber(value) {
 }
 
 /** Accepts "09:00", "9:00", 9, "9", "hour 9" -> 9. */
-function coerceHour(value) {
+function coerceHour(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value))
     return Math.trunc(value);
   if (typeof value === "string") {
     const match = value.match(/(\d{1,2})(?::\d{2})?/);
-    if (match) return Number(match[1]);
+    if (match?.[1]) return Number(match[1]);
   }
   return undefined;
 }
 
-/** Accepts "2026-03-28", "28.03.2026", "March 28 2026" is NOT handled — kept strict on purpose
- * (the schema explicitly asks for YYYY-MM-DD); loosely accepts surrounding whitespace/quotes. */
-function coerceDate(value) {
+/** Accepts "2026-03-28"; kept strict on purpose (the schema explicitly asks for YYYY-MM-DD);
+ * loosely accepts surrounding whitespace/quotes/prose. */
+function coerceDate(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const match = value.match(/\d{4}-\d{2}-\d{2}/);
-  return match ? match[0] : undefined;
+  return match?.[0];
 }
 
 /** Accepts "+02:00", "+2:00", "+2", "UTC+2" -> "+02:00". */
-function coerceOffset(value) {
+function coerceOffset(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const match = value.match(/([+-])\s*(\d{1,2})(?::?(\d{2}))?/);
-  if (!match) return undefined;
+  if (!match?.[1] || !match[2]) return undefined;
   const sign = match[1];
   const hours = match[2].padStart(2, "0");
   const minutes = (match[3] ?? "00").padStart(2, "0");
   return `${sign}${hours}:${minutes}`;
 }
 
-/**
- * Score one leaf expectation against a parsed answer object.
- * Returns { pass, score (0 or 1), reason }.
- */
-function scoreLeaf(parsed, leaf) {
+type LeafResult = { pass: boolean; score: 0 | 1; reason: string };
+
+/** Score one leaf expectation against a parsed answer object. */
+function scoreLeaf(
+  parsed: Record<string, unknown> | undefined,
+  leaf: LeafExpected,
+): LeafResult {
   const raw = parsed ? parsed[leaf.key] : undefined;
 
   if (leaf.kind === "unavailable") {
@@ -165,20 +170,22 @@ function scoreLeaf(parsed, leaf) {
         reason: `expected ${leaf.value}, got ${JSON.stringify(raw)}`,
       };
     }
-    default:
-      return {
-        pass: false,
-        score: 0,
-        reason: `unknown leaf kind: ${leaf.kind}`,
-      };
   }
 }
 
-/**
- * Score a raw model response against an `Expected` (leaf or compound). Returns:
- *   { outcome: 'unparseable' | 'wrong' | 'correct' | 'partial', score: 0..1, pass: boolean, detail: string }
- */
-export function scoreResponse(rawText, expected) {
+export type ScoreOutcome = "unparseable" | "wrong" | "correct" | "partial";
+export type ScoreResult = {
+  outcome: ScoreOutcome;
+  score: number;
+  pass: boolean;
+  detail: string;
+};
+
+/** Score a raw model response against an `Expected` (leaf or compound). */
+export function scoreResponse(
+  rawText: unknown,
+  expected: Expected,
+): ScoreResult {
   const parsed = extractJson(rawText);
   if (parsed === undefined) {
     return {
@@ -189,11 +196,16 @@ export function scoreResponse(rawText, expected) {
     };
   }
 
-  const leaves = expected.kind === "compound" ? expected.parts : [expected];
+  const leaves: LeafExpected[] =
+    expected.kind === "compound" ? expected.parts : [expected];
   const results = leaves.map((leaf) => scoreLeaf(parsed, leaf));
   const score = results.reduce((sum, r) => sum + r.score, 0) / results.length;
   const pass = score === 1;
-  const outcome = pass ? "correct" : score > 0 ? "partial" : "wrong";
+  const outcome: ScoreOutcome = pass
+    ? "correct"
+    : score > 0
+      ? "partial"
+      : "wrong";
   const detail = results.map((r) => r.reason).join("; ");
   return { outcome, score, pass, detail };
 }

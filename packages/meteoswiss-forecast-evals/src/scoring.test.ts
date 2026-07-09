@@ -5,8 +5,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-// scoring-core.mjs is plain ESM JS, imported directly with its .mjs extension.
-import { extractJson, scoreResponse } from "./scoring-core.mjs";
+import { extractJson, scoreResponse } from "./scoring-core.js";
 
 describe("extractJson", () => {
   test("parses strict JSON", () => {

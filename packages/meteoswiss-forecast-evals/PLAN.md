@@ -21,11 +21,12 @@ The UTC-vs-local result on that tier **gates merging #99 / releasing to PROD.**
 
 ## Decisions (locked)
 
-- Stack: **promptfoo** (TS devDep). Considered inspect-ai (Python) on the merits — head-to-head
-  covered in the session transcript; inspect-ai's real strengths (solver composition, epochs,
-  agentic rigor) don't clear the bar for a single-turn comprehension matrix, and it would graft
-  a second toolchain onto an otherwise TS-consistent monorepo. promptfoo's comparison-grid +
-  native OpenRouter/Ollama providers fit this task directly.
+- Stack: **promptfoo**, invoked via pinned `npx` (not a declared dependency — see "Q-B" below).
+  Considered inspect-ai (Python) on the merits — head-to-head covered in the session transcript;
+  inspect-ai's real strengths (solver composition, epochs, agentic rigor) don't clear the bar for
+  a single-turn comprehension matrix, and it would graft a second toolchain onto an otherwise
+  TS-consistent monorepo. promptfoo's comparison-grid + native OpenRouter/Ollama providers fit
+  this task directly.
 - **New PR, based on `main`, independent of #99.** This package does not import `meteoswiss-mcp`
   source; `fixtures/` holds static JSON captured from a real run of the #99 tool (see below).
 - Package: `packages/meteoswiss-forecast-evals`, a normal pnpm workspace member (no
@@ -113,14 +114,14 @@ Plus two secondary-track questions on the 7-day fixture (`sevenday-wettest`,
 total from `pnpm run generate`.
 
 Every test asks for a strict single-line JSON answer with a declared schema (e.g.
-`{"mm": <number>}`). `src/scoring-core.mjs` parses leniently — strict JSON first, then a
+`{"mm": <number>}`). `src/scoring-core.ts` parses leniently — strict JSON first, then a
 markdown-fence strip, then a brace-matched extraction from surrounding prose — before falling
 back to `unparseable`. This is unit-tested in `src/scoring.test.ts` and was also validated by
 the real smoke-test run (see "What the smoke test found" below).
 
 ## Secondary track: 7-day fixture
 
-`scripts/synth-7day-fixture.mjs` is a **deterministic, non-random** generator (see its header
+`scripts/synth-7day-fixture.ts` is a **deterministic, non-random** generator (see its header
 comment for why: real fixture data only spans ~1.5 days, and this suite also needs to test
 whether legibility holds up over a longer series — a proxy for "will consumers still cope once
 we add more time-series over more days", the actual reason to eval now). Four hand-picked
@@ -225,14 +226,156 @@ or a stacked follow-up PR if #99 has already merged by then.
    `toUtcIso` correctness including the DST boundary, and the lenient scorer across every leaf
    kind + compound + unparseable). All passing, no network.
 3. `pnpm run dryrun` — promptfoo's built-in `echo` provider, $0, validated the full pipeline
-   wiring end-to-end (including confirming `scorer.cjs`'s dynamic `import()` of the ESM
-   `scoring-core.mjs` actually works under promptfoo's runtime, which was the biggest
-   unverified-until-tested risk in the design).
+   wiring end-to-end (including confirming `scorer.ts`'s dynamic `import()` of `scoring-core.ts`
+   actually works under promptfoo's runtime, which was the biggest unverified-until-tested risk
+   in the design — see "Q-A" below for the full story of why that's a plain `.ts` file today).
 4. `pnpm run smoke` — 1 real cheap model (gemini-2.5-flash-lite), ~$0.01, confirmed the real
    OpenRouter path, produced the gate-table finding above, and surfaced the cost-tracking
    caveat.
 5. `pnpm -r lint` / `pnpm -r build` / `pnpm -r test` stay green across the monorepo; this
    package is not wired into any CI workflow.
 
-**The full paid sweep across all 13 models (`pnpm run eval` + `eval:judge`) was deliberately
-NOT run** — that's a separate, explicit step after this PR is reviewed.
+The full paid sweep across all 13 models was subsequently run — see "Full sweep results
+(2026-07-09)" below for the outcome, the account-funding blocker that limited it, and the
+resulting (partial but statistically clean) verdict.
+
+## Q-A: why plain TypeScript, not `.mjs`/`.cjs`
+
+Raised in PR review: this suite originally shipped `src/scorer.cjs` (CommonJS) dynamically
+`import()`-ing `src/scoring-core.mjs` (ESM) — two different module formats for two files in the
+same feature, which is exactly the kind of thing that looks like an unexplained workaround.
+
+promptfoo's own docs say so directly: "if you are transpiling Javascript or Typescript, we
+recommend pointing promptfoo to the transpiled Javascript output" — i.e., "don't point us at
+`.ts`, pre-build it yourself." Rather than take that at face value, it was tested empirically: a
+throwaway `scorer-experiment.ts` was pointed at from a scratch promptfooconfig using promptfoo's
+free `echo` provider (zero cost, no API key needed). It worked immediately — the grading result
+came back exactly as the `.ts` file computed it. So the docs describe a *recommendation*, not a
+*hard requirement*: promptfoo's `javascript` assertion just does a plain dynamic
+`import()`/`require()` on whatever `file://` path it's given. What actually determines whether
+that succeeds is the *host runtime's* ability to load a `.ts` file — nothing promptfoo-specific.
+
+This repo's pinned Node version is 24.18 (`.nvmrc`; every CI workflow pins `node-version: 24`).
+Node has shipped native TypeScript type-stripping, on by default, since 23.6 — for "erasable"
+syntax (interfaces, type annotations, `satisfies`, etc.), not for enums/namespaces/parameter
+properties (those need `--experimental-transform-types`). This repo's own coding standards
+already ban TS enums (root `CLAUDE.md`, "Never use TypeScript enums") and this suite never used
+namespaces or parameter properties either — so every file here was already inside the erasable
+subset, with nothing to lose by dropping the pre-transpiled workaround.
+
+**Result:** `scorer.cjs`/`scoring-core.mjs`/`synth-7day-fixture.mjs` were converted to plain
+`scorer.ts`/`scoring-core.ts`/`synth-7day-fixture.ts`, typed against the real `Expected`/
+`LeafExpected`/`DailyForecast` domain types instead of duck-typing `unknown`. No build step, no
+`// @ts-check` fallback needed — `tsc --noEmit` (already wired into `pnpm run lint`) type-checks
+them for real, and `promptfooconfig.yaml`'s `tests: file://generated/tests.json` /
+`file://src/scorer.ts` path just works because Node loads it the same way it loads every other
+`.ts` file in this monorepo. This matches the workspace's existing `tsx`-first convention instead
+of adding a second, CJS/ESM-mixed convention specific to this one package.
+
+## Q-B: why `promptfoo` isn't a declared dependency
+
+Also raised in PR review: `promptfoo` is a large package (the CLI plus its own sizeable
+dependency tree). Declaring it as a `dependency`/`devDependency` of this package would mean
+every `pnpm install` at the **repo root** installs it for every contributor — including everyone
+working on `meteoswiss-mcp` or `meteoswiss-skills` who never touches evals — because pnpm
+workspaces resolve and install the full dependency graph of every workspace member on a root
+install by default (`pnpm-workspace.yaml`'s `packages: ["packages/*"]` glob picks this package
+up automatically; there's no per-member install opt-out in pnpm).
+
+Options considered:
+
+| Option | Verdict |
+|---|---|
+| **`npx`/`pnpm dlx` at runtime, no declared dependency** | **Chosen.** Zero footprint in `pnpm-lock.yaml`/`node_modules` for anyone who doesn't run the evals; `npx promptfoo@0.121.18 ...` already pins the exact version (nothing new to add — `scripts/run.sh` and the `view` script already worked this way). Downside: first `npx` invocation per machine pays a one-time download; every run after is cached by npm's own package cache. Acceptable for a manual, occasional-use suite. |
+| `optionalDependencies` | Rejected. Still adds promptfoo (and its transitive tree) to `pnpm-lock.yaml` and gets installed by default unless the installer passes `--no-optional`, which nobody does by default at the repo root. Doesn't actually solve the bloat. |
+| Exclude this package from the default workspace install (pnpm filters) | Rejected. pnpm doesn't support "always skip this workspace member on root install" — filtering (`--filter`) is opt-in per-invocation, not a persistent property of a package. Would require every contributor to remember a special flag, which is fragile and undocumented-in-practice. |
+| Keep as workspace package, but move promptfoo to a nested throwaway `node_modules` outside pnpm's graph | Rejected as needless complexity — functionally equivalent to what `npx` already does, but hand-rolled. |
+
+**Result:** confirmed via `grep -rn "from ['\"]promptfoo" src/ scripts/` (and equivalent import
+searches) that promptfoo is never imported as a library anywhere in this package — every use was
+already a CLI invocation through `scripts/run.sh` (`npx --yes promptfoo@0.121.18 eval ...`) or
+the `"view": "npx promptfoo@0.121.18 view"` script. So the `"dependencies": { "promptfoo":
+"^0.121.18" }` entry in `package.json` was simply removed — nothing else changed. Verified by
+regenerating `pnpm-lock.yaml` at the repo root (`promptfoo` no longer appears anywhere in it —
+checked with `grep -c promptfoo pnpm-lock.yaml` → `0`) and by re-running `pnpm run dryrun` from a
+clean state to confirm the suite still works end-to-end without it declared.
+
+## Full sweep results (2026-07-09)
+
+**Cost: ~$0.32 actually spent** (verified against OpenRouter's own account API, not promptfoo's
+internal cost field — see the caveat above). Well under the $2-4 target and the $10 hard
+ceiling. The sweep did **not** complete cleanly, though — 61.9% of the 462 scheduled calls
+(286 rows) came back as real API errors rather than model answers. Root-caused (systematic
+debugging, not guessed) to **three independent, unrelated causes**, none of which are eval-suite
+bugs in the harness itself:
+
+1. **Dominant cause — this OpenRouter account has never purchased credits.**
+   `GET /api/v1/auth/key` reports `"limit": 10, "limit_remaining": 9.66, "is_free_tier": true`;
+   `GET /api/v1/credits` reports `"total_credits": 0`. The `$10` figure is a *per-key spend cap*
+   that would apply once the account has a real prepaid balance — it is not itself spendable
+   money. Free-tier accounts draw against a much smaller complimentary balance for metered usage,
+   and this run exhausted it partway through (concurrency=4, 13 models spending simultaneously):
+   `402 "Insufficient credits. This account never purchased credits."` hit 7 of 13 providers,
+   always on their *later*-scheduled test cases (7-day/station/multi-series fixtures), never on
+   the very first (primary-fixture) calls — consistent with "ran out partway through," not a
+   per-request limit. **Action needed from Max: add real credits to the OpenRouter account** at
+   <https://openrouter.ai/settings/credits> before a complete, all-13-provider rerun — this is a
+   billing action outside what a coding session should do unprompted.
+2. **`mistralai/mistral-large-2512` and `mistralai/mistral-medium-3.1`: 100% failure**, unrelated
+   to credits — `404 "No endpoints available matching your guardrail restrictions and data
+   policy. Configure: https://openrouter.ai/settings/privacy"`. An account-level privacy/data-
+   policy setting on OpenRouter excludes these two endpoints entirely. **Action needed from Max:
+   toggle the relevant setting at that URL**, or accept these two EU frontier/cheap-tier
+   providers stay excluded from this suite.
+3. **`gpt-5-mini`, `gpt-5-nano`, `gemini-3.1-pro-preview`, `gpt-5.2`: 100% failure**, also
+   unrelated to credits exhaustion (all four failed even on their very first, primary-fixture
+   call) — these four reject this suite's cost-control config outright. Three returned
+   `400 "Reasoning is mandatory for this endpoint and cannot be disabled"` in response to
+   `passthrough.reasoning.enabled: false`; `gpt-5.2` returned a distinct `402 "This request
+   requires more credits... You requested up to 65536 tokens, but can only afford 2708"` —
+   meaning it silently ignored `max_tokens: 256` and reserved a huge hidden reasoning-token
+   budget instead of refusing outright. **Fixed in this PR**: `promptfooconfig.yaml` now gives
+   these four `passthrough: { reasoning: { effort: 'minimal' } }` instead of `enabled: false` —
+   the lowest reasoning budget these endpoints accept, rather than trying to disable reasoning
+   entirely. Not yet re-verified against a live call (would need real credits — see #1).
+
+**The headline verdict, from the 7 providers that did complete cleanly** (all 3 tiers
+represented — frontier: opus-4.8, sonnet-5; cheap: haiku-4.5, gemini-3.1-flash-lite; tiny:
+gemini-2.5-flash-lite, llama-3.3-70b, ministral-8b — 18/18 or 27/27 API-successful calls each on
+the primary, DST-spanning fixture):
+
+```
+tier      variant   accuracy
+frontier  local     18/18  100.0%
+frontier  utc       11/18   61.1%
+cheap     local     18/18  100.0%
+cheap     utc        9/18   50.0%
+tiny      local     25/27   92.6%
+tiny      utc       12/27   44.4%
+```
+
+By question family, the pattern is uniform across every tier — including frontier — which per
+this doc's own reporting rule ("a family missed uniformly across tiers is a format defect, not a
+capability gap") is a clean signal:
+
+- **Day-level / boolean-only questions** (`argmax-day`, `availability`, `cross-field`,
+  `range-bool`) stay at or near 100% on **both** variants, every tier.
+- **Hour-level questions** (`point-num`, `range-num`, `argmax-time`, `dst-trap`) collapse to
+  **0%** on the UTC variant in nearly every tier x family cell — including `frontier/opus-4.8`
+  and `frontier/sonnet-5` getting `0/2` on `point-num` and `range-num` under UTC, despite 100% on
+  the same questions under local time. This is not a weak-model problem; even the strongest
+  models tested got the UTC→local hour conversion wrong essentially every time it was needed for
+  a precise lookup.
+
+**Verdict: keep local-time labeling (PR #99 as shipped). Do not switch to UTC.** The effect is
+large (100%→50-61% aggregate, 100%→0% on hour-level lookups specifically), consistent across all
+three tiers including frontier, and concentrated exactly where the mechanism predicts (hour-level
+lookups need a UTC→local conversion step; day-level/boolean questions don't and are unaffected).
+This is drawn from 7 of 13 configured providers (missing: gpt-5.2, gemini-3.1-pro, gpt-5-mini,
+gpt-5-nano, mistral-large, mistral-medium-3.1 — all excluded by the account/config issues above,
+not by the format being tested) — a full 13-provider rerun after Max adds credits would firm up
+the tiny-tier n and add the two missing EU/Mistral providers, but is unlikely to reverse a signal
+this large and this consistent across independent tiers. The judge slice (`pnpm run eval:judge`)
+was not run — it uses `opus-4.8` as judge, which already showed the same credit-exhaustion
+pattern above, so running it now would mostly fail for the same reason; rerun once credits are
+added.

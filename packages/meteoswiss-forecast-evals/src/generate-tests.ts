@@ -89,7 +89,7 @@ function toTestCase(
       questionId: q.id,
     },
     assert: [
-      { type: "javascript", value: "file://src/scorer.cjs", threshold: 1 },
+      { type: "javascript", value: "file://src/scorer.ts", threshold: 1 },
     ],
   };
 }

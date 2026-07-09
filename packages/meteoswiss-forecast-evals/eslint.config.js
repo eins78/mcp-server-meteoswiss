@@ -54,28 +54,6 @@ export default [
     },
   },
 
-  // Plain-JS scorer (loaded directly by promptfoo, no TS project)
-  {
-    files: ['**/*.mjs'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: { ...globals.node },
-    },
-    plugins: { prettier: prettierPlugin },
-    rules: { 'prettier/prettier': 'error' },
-  },
-  {
-    files: ['**/*.cjs'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'commonjs',
-      globals: { ...globals.node },
-    },
-    plugins: { prettier: prettierPlugin },
-    rules: { 'prettier/prettier': 'error' },
-  },
-
   prettierConfig,
 
   {

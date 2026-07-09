@@ -105,7 +105,7 @@ function isPromptfooOutputFile(value: unknown): value is PromptfooOutputFile {
   return Array.isArray((results as { results?: unknown }).results);
 }
 
-/** Our scorer always prefixes gradingResult.reason with "[outcome] ..." — see scoring-core.mjs. */
+/** Our scorer always prefixes gradingResult.reason with "[outcome] ..." — see scoring-core.ts. */
 function outcomeOf(row: PromptfooResultRow): string {
   const reason = row.gradingResult?.reason ?? "";
   const match = reason.match(/^\[(\w+)\]/);

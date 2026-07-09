@@ -23,9 +23,8 @@
     "types": ["node"],
     /* Additional options */
     "sourceMap": true,
-    "declaration": false,
-    "rootDir": "./src"
+    "declaration": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "scripts/**/*"],
   "exclude": ["node_modules", "dist", "generated"]
 }
