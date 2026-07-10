@@ -7,6 +7,12 @@ Eval suite measuring how well LLMs **understand** the JSON returned by `meteoswi
 package: it does **not** depend on `meteoswiss-mcp`'s source, only on a static JSON sample
 captured from it (see `fixtures/`).
 
+In the repo's showcase framing, this package demonstrates **eval-driven interface design**: the
+JSON an MCP tool returns is an interface for a language model, and its legibility can be measured
+before shipping instead of assumed. Note that this suite compares JSON *formats* across models —
+it does **not** compare the agent skill against the MCP server; see
+[docs/skill-vs-mcp.md](../../docs/skill-vs-mcp.md) for that (qualitative) comparison.
+
 **Not run in CI.** This is a manual, on-demand suite — run it when you're about to change the
 forecast JSON shape, or periodically to catch regressions in legibility as models change.
 
