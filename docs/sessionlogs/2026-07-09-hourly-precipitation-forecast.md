@@ -139,9 +139,52 @@ GitHub's automated Copilot PR review on #99 found two real issues, both fixed:
 
 Re-ran `pnpm run ci` after both fixes — still 21 suites, 175 passed, 1 pre-existing skip.
 
+## Tool description clarification + merge
+
+Max reviewed PR #99, asked for two clarifications to the LLM-facing tool description in
+`src/server.ts`, then authorized merging. Verified both against the code (not guessed) before
+writing:
+
+1. **Local time, no conversion needed.** Confirmed from `zurichParts()`/`groupPrecipByDate()`
+   that every `hourly[].time` is built from the Zurich-local date+time+offset — never raw UTC.
+   Description now says explicitly: "already local wall-clock time... It is NOT UTC — do not
+   convert it."
+2. **null / [] / value:0 distinction**, confirmed line-by-line: `value: 0` = dry hour, kept not
+   omitted (only `val === null` rows are skipped); `hourly: null` = set explicitly in
+   `buildStationForecast` for stations (no hourly source data at all); `hourly: []` = confirmed
+   this only arises via `precipByDate.get(date) ?? []` in `buildHourlyAggregatedForecast` — an
+   hourly-capable (non-station) point with a data gap for that specific day. Spelled out all
+   three as bullets matching the existing "Accepts:" list style. Commit `f52299f`.
+
+This mattered beyond wording: the linked eval suite (PR #100) had already shown smaller models
+read local time far better than UTC and conflate the null/empty/zero states for precipitation —
+the same trap Copilot's review caught in the schema doc. The tool description is literally what
+the model reads, so precision here is a direct, cheap comprehension win, not just polish.
+
+**Merge mechanics** — determined empirically since there's no CONTRIBUTING doc: compared the
+last 20 merged PRs by parent-count (`git log -1 --format='%P' <mergeCommit>`). 18/20, including
+both dependency PRs and feature/changesets-bot PRs, were single-parent squash commits titled
+`{title} (#{number})`. Squash-merged PR #99 accordingly (`gh pr merge --squash`) — merge commit
+`b6c5c65` on `main`. Remote branch auto-deleted (`delete_branch_on_merge: true`); local worktree
+branch left alone (session was running inside it).
+
+**Release-pipeline finding (discovered, not fixed):** the "Version Packages" GitHub Action
+triggered post-merge, correctly consumed `.changeset/hourly-precip-forecast.md` (version bump +
+CHANGELOG generated, changeset file deleted, pushed to `changeset-release/main`), but then failed
+at PR creation: `HttpError: GitHub Actions is not permitted to create or approve pull requests.`
+This is a repo/org Actions permission setting
+(Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and
+approve pull requests"), unrelated to this PR's content — the version bump commit exists on
+`changeset-release/main`, just not exposed via an open PR. Flagged to Max rather than fixed
+(changing repo settings wasn't in scope for this session).
+
 ## Pending / follow-ups
 
+- [x] PR #99 reviewed, description clarified, and merged (`b6c5c65`) — done this session.
 - [ ] Fetch `rre150h0` for stations (`point_type_id === 1`) + add a station hourly fixture to
-      close the station gap noted in #98.
-- [ ] PR #99 open, not merged — awaiting Max's review, including the day-boundary consequence
-      flagged above.
+      close the station gap noted in #98 (still open, tracks this).
+- [ ] "Version Packages" release automation is blocked by a repo Actions permission setting —
+      needs a repo admin to enable "Allow GitHub Actions to create and approve pull requests,"
+      or someone to manually open a PR from `changeset-release/main`, before `meteoswiss-mcp`
+      can be released with this feature.
+- [ ] Clean up the `hourly-precip` worktree once done with it (`git worktree remove`).
