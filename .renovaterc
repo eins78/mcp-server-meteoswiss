@@ -49,6 +49,16 @@
         "digest"
       ],
       "automerge": true
+    },
+    {
+      "description": "Pin js-yaml override — forces the tree to 4.3.0 (GHSA-h67p-54hq-rp68 fix, >=3.15.0) while staying off js-yaml 5+, which some transitive consumers are not yet compatible with. Renovate PR #104 previously bumped this override straight to 5.2.1 and broke `changeset version` (read-yaml-file@1.1.0 called the v3-only safeLoad). Do not update without re-verifying `pnpm changeset version` and `pnpm audit --audit-level moderate` both pass.",
+      "matchPackageNames": ["js-yaml"],
+      "enabled": false
+    },
+    {
+      "description": "Pin read-yaml-file override to ^2.1.0 — @manypkg/get-packages (via @changesets/cli) declares read-yaml-file@^1.1.0, whose only version line calls the v3-only js-yaml.safeLoad and can't be forced onto a patched js-yaml without breaking. read-yaml-file@2.1.0 uses js-yaml.load (v4-compatible) instead, letting js-yaml stay patched. Do not update without re-verifying `pnpm changeset status`/`version` don't throw (export shape changed once already between 1.x and 2.x).",
+      "matchPackageNames": ["read-yaml-file"],
+      "enabled": false
     }
   ]
 }
