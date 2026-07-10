@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "meteoswiss-llm-tools",
-  "description": "Swiss weather data for AI assistants — powered by MeteoSwiss Open Data",
+  "description": "Swiss weather data for AI agents \u2014 MeteoSwiss open data exposed two ways: MCP server and agent skill",
   "license": "CC0-1.0",
   "scripts": {
     "changeset": "changeset",
