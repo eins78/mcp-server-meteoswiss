@@ -16,13 +16,13 @@ overrides:
   read-yaml-file: ^2.1.0
   mcp-remote>path-to-regexp: 8.4.2
   eslint-plugin-tsdoc>@typescript-eslint/utils: 8.63.0
-  shell-quote@<1.8.4: 1.8.4
+  shell-quote@<1.8.4: 1.9.0
   fast-uri@<3.1.2: 4.1.0
   form-data@>=4.0.0 <4.0.6: 4.0.6
-  ip-address@<=10.1.0: 10.1.1
+  ip-address@<=10.1.0: 10.2.0
   undici@>=7.0.0 <7.28.0: 8.7.0
   ws@>=8.0.0 <8.21.0: 8.21.0
-  brace-expansion@>=5.0.0 <5.0.6: 5.0.6
+  brace-expansion@>=5.0.0 <5.0.6: 5.0.7
   hono: '>=4.12.25'
   '@hono/node-server': '>=1.19.13'
 
@@ -168,7 +168,7 @@ importers:
     devDependencies:
       skills:
         specifier: ^1.1.6
-        version: 1.5.14
+        version: 1.5.15
 
 packages:
 
@@ -1789,8 +1789,8 @@ packages:
   brace-expansion@2.0.3:
     resolution: {integrity: sha512-MCV/fYJEbqx68aE58kv2cA/kiky1G8vux3OR6/jbS+jIMe/6fJWa0DTzJU7dqijOWYwHi1t29FlfYI9uytqlpA==}
 
-  brace-expansion@5.0.6:
-    resolution: {integrity: sha512-kLpxurY4Z4r9sgMsyG0Z9uzsBlgiU/EFKhj/h91/8yHu0edo7XuixOIH3VcJ8kkxs6/jPzoI6U9Vj3WqbMQ94g==}
+  brace-expansion@5.0.7:
+    resolution: {integrity: sha512-7oFy703dxfY3/NLxC1fh2SUCQ0H9rmAY+5EpDVfXjUTTs+HEwR2nYaqLv+GWcTsumwxPfiz6CzCNkwXwBUwqCA==}
     engines: {node: 18 || 20 || >=22}
 
   braces@3.0.3:
@@ -2559,8 +2559,8 @@ packages:
     resolution: {integrity: sha512-agE4QfB2Lkp9uICn7BAqoscw4SZP9kTE2hxiFI3jBPmXJfdqiahTbUuKGsMoN2GtqL9AxhYioAcVvgsb1HvRbA==}
     engines: {node: '>= 0.10'}
 
-  ip-address@10.1.1:
-    resolution: {integrity: sha512-1FMu8/N15Ck1BL551Jf42NYIoin2unWjLQ2Fze/DXryJRl5twqtwNHlO39qERGbIOcKYWHdgRryhOC+NG4eaLw==}
+  ip-address@10.2.0:
+    resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -3522,8 +3522,8 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
-  shell-quote@1.8.4:
-    resolution: {integrity: sha512-VsC6n6vz1ihYYyZZwX7YZSF5l5x36ca17OC+a69h94YqB7X6XLwf+5MOgynYir2SLFUbl8gIYvBo8K8RoNQ6bQ==}
+  shell-quote@1.9.0:
+    resolution: {integrity: sha512-Iov+JwFv/2HcTpcwNMKd8+IWNb8tboQJNQTkAY/LLVK7gGH9jy+LGkVqPxfekHl+yMmiqXszdGWXgkfml7hjqA==}
     engines: {node: '>= 0.4'}
 
   shelljs@0.8.5:
@@ -3563,8 +3563,8 @@ packages:
     resolution: {integrity: sha512-a2B9Y0KlNXl9u/vsW6sTIu9vGEpfKu2wRV6l1H3XEas/0gUIzGzBoP/IouTcUQbm9JWZLH3COxyn03TYlFax6w==}
     engines: {node: '>=10'}
 
-  skills@1.5.14:
-    resolution: {integrity: sha512-oA0Wv2cfUnLaFHeDU+IwHfrbfyP42H1UTjjEZYnOtgujkMGL6uXKzmmIx8/6jPhqJiK1v7HbvRPBmhowg9N2lA==}
+  skills@1.5.15:
+    resolution: {integrity: sha512-qOjkxQ+Bbua6UWx71XSbkEpAFQpBLvOFc26PDMHkT7BSnwud1/CyyyWyF2HElHyt51GN32GQ1ZDPrGhsNG47GA==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -4843,7 +4843,7 @@ snapshots:
       cors: 2.8.6
       express: 5.2.1
       express-rate-limit: 8.3.1(express@5.2.1)
-      shell-quote: 1.8.4
+      shell-quote: 1.9.0
       shx: 0.3.4
       spawn-rx: 5.1.2
       ws: 8.21.0
@@ -4863,7 +4863,7 @@ snapshots:
       concurrently: 9.2.1
       node-fetch: 3.3.2
       open: 10.2.0
-      shell-quote: 1.8.4
+      shell-quote: 1.9.0
       spawn-rx: 5.1.2
       ts-node: 10.9.2(@types/node@25.5.0)(typescript@6.0.2)
       zod: 3.25.76
@@ -5808,7 +5808,7 @@ snapshots:
     dependencies:
       balanced-match: 1.0.2
 
-  brace-expansion@5.0.6:
+  brace-expansion@5.0.7:
     dependencies:
       balanced-match: 4.0.4
 
@@ -5933,7 +5933,7 @@ snapshots:
     dependencies:
       chalk: 4.1.2
       rxjs: 7.8.2
-      shell-quote: 1.8.4
+      shell-quote: 1.9.0
       supports-color: 8.1.1
       tree-kill: 1.2.2
       yargs: 17.7.2
@@ -6266,7 +6266,7 @@ snapshots:
   express-rate-limit@8.3.1(express@5.2.1):
     dependencies:
       express: 5.2.1
-      ip-address: 10.1.1
+      ip-address: 10.2.0
 
   express@4.22.1:
     dependencies:
@@ -6636,7 +6636,7 @@ snapshots:
 
   interpret@1.4.0: {}
 
-  ip-address@10.1.1: {}
+  ip-address@10.2.0: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -7383,11 +7383,11 @@ snapshots:
 
   minimatch@10.2.4:
     dependencies:
-      brace-expansion: 5.0.6
+      brace-expansion: 5.0.7
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.6
+      brace-expansion: 5.0.7
 
   minimatch@3.1.5:
     dependencies:
@@ -7830,7 +7830,7 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  shell-quote@1.8.4: {}
+  shell-quote@1.9.0: {}
 
   shelljs@0.8.5:
     dependencies:
@@ -7879,7 +7879,7 @@ snapshots:
     dependencies:
       semver: 7.7.4
 
-  skills@1.5.14:
+  skills@1.5.15:
     dependencies:
       yaml: 2.9.0
 
