@@ -56,7 +56,7 @@ Get homogeneous climate series from Switzerland's National Basic Climatic Networ
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `station` | string | No | Station name ("Zurich"), abbreviation ("BAS"), or NBCN station |
+| `station` | string | No | Climate station name ("Zurich") or abbreviation ("BAS") |
 | `coordinates` | object | No | `{ lat, lon }` in WGS84 — finds nearest climate station |
 | `resolution` | string | No | `daily`, `monthly` (default), or `yearly` |
 | `start_date` | string | No | Start date filter (`YYYY-MM-DD`) |
