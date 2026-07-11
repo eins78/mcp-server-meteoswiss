@@ -100,6 +100,11 @@ typography, versioning if ever needed).
 architecture, MDX, content collections — none of which this use case needs. It would work, but
 every one of its differentiators over Eleventy/VitePress goes unused here.)*
 
+> **Superseded by outcome:** Max ultimately picked Astro's Starlight preset, not vanilla Astro —
+> see the implementation plan. Starlight ships the doc-site scaffolding (content collections,
+> sidebar, search) out of the box, which changes the calculus above; the original reasoning is
+> kept here for the record, not as live guidance.
+
 ## Recommendation
 
 **VitePress.** The actual deliverable — a public, permanent showcase of engineering reports and

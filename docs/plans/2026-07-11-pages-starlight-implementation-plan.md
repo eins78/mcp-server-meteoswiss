@@ -1,6 +1,7 @@
 # GH Pages via Astro Starlight — implementation plan
 
-**Status: awaiting Max's go-ahead.** Supersedes the generator choice in
+**Status: implemented** (see `packages/meteoswiss-docs-site/` and
+`.github/workflows/pages.yml`). Supersedes the generator choice in
 [2026-07-11-pages-site-generator-options.md](./2026-07-11-pages-site-generator-options.md) —
 Max picked Starlight directly, so this is the concrete build, not another ballot.
 
