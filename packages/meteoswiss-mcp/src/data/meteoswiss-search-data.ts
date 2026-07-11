@@ -26,7 +26,6 @@ const SolrDocumentSchema = z.object({
   publicationDate: z.string().optional(),
   content: z.string().optional(),
 });
-type SolrDocument = z.infer<typeof SolrDocumentSchema>;
 
 const SolrResponseSchema = z.object({
   response: z.object({
@@ -208,12 +207,16 @@ async function searchFromTestFixtures(
 ): Promise<SearchResults> {
   // Get the base domain for this language
   const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
-  // Replace spaces with hyphens for fixture filename, consistent with how we name fixture files
+  // Slugify the query into a fixture filename. Diacritics are stripped (NFD +
+  // combining-mark removal) so "météo" resolves to `meteo-results.json` by exact
+  // match instead of relying on the removed first-file fallback (TEST-2).
   const fixtureFile = path.join(
     TEST_FIXTURES_ROOT,
     language,
     `${query
       .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '-')}-results.json`
   );
@@ -267,51 +270,17 @@ async function searchFromTestFixtures(
     };
   }
 
-  // Try to find any fixture file for the language
-  const langDir = path.join(TEST_FIXTURES_ROOT, language);
-  if (existsSync(langDir)) {
-    const files = await fs.readdir(langDir);
-    if (files.length > 0 && files[0]) {
-      const firstFile = files[0];
-      const data = await fs.readFile(path.join(langDir, firstFile), 'utf-8');
-      const response = parseSolrResponse(JSON.parse(data));
-
-      // Filter results by query in fixtures
-      const allDocs = response.response?.docs || [];
-      const filteredDocs = allDocs.filter(
-        (doc: SolrDocument) =>
-          doc.title?.toLowerCase().includes(query.toLowerCase()) ||
-          doc.lead?.toLowerCase().includes(query.toLowerCase()) ||
-          doc.content?.toLowerCase().includes(query.toLowerCase())
-      );
-
-      const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
-      const results: SearchResultItem[] = filteredDocs.map((doc: SolrDocument) => ({
-        id: doc.path ? `${baseDomain}${doc.path}` : doc.id || '',
-        title: doc.title || 'Untitled',
-        url: doc.path ? `${baseDomain}${doc.path}` : '',
-        description: doc.lead || doc.description || '',
-        contentType: doc.pageType || 'content',
-        lastModified: doc.modificationDate || doc.publicationDate,
-        path: doc.path,
-        lead: doc.lead,
-        publicationDate: doc.publicationDate,
-      }));
-
-      // Mirror the live API's fixed upstream page size (see UPSTREAM_PAGE_SIZE).
-      const startIndex = (page - 1) * UPSTREAM_PAGE_SIZE;
-      const paginatedResults = results.slice(startIndex, startIndex + UPSTREAM_PAGE_SIZE);
-
-      return {
-        totalResults: results.length,
-        page,
-        pageSize: paginatedResults.length,
-        results: paginatedResults,
-      };
-    }
-  }
-
-  // Return empty results if no fixtures found
+  // No exact fixture: return empty (a genuine "no match", the same shape the
+  // live API gives for an unmatched query). The previous behaviour — read the
+  // first file in the language directory and substring-filter it — could return
+  // "whatever sorts first" for a missing/renamed fixture, silently masking the
+  // gap with unrelated results (TEST-2). Diacritic-insensitive slugging above
+  // means real fixtures (e.g. "météo" → meteo) resolve by exact match instead.
+  debugData(
+    'No exact search fixture for query "%s" (%s) — returning empty results',
+    query,
+    language
+  );
   return {
     totalResults: 0,
     page,
