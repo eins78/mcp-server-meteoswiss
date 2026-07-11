@@ -95,7 +95,7 @@ export const ClimateDataResponseSchema = z.object({
     network: z
       .string()
       .describe(
-        'NBCN network kind ("climate" full climate series, "precipitation" precipitation-only)'
+        'NBCN network kind: "nbcn" (full climate series) or "nbcn-precip" (precipitation-only)'
       ),
   }),
   resolution: z.enum(CLIMATE_RESOLUTIONS).describe('Resolution the returned rows are in'),

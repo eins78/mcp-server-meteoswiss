@@ -211,7 +211,7 @@
               },
               "network": {
                 "type": "string",
-                "description": "NBCN network kind (\"climate\" full climate series, \"precipitation\" precipitation-only)"
+                "description": "NBCN network kind: \"nbcn\" (full climate series) or \"nbcn-precip\" (precipitation-only)"
               }
             },
             "required": [
