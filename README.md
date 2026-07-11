@@ -24,7 +24,7 @@ What the tools provide:
 - **Climate series** from the National Basic Climatic Network (NBCN), going back decades
 - **MeteoSwiss website** search and content retrieval
 
-## What This Repo Demonstrates
+## What this repo demonstrates
 
 - **An agent skill** — teach an agent to fetch open data directly with `curl`/`awk`/`jq`: ~630 lines of markdown and bash, zero infrastructure. → [packages/meteoswiss-skills](packages/meteoswiss-skills/)
 - **An MCP server** — the same data as structured, validated tools with fuzzy station matching, geocoding, TTL-tiered caching, a real test suite, Docker, and a hosted instance. → [packages/meteoswiss-mcp](packages/meteoswiss-mcp/)
@@ -32,7 +32,7 @@ What the tools provide:
 
 Read the comparison: **[Skill vs. MCP Server: Two Ways to Give AI Agents the Same Data](docs/skill-vs-mcp.md)**.
 
-## Choose Your Approach
+## Choose your approach
 
 Both approaches answer the same weather questions. Which to install depends on your agent:
 
@@ -47,7 +47,7 @@ Both approaches answer the same weather questions. Which to install depends on y
 
 Full comparison — parity matrix, engineering trade-offs, context cost, when to choose which: [docs/skill-vs-mcp.md](docs/skill-vs-mcp.md).
 
-### MCP Server — Quickstart
+### MCP server — quickstart
 
 Use the hosted instance (no installation):
 
@@ -66,7 +66,7 @@ docker run -p 3000:3000 ghcr.io/eins78/meteoswiss-mcp:latest
 
 See the [meteoswiss-mcp README](packages/meteoswiss-mcp/README.md) for Claude Desktop setup, environment variables, and full documentation.
 
-### Agent Skill — Quickstart
+### Agent skill — quickstart
 
 Install via the Claude Code plugin marketplace:
 
@@ -83,7 +83,7 @@ pnpx skills add https://github.com/eins78/meteoswiss-llm-tools.git#packages/mete
 
 See the [meteoswiss-skills README](packages/meteoswiss-skills/README.md) for manual installation and details.
 
-## Available Tools (MCP Server)
+## Available tools (MCP server)
 
 | Tool | Description |
 |------|-------------|
@@ -95,7 +95,7 @@ See the [meteoswiss-skills README](packages/meteoswiss-skills/README.md) for man
 | `search` | Search MeteoSwiss website content (DE, FR, IT, EN) |
 | `fetch` | Fetch full content from MeteoSwiss pages |
 
-## Example Questions
+## Example questions
 
 Works with both approaches — just ask in any of Switzerland's four languages:
 
@@ -131,7 +131,7 @@ See each package's README for package-specific commands. The repo uses [changese
 
 Manual, point-in-time test reports (e.g. live MCP tool test passes) live in `docs/test-reports/`.
 
-## Data Source
+## Data source
 
 All weather data comes from [MeteoSwiss Open Government Data (OGD)](https://opendatadocs.meteoswiss.ch/) — the official free data offering from Switzerland's Federal Office of Meteorology and Climatology. The same data powers the MeteoSwiss app and website.
 

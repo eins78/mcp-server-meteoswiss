@@ -63,3 +63,18 @@ Verified: `pnpm --filter meteoswiss-mcp run fix && run ci` green (21 suites, 175
 homepage served locally and checked for the new content; all relative links resolve (homepage
 links are absolute URLs, since that markdown is rendered by the server, not GitHub); every
 "MeteoSwiss app" mention says "app and website". All five PR CI checks green.
+
+## Follow-up: copy-editing pass
+
+A later pass ran the reworked showcase docs through a de-AI copy-edit (sentence-case headings,
+remove AI-writing tells), preserving every count, tool name, and URL:
+
+- Root README: section headings normalized to sentence case ("What this repo demonstrates",
+  "Choose your approach", "Available tools (MCP server)", "Example questions", "Data source",
+  and the two Quickstart subheadings).
+- `docs/skill-vs-mcp.md`: one phrasing fix — "serves as readable documentation" → "is also
+  readable documentation".
+- `meteoswiss-forecast-evals` README: dropped a "Note that" hedge.
+
+No facts changed: a number / tool-name / URL set comparison against the prior revision was
+identical for every edited file.

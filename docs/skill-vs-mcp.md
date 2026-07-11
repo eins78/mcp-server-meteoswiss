@@ -119,7 +119,7 @@ The lesson generalizes to both approaches in this case study: whatever the trans
 - You want typed inputs, structured outputs, and a testable surface in CI.
 - Many users share the same access — a hosted server amortizes the work and caching.
 
-**Or do both**, as this repo does: the implementations share no code but encode the same domain knowledge, and the skill explicitly points agents to the MCP server for the cases it doesn't cover. The skill also serves as readable documentation of what the server automates.
+**Or do both**, as this repo does: the implementations share no code but encode the same domain knowledge, and the skill explicitly points agents to the MCP server for the cases it doesn't cover. The skill is also readable documentation of what the server automates.
 
 ## Limitations
 

@@ -9,7 +9,7 @@ captured from it (see `fixtures/`).
 
 In the repo's showcase framing, this package demonstrates **eval-driven interface design**: the
 JSON an MCP tool returns is an interface for a language model, and its legibility can be measured
-before shipping instead of assumed. Note that this suite compares JSON *formats* across models —
+before shipping instead of assumed. This suite compares JSON *formats* across models —
 it does **not** compare the agent skill against the MCP server; see
 [docs/skill-vs-mcp.md](../../docs/skill-vs-mcp.md) for that (qualitative) comparison.
 
