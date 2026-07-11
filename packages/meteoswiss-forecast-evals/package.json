@@ -20,6 +20,10 @@
     "eval": "pnpm run generate && bash scripts/run.sh promptfooconfig.yaml -o generated/results.json",
     "eval:judge": "pnpm run generate && bash scripts/run.sh promptfooconfig.judge.yaml -o generated/results-judge.json",
     "summarize": "tsx src/summarize.ts",
+    "mcp-skills:smoke": "bash scripts/run-mcp-skills.sh --filter-providers haiku --filter-pattern 'current-temp-zurich|forecast-weekend-lugano|pollen-grasses-zurich'",
+    "mcp-skills:eval": "bash scripts/run-mcp-skills.sh",
+    "mcp-skills:summarize": "tsx src/mcp-vs-skills/summarize.ts",
+    "mcp-skills:charts": "tsx src/mcp-vs-skills/render-charts.ts",
     "view": "promptfoo view",
     "lint": "pnpm run lint:ts && pnpm run lint:eslint",
     "lint:ts": "tsc --noEmit",
@@ -30,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^25.5.0",
     "@typescript-eslint/eslint-plugin": "^8.57.2",
     "@typescript-eslint/parser": "^8.57.2",
