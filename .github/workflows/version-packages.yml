@@ -41,6 +41,9 @@ jobs:
         with:
           title: 'Version Packages'
           commit: 'I: Version packages'
-          version: pnpm changeset version
+          # `pnpm run version` = `changeset version` + syncs meteoswiss-skills'
+          # bumped version into its plugin/marketplace manifests and SKILL.md
+          # + stamps release dates onto the new CHANGELOG headers.
+          version: pnpm run version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

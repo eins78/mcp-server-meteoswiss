@@ -1,5 +1,5 @@
 ---
-"meteoswiss-mcp": minor
+"meteoswiss-mcp": major
 ---
 
 Fix nine findings from a 3-model QA sweep of v2.3.2 (issue #110):
