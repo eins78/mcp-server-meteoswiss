@@ -111,11 +111,15 @@ export async function createHttpServer(
   // their IP by prepending a forged X-Forwarded-For, defeating per-IP rate limiting.
   app.set('trust proxy', config.TRUST_PROXY);
 
-  // Configure CORS for production
+  // Configure CORS for production.
+  // credentials is deliberately false: this is a public, read-only service with
+  // no cookies/auth, and reflecting an arbitrary Origin *with* credentials is the
+  // exact combination the CORS spec forbids for wildcards — a latent footgun the
+  // day any credentialed response is added (SEC-7).
   app.use(
     cors({
       origin: config.CORS_ORIGIN === '*' ? true : config.CORS_ORIGIN,
-      credentials: true,
+      credentials: false,
     })
   );
 
