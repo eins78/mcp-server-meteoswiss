@@ -23,6 +23,14 @@ export type HttpRequestOptions = {
   useCache?: boolean;
   /** Hard cap on the response body size in bytes (defaults to {@link MAX_RESPONSE_BYTES}) */
   maxBytes?: number;
+  /**
+   * When provided, redirects are followed manually and this callback is invoked
+   * for the initial URL and every redirect `Location`. Throw to reject a hop.
+   * Without it, native fetch's default `redirect: 'follow'` is used unchanged.
+   */
+  validateUrl?: (url: string) => void;
+  /** Maximum redirect hops to follow when {@link validateUrl} is set (default 5) */
+  maxRedirects?: number;
 };
 
 /**
@@ -132,6 +140,63 @@ async function readBodyCapped(response: Response, maxBytes: number, url: string)
   return Buffer.concat(chunks);
 }
 
+/** HTTP status codes that carry a redirect `Location`. */
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+/**
+ * Performs a fetch, following redirects manually when `validateUrl` is supplied
+ * so the caller can re-run its allowlist on every hop (defends against an
+ * upstream open redirect escaping the domain allowlist — SEC-4). When
+ * `validateUrl` is absent, native `redirect: 'follow'` is used unchanged.
+ *
+ * @throws {HttpRequestError} If a hop is rejected by `validateUrl` (non-retryable)
+ *   or the redirect chain exceeds `maxRedirects`.
+ */
+async function fetchMaybeFollowingRedirects(
+  url: string,
+  init: NonNullable<Parameters<typeof fetch>[1]>,
+  validateUrl: ((url: string) => void) | undefined,
+  maxRedirects: number
+): Promise<Response> {
+  if (!validateUrl) {
+    return fetch(url, init);
+  }
+
+  let current = url;
+  for (let hop = 0; hop <= maxRedirects; hop++) {
+    try {
+      validateUrl(current);
+    } catch (error) {
+      // Rejection is a permanent property of the URL — do not retry.
+      throw new HttpRequestError(
+        error instanceof Error ? error.message : String(error),
+        current,
+        undefined,
+        false
+      );
+    }
+
+    const response = await fetch(current, { ...init, redirect: 'manual' });
+    if (!REDIRECT_STATUSES.has(response.status)) {
+      return response;
+    }
+
+    const location = response.headers.get('location');
+    if (location === null) {
+      return response; // 3xx without Location — let the caller handle the status
+    }
+    await response.body?.cancel();
+    current = new URL(location, current).toString();
+  }
+
+  throw new HttpRequestError(
+    `Too many redirects (exceeded ${maxRedirects}) starting from ${url}`,
+    url,
+    undefined,
+    false
+  );
+}
+
 /**
  * Fetches data from a URL with retry logic and error handling
  *
@@ -181,12 +246,17 @@ export async function fetchWithRetry(
       }
 
       const startTime = Date.now();
-      const response = await fetch(url, {
-        headers: requestHeaders,
-        // Always bound time — the content-fetch path previously passed no timeout,
-        // leaving the signal undefined and the request unbounded in time.
-        signal: AbortSignal.timeout(timeout),
-      });
+      const response = await fetchMaybeFollowingRedirects(
+        url,
+        {
+          headers: requestHeaders,
+          // Always bound time — the content-fetch path previously passed no timeout,
+          // leaving the signal undefined and the request unbounded in time.
+          signal: AbortSignal.timeout(timeout),
+        },
+        options.validateUrl,
+        options.maxRedirects ?? 5
+      );
       const duration = Date.now() - startTime;
 
       debugHttp('Response received in %dms: %d %s', duration, response.status, response.statusText);

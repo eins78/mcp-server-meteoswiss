@@ -47,6 +47,38 @@ const ALLOWED_DOMAINS = [
   'meteoswiss.admin.ch',
 ];
 
+/**
+ * Assert that a URL targets an allowed MeteoSwiss domain over https on the
+ * default port. Run on the initial fetch URL and re-run on every redirect hop
+ * (so an upstream open redirect cannot escape the allowlist — SEC-4), and pins
+ * the scheme to https and the port to default (SEC-8).
+ *
+ * `URL.hostname` is used for the host check, which is robust against userinfo
+ * (`@`), case, punycode/IDN, and bare-path (`//evil.com`) escapes.
+ *
+ * @param rawUrl - The URL to validate
+ * @throws {Error} If the URL is malformed, non-https, non-default-port, or off-allowlist
+ */
+export function assertAllowedContentUrl(rawUrl: string): void {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch (error) {
+    throw new Error(`Invalid URL: ${rawUrl}`, { cause: error });
+  }
+  if (parsedUrl.protocol !== 'https:') {
+    throw new Error(`Invalid scheme: ${parsedUrl.protocol} for ${rawUrl}. Only https is allowed.`);
+  }
+  if (parsedUrl.port !== '') {
+    throw new Error(
+      `Invalid port: ${parsedUrl.port} for ${rawUrl}. Only the default https port is allowed.`
+    );
+  }
+  if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
+    throw new Error(`Invalid domain: ${parsedUrl.hostname}. Only MeteoSwiss domains are allowed.`);
+  }
+}
+
 // Initialize Turndown for HTML to Markdown conversion
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -109,24 +141,14 @@ async function fetchFromWeb(
 
   debugData('Fetching content from URL: %s', fullUrl);
 
-  // Validate the URL is from an allowed MeteoSwiss domain
-  try {
-    const parsedUrl = new URL(fullUrl);
-    if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
-      throw new Error(
-        `Invalid domain: ${parsedUrl.hostname}. Only MeteoSwiss domains are allowed.`
-      );
-    }
-  } catch (error) {
-    if (error instanceof TypeError) {
-      throw new Error(`Invalid URL: ${fullUrl}`, { cause: error });
-    }
-    throw error;
-  }
+  // Validate scheme, port, and domain up front (thrown directly to the caller).
+  assertAllowedContentUrl(fullUrl);
 
   try {
     debugData('Making HTTP request to fetch content');
-    const html = await fetchHtml(fullUrl);
+    // Re-validate every redirect hop so an upstream open redirect cannot escape
+    // the allowlist.
+    const html = await fetchHtml(fullUrl, { validateUrl: assertAllowedContentUrl });
     debugData('Content fetched successfully, size: %d bytes', html.length);
 
     // processHtmlContent is synchronous; a Promise.race timeout around it was
