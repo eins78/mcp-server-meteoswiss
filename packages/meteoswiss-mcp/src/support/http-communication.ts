@@ -232,18 +232,7 @@ export async function fetchWithRetry(
   for (let attempt = 0; attempt <= retries!; attempt++) {
     debugHttp('Attempt %d/%d for URL: %s', attempt + 1, retries! + 1, url);
     try {
-      // Prepare headers with conditional request support
       const requestHeaders = { ...DEFAULT_OPTIONS.headers, ...options.headers };
-
-      if (useCache) {
-        const staleEntry = httpCache.getStaleEntry(url);
-        if (staleEntry?.etag) {
-          requestHeaders['If-None-Match'] = staleEntry.etag;
-        }
-        if (staleEntry?.lastModified) {
-          requestHeaders['If-Modified-Since'] = staleEntry.lastModified;
-        }
-      }
 
       const startTime = Date.now();
       const response = await fetchMaybeFollowingRedirects(
@@ -261,21 +250,11 @@ export async function fetchWithRetry(
 
       debugHttp('Response received in %dms: %d %s', duration, response.status, response.statusText);
 
-      // Store response headers
+      // Store response headers (used for TTL derivation when caching below)
       responseHeaders = {};
       response.headers.forEach((value, key) => {
         responseHeaders[key] = value;
       });
-
-      // Handle 304 Not Modified
-      if (response.status === 304 && useCache) {
-        debugHttp('Content not modified, using cached version');
-        httpCache.updateNotModified(url, responseHeaders);
-        const cached = httpCache.get<string>(url);
-        if (cached) {
-          return cached.data;
-        }
-      }
 
       if (!response.ok) {
         const error = new HttpRequestError(

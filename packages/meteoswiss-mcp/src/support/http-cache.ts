@@ -5,8 +5,6 @@ import { debugHttp } from './logging.js';
  */
 interface CacheEntry<T> {
   data: T;
-  etag?: string;
-  lastModified?: string;
   expiresAt: number;
   cachedAt: number;
 }
@@ -35,7 +33,7 @@ export class HttpCache {
    * @param key Cache key (usually URL)
    * @returns Cached data or undefined if not found/expired
    */
-  get<T>(key: string): { data: T; etag?: string; lastModified?: string } | undefined {
+  get<T>(key: string): { data: T } | undefined {
     const entry = this.cache.get(key);
 
     if (!entry) {
@@ -57,11 +55,7 @@ export class HttpCache {
     this.cache.set(key, entry);
 
     debugHttp('Cache hit for key: %s', key);
-    return {
-      data: entry.data as T,
-      etag: entry.etag,
-      lastModified: entry.lastModified,
-    };
+    return { data: entry.data as T };
   }
 
   /**
@@ -98,8 +92,6 @@ export class HttpCache {
 
     const entry: CacheEntry<T> = {
       data,
-      etag: this.getHeader(headers, 'etag'),
-      lastModified: this.getHeader(headers, 'last-modified'),
       expiresAt: now + ttl,
       cachedAt: now,
     };
@@ -115,39 +107,6 @@ export class HttpCache {
       debugHttp('Evicted LRU cache entry: %s', oldest);
     }
     debugHttp('Cached response for key: %s, TTL: %dms', key, ttl);
-  }
-
-  /**
-   * Check if we have a potentially stale cache entry (for conditional requests)
-   *
-   * @param key Cache key
-   * @returns ETag and Last-Modified if available
-   */
-  getStaleEntry(key: string): { etag?: string; lastModified?: string } | undefined {
-    const entry = this.cache.get(key);
-
-    if (!entry || (!entry.etag && !entry.lastModified)) {
-      return undefined;
-    }
-
-    return {
-      etag: entry.etag,
-      lastModified: entry.lastModified,
-    };
-  }
-
-  /**
-   * Update cache entry if server returned 304 Not Modified
-   *
-   * @param key Cache key
-   * @param headers New response headers
-   */
-  updateNotModified(key: string, headers: Record<string, string | string[] | undefined>): void {
-    const entry = this.cache.get(key);
-    if (!entry) return;
-
-    // Update cache expiry based on new headers
-    this.set(key, entry.data, headers);
   }
 
   /**
