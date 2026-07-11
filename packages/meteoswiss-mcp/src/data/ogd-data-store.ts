@@ -73,6 +73,9 @@ function resolveFixturePath(url: string): string | null {
     'tre200h0',
     'rre150h0',
     'jww003i0',
+    'sre000h0',
+    'fu3010h0',
+    'fu3010h1',
   ]) {
     if (url.includes(`.${param}.csv`))
       return path.join(OGD_FIXTURES_ROOT, 'forecasts', `${param}.csv`);
