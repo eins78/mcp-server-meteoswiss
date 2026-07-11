@@ -146,11 +146,13 @@
           },
           "start_date": {
             "description": "Start date filter (YYYY-MM-DD). Only rows on or after this date are returned.",
-            "type": "string"
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "end_date": {
             "description": "End date filter (YYYY-MM-DD). Only rows on or before this date are returned.",
-            "type": "string"
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "limit": {
             "default": 30,

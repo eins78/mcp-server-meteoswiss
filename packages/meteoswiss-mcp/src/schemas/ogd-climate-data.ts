@@ -31,10 +31,12 @@ export const GetClimateDataParamsSchema = z.object({
     ),
   start_date: z
     .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .optional()
     .describe('Start date filter (YYYY-MM-DD). Only rows on or after this date are returned.'),
   end_date: z
     .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .optional()
     .describe('End date filter (YYYY-MM-DD). Only rows on or before this date are returned.'),
   limit: z
