@@ -10,9 +10,11 @@ same pattern as `meteoswiss-forecast-evals`, see the root `pnpm-workspace.yaml` 
 
 ## Content sources
 
-This package has no hand-authored docs of its own (other than the homepage). Content is
-assembled at build time by `scripts/sync-content.ts` from two source trees elsewhere in the
-monorepo:
+This package's own hand-authored docs are the homepage (`src/content/docs/index.mdx`) plus a
+landing page per sidebar section that has no natural overview source file
+(`src/content/docs/plans/index.mdx`, `src/content/docs/forecast-evals/results/index.mdx`).
+Everything else is assembled at build time by `scripts/sync-content.ts` from two source trees
+elsewhere in the monorepo:
 
 - repo-root `docs/` → `src/content/docs/`
 - `packages/meteoswiss-forecast-evals/docs/results/` → `src/content/docs/forecast-evals/results/`
@@ -20,7 +22,7 @@ monorepo:
   snapshots, served byte-for-byte, outside the content-collection pipeline)
 
 The sync script is idempotent and destructive on its own output — it clears
-`src/content/docs/*` (except the hand-authored `index.mdx`) and
+`src/content/docs/*` (except the hand-authored pages listed above) and
 `public/forecast-evals-results/` before every run. Never hand-edit synced files; edit the
 source in `docs/` or `packages/meteoswiss-forecast-evals/docs/results/` instead.
 
