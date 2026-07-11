@@ -1,0 +1,1 @@
+../2026-07-11-skills-mcp-parity.md
