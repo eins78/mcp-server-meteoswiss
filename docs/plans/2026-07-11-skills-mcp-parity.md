@@ -4,7 +4,7 @@
 
 ## Status
 
-- **Phase:** Approved (Max answered all five open questions on PR #119, 2026-07-11 — resolutions baked in below)
+- **Phase:** Delivered (STEP A merged as PR #125 `49949f6`; STEP B merged as PR #128 `00c4f0f` — parity lint live and hard-blocking; red→green proof preserved in main's history)
 - **Type:** infra
 - **Sprint:** —
 

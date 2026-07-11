@@ -352,13 +352,18 @@ anticipated follow-on outside this plan's scope.
   `feature/register-tool-output-schemas` = STEP A (prerequisite, own PR);
   `infra/skills-parity-lint` = STEP B (after A merges).
 
-### Pipeline status
+### Pipeline status (final — both steps delivered 2026-07-11)
 
-- [x] Plan finalized on PR #119 (this commit).
-- [ ] STEP A: `feature/register-tool-output-schemas` — in progress, branched off `origin/main`
-      (which moved: #122 hourly-timeseries, #123 skills-changesets-release, #124 changelog-backfill
-      all merged since this worktree branched). Own sessionlog on that branch per policy.
-- [ ] STEP B: blocked on A landing.
-- [ ] PR #119: stays draft until Max folds it into the record; implementation readiness is reported
-      per-PR (A, then B), with merges coordinated by Max (Copilot loop → manual rebase-fold →
-      merge commit, no squash).
+- [x] Plan finalized on PR #119.
+- [x] STEP A: PR #125 **merged** (`49949f6`, merge commit). All 7 tools on `registerTool()` with
+      Zod output schemas + `structuredContent`; Copilot loop converged (1 real finding fixed);
+      review churn rebase-folded; sessionlog `2026-07-11-register-tool-output-schemas.md` merged
+      with it.
+- [x] STEP B: PR #128 **merged** (`00c4f0f`, merge commit). Parity lint live and hard-blocking
+      (lint chain + Skill Validation job). The red→green climateData pair was deliberately kept
+      unfolded in history (`7f58f5c` RED → `fbb1904` GREEN) per the Q5 directive — only Copilot
+      churn was folded. Four Copilot rounds, all findings fixed (incl. a scripts/ typecheck gap
+      whose fix caught two real strictness bugs); sessionlog `2026-07-11-skills-parity-lint.md`
+      merged with it.
+- [ ] PR #119 (this plan/record PR): Max's call — fold into the record when ready
+      (`/plot-deliver` would move the plan's active symlink to delivered/).
