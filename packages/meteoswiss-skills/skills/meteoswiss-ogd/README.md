@@ -36,6 +36,6 @@ curl -sf 'https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-
 ## Known Gaps
 
 - No radar/satellite image data (not available as structured OGD)
-- Climate normals tool pending MeteoSwiss publishing `ch.meteoschweiz.ogd-climate-normals`
+- Climate *normals* pending MeteoSwiss publishing `ch.meteoschweiz.ogd-climate-normals` (measured climate *series* are covered — SKILL.md section 5)
 - Weather icon code descriptions cover codes 1-35 (day) and 101-142 (night) — additional codes may exist
 - Forecast point_id examples are limited; agents should look up point_id from metadata

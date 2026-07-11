@@ -26,10 +26,13 @@ Access Swiss weather data from MeteoSwiss Open Government Data. Free, no API key
 | Forecast metadata | STAC `ch.meteoschweiz.ogd-local-forecasting` → asset containing `meta_point.csv` (Latin1) | Daily |
 | Forecast data | STAC items in `ch.meteoschweiz.ogd-local-forecasting` → parameter CSVs | Hourly |
 | Pollen data | `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/{abbr}/ogd-pollen_{abbr}_d_recent.csv` (Latin1) | Daily |
+| Climate data | `https://data.geo.admin.ch/ch.meteoschweiz.ogd-nbcn/{abbr}/ogd-nbcn_{abbr}_{res}.csv` (res: `m`, `y`, `d_recent`) | Daily (`d_recent`); `m`/`y` as periods close |
 
 STAC API base: `https://data.geo.admin.ch/api/stac/v1`
 
 ## 1. Get Current Weather
+
+<!-- mcp-tool: meteoswissCurrentWeather -->
 
 ```bash
 # Get weather for Zurich (station SMA) — key columns: tre200s0 (temp °C),
@@ -41,6 +44,8 @@ curl -s 'https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv'
 Full parameter list in `${CLAUDE_SKILL_DIR}/REFERENCE.md`. Missing values appear as empty fields or `-`. Timestamps are `YYYYMMDDHHmm` in UTC.
 
 ## 2. Find Stations
+
+<!-- mcp-tool: meteoswissStations -->
 
 ```bash
 # Search weather stations by name (Latin1 encoded)
@@ -64,6 +69,8 @@ Point columns: `point_id`, `point_type_id` (1=station, 2=postal_code, 3=mountain
 
 ## 3. Get Forecasts
 
+<!-- mcp-tool: meteoswissLocalForecast -->
+
 Two steps: get the latest STAC item, then download parameter CSVs.
 
 ```bash
@@ -83,6 +90,8 @@ curl -s "$ASSET_URL" | awk -F';' 'NR==1 || $1=="71"'
 
 ## 4. Get Pollen Data
 
+<!-- mcp-tool: meteoswissPollenData -->
+
 ```bash
 # Stations: PBE, PBS, PBU, PCF, PDS, PGE, PJU, PLO, PLS, PLU, PLZ, PMU, PNE, PPY, PSN, PZH
 # Use lowercase in URLs
@@ -92,6 +101,21 @@ curl -s 'https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/pzh/ogd-pollen_pzh
 ```
 
 Columns: `station_abbr`, `reference_timestamp`, then pollen parameter codes (e.g. `kabetud1`=birch, `khpoacd1`=grasses) in particles/m³. See `${CLAUDE_SKILL_DIR}/REFERENCE.md` for all codes.
+
+## 5. Get Climate Data
+
+<!-- mcp-tool: meteoswissClimateData -->
+
+Homogeneous climate series from the NBCN network (29 climate + 46 precipitation-only stations), going back decades. Monthly (`_m`) and yearly (`_y`) files hold all history; daily is `_d_recent` (last ~2 years, `_d_historical` for older).
+
+```bash
+# Yearly climate summary for Zurich (SMA) — key columns: ths200y0 (mean temp °C),
+# rhs150y0 (precip mm), shs000y0 (sunshine min), ths30xy0 (heat days)
+curl -s 'https://data.geo.admin.ch/ch.meteoschweiz.ogd-nbcn/sma/ogd-nbcn_sma_y.csv' \
+  | awk -F';' 'NR==1 || NR>2 {print}' | tail -5
+```
+
+Monthly columns use `m` in place of `y` (e.g. `ths200m0`); daily uses `d` (`ths200d0`). Timestamps are `DD.MM.YYYY HH:MM`. Station list: STAC `ch.meteoschweiz.ogd-nbcn` → asset `ogd-nbcn_meta_stations.csv` (Latin1). Precipitation-only stations live in `ch.meteoschweiz.ogd-nbcn-precip` with the same URL pattern. See `${CLAUDE_SKILL_DIR}/REFERENCE.md` for all parameter codes.
 
 ## Error Handling
 

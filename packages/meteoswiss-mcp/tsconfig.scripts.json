@@ -1,0 +1,12 @@
+{
+  // Type-checks the parity/dev scripts (run via tsx, which transpiles WITHOUT
+  // type-checking — without this config, type errors in scripts/ would only
+  // surface at runtime). Not used for builds; noEmit only.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["scripts/**/*.ts", "src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
