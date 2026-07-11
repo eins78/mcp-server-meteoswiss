@@ -201,9 +201,9 @@ Prefer comprehensive JSDoc/TSDoc comments for implementation details and README 
 ## MCP Tool Implementation
 
 When implementing MCP tools:
-1. Define Zod schema for parameters in `src/schemas/`
+1. Define Zod schemas in `src/schemas/` — both the input params schema and the output (response) schema; export response types via `z.infer` so data-layer return types stay in sync with the declared schema
 2. Implement tool logic in `src/tools/`
-3. Register tool in `src/server.ts` using `server.tool()`
+3. Register tool in `src/server.ts` using `server.registerTool(name, { description, inputSchema, outputSchema }, handler)` — declare the output schema so `tools/list` advertises it, and return `structuredContent` (the SDK validates it against the output schema on every call; the plain `content` JSON text stays alongside it for compatibility)
 4. Add integration tests in `test/integration/`
 5. Document tool behavior and parameters
 

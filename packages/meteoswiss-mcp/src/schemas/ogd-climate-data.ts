@@ -48,42 +48,63 @@ export const GetClimateDataParamsSchema = z.object({
 export type GetClimateDataParams = z.infer<typeof GetClimateDataParamsSchema>;
 
 /** A single climate measurement row */
-export type ClimateMeasurement = {
-  date: string;
-  temperature_mean?: number;
-  temperature_max?: number;
-  temperature_min?: number;
-  precipitation?: number;
-  sunshine_duration_min?: number;
-  radiation_w_m2?: number;
-  wind_speed_m_s?: number;
-  pressure_hpa?: number;
-  frost_days?: number;
-  summer_days?: number;
-  heat_days?: number;
-  ice_days?: number;
-  tropical_nights?: number;
-  rain_days?: number;
-};
+export const ClimateMeasurementSchema = z.object({
+  date: z
+    .string()
+    .describe('Measurement date (YYYY-MM-DD; first day of period for monthly/yearly)'),
+  temperature_mean: z.number().optional().describe('Mean temperature, °C'),
+  temperature_max: z.number().optional().describe('Maximum temperature, °C'),
+  temperature_min: z.number().optional().describe('Minimum temperature, °C'),
+  precipitation: z.number().optional().describe('Precipitation total, mm'),
+  sunshine_duration_min: z.number().optional().describe('Sunshine duration, minutes'),
+  radiation_w_m2: z.number().optional().describe('Global radiation, W/m²'),
+  wind_speed_m_s: z.number().optional().describe('Wind speed, m/s'),
+  pressure_hpa: z.number().optional().describe('Air pressure, hPa'),
+  frost_days: z.number().optional().describe('Days with minimum below 0 °C (monthly/yearly)'),
+  summer_days: z
+    .number()
+    .optional()
+    .describe('Days with maximum of 25 °C or above (monthly/yearly)'),
+  heat_days: z.number().optional().describe('Days with maximum of 30 °C or above (monthly/yearly)'),
+  ice_days: z.number().optional().describe('Days with maximum below 0 °C (monthly/yearly)'),
+  tropical_nights: z
+    .number()
+    .optional()
+    .describe('Nights with minimum of 20 °C or above (monthly/yearly)'),
+  rain_days: z.number().optional().describe('Days with measurable precipitation (monthly/yearly)'),
+});
+export type ClimateMeasurement = z.infer<typeof ClimateMeasurementSchema>;
 
 /** Climate data response */
-export type ClimateDataResponse = {
-  station: {
-    name: string;
-    abbreviation: string;
-    elevation: number;
-    coordinates: { lat: number; lon: number };
-    canton?: string;
-    distance_km?: number;
-    network: string;
-  };
-  resolution: ClimateResolution;
-  data: ClimateMeasurement[];
-  /**
-   * Present only when `data` is empty because the requested date range fell
-   * outside the fetched series (e.g. a daily request older than the ~2-year
-   * `_recent` window). Explains why and suggests a fallback resolution.
-   */
-  note?: string;
-  source: string;
-};
+export const ClimateDataResponseSchema = z.object({
+  station: z.object({
+    name: z.string().describe('Climate station name'),
+    abbreviation: z.string().describe('Official station abbreviation (e.g. "SMA")'),
+    elevation: z.number().describe('Elevation in metres above sea level'),
+    coordinates: CoordinatesSchema.describe('WGS84 coordinates of the station'),
+    canton: z.string().optional().describe('Canton abbreviation (e.g. "ZH")'),
+    distance_km: z
+      .number()
+      .optional()
+      .describe(
+        'Distance from the queried location to this station, km (when resolved by proximity)'
+      ),
+    network: z
+      .string()
+      .describe(
+        'NBCN network kind ("climate" full climate series, "precipitation" precipitation-only)'
+      ),
+  }),
+  resolution: z.enum(CLIMATE_RESOLUTIONS).describe('Resolution the returned rows are in'),
+  data: z
+    .array(ClimateMeasurementSchema)
+    .describe('Measurement rows, filtered and limited as requested'),
+  note: z
+    .string()
+    .optional()
+    .describe(
+      'Present only when `data` is empty because the requested date range fell outside the fetched series (e.g. a daily request older than the ~2-year `_recent` window). Explains why and suggests a fallback resolution.'
+    ),
+  source: z.string().describe('Data attribution'),
+});
+export type ClimateDataResponse = z.infer<typeof ClimateDataResponseSchema>;

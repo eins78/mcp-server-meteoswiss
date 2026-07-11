@@ -8,7 +8,9 @@ import { gfm } from 'turndown-plugin-gfm';
 import { fetchHtml, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
 import { expandWebComponents } from './meteoswiss-web-components.js';
-import type { FetchMeteoSwissContentInput } from '../schemas/meteoswiss-fetch.js';
+import type { ContentResponse, FetchMeteoSwissContentInput } from '../schemas/meteoswiss-fetch.js';
+
+export type { ContentResponse } from '../schemas/meteoswiss-fetch.js';
 
 // Test fixtures location
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,31 +47,12 @@ const turndownService = new TurndownService({
 // Add GFM plugin for better markdown support (tables, strikethrough, task lists)
 turndownService.use(gfm);
 
-/**
- * Content response structure.
- *
- * Field naming follows the ChatGPT Deep Research MCP contract:
- * `id`, `title`, `text`, `url`, `metadata`. Prior to v2.4.0 this response
- * also included a `content` field duplicating `text` byte-for-byte; it was
- * removed as a token-cost fix (issue #110, BUG-2) — `text` is canonical.
- */
-export interface ContentResponse {
-  id: string;
-  title?: string;
-  /** Canonical body field (matches ChatGPT Deep Research spec). */
-  text: string;
-  format: 'markdown' | 'text';
-  /** Canonical URL field (matches ChatGPT Deep Research spec). For this server `url === id`. */
-  url: string;
-  metadata?: {
-    url: string;
-    language?: string;
-    lastModified?: string;
-    contentType?: string;
-    keywords?: string[];
-    description?: string;
-  };
-}
+// ContentResponse now lives in ../schemas/meteoswiss-fetch.ts as a Zod schema
+// (ContentResponseSchema) so the fetch tool can declare it as its MCP outputSchema.
+// Field naming follows the ChatGPT Deep Research MCP contract: `id`, `title`,
+// `text`, `url`, `metadata`. Prior to v2.4.0 this response also included a
+// `content` field duplicating `text` byte-for-byte; it was removed as a
+// token-cost fix (issue #110, BUG-2) — `text` is canonical.
 
 /**
  * Fetch MeteoSwiss content by ID.

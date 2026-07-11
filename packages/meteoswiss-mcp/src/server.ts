@@ -4,25 +4,34 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { searchMeteoSwissContentSchema } from './schemas/meteoswiss-search.js';
+import { searchMeteoSwissContentSchema, SearchResultsSchema } from './schemas/meteoswiss-search.js';
 import type { SearchMeteoSwissContentInput } from './schemas/meteoswiss-search.js';
-import { fetchMeteoSwissContentSchema } from './schemas/meteoswiss-fetch.js';
+import { fetchMeteoSwissContentSchema, ContentResponseSchema } from './schemas/meteoswiss-fetch.js';
 import type { FetchMeteoSwissContentInput } from './schemas/meteoswiss-fetch.js';
 import { meteoswissSearchTool } from './tools/meteoswiss-search.js';
 import { meteoswissFetchTool } from './tools/meteoswiss-fetch.js';
-import { GetLocalForecastParamsSchema } from './schemas/ogd-local-forecast.js';
+import {
+  GetLocalForecastParamsSchema,
+  LocalForecastResponseSchema,
+} from './schemas/ogd-local-forecast.js';
 import type { GetLocalForecastParams } from './schemas/ogd-local-forecast.js';
 import { getLocalForecast } from './data/ogd-local-forecast.js';
-import { GetCurrentWeatherParamsSchema } from './schemas/ogd-current-weather.js';
+import {
+  GetCurrentWeatherParamsSchema,
+  CurrentWeatherResponseSchema,
+} from './schemas/ogd-current-weather.js';
 import type { GetCurrentWeatherParams } from './schemas/ogd-current-weather.js';
 import { getCurrentWeather } from './data/ogd-current-weather.js';
-import { ListStationsParamsSchema } from './schemas/ogd-station-list.js';
+import { ListStationsParamsSchema, StationListResponseSchema } from './schemas/ogd-station-list.js';
 import type { ListStationsParams } from './schemas/ogd-station-list.js';
 import { listStations } from './data/ogd-station-list.js';
-import { GetPollenDataParamsSchema } from './schemas/ogd-pollen-data.js';
+import { GetPollenDataParamsSchema, PollenDataResponseSchema } from './schemas/ogd-pollen-data.js';
 import type { GetPollenDataParams } from './schemas/ogd-pollen-data.js';
 import { getPollenData } from './data/ogd-pollen-data.js';
-import { GetClimateDataParamsSchema } from './schemas/ogd-climate-data.js';
+import {
+  GetClimateDataParamsSchema,
+  ClimateDataResponseSchema,
+} from './schemas/ogd-climate-data.js';
 import type { GetClimateDataParams } from './schemas/ogd-climate-data.js';
 import { getClimateData } from './data/ogd-climate-data.js';
 import { debugServer, debugTools } from './support/logging.js';
@@ -60,10 +69,14 @@ export function createServer(): McpServer {
 
   // Register search tool
   debugServer('Registering tool: search');
-  server.tool(
+  server.registerTool(
     'search',
-    'Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Always returns up to 10 results per page — the upstream API has a fixed page size that cannot be changed. Note: pagination may return duplicate results across pages (upstream API limitation).',
-    searchMeteoSwissContentSchema.shape,
+    {
+      description:
+        'Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Always returns up to 10 results per page — the upstream API has a fixed page size that cannot be changed. Note: pagination may return duplicate results across pages (upstream API limitation).',
+      inputSchema: searchMeteoSwissContentSchema.shape,
+      outputSchema: SearchResultsSchema.shape,
+    },
     async (params: SearchMeteoSwissContentInput) => {
       const _t0 = performance.now();
       try {
@@ -82,6 +95,7 @@ export function createServer(): McpServer {
               text: JSON.stringify(results, null, 2),
             },
           ],
+          structuredContent: results,
         };
       } catch (error: unknown) {
         console.error('Error in search tool:', error);
@@ -103,10 +117,14 @@ export function createServer(): McpServer {
 
   // Register fetch tool with ChatGPT-compatible name
   debugServer('Registering tool: fetch');
-  server.tool(
+  server.registerTool(
     'fetch',
-    'Fetch full content from a MeteoSwiss webpage and convert to markdown or plain text. Use the search tool first to discover valid page URLs, then pass the full URL as the id parameter.',
-    fetchMeteoSwissContentSchema.shape,
+    {
+      description:
+        'Fetch full content from a MeteoSwiss webpage and convert to markdown or plain text. Use the search tool first to discover valid page URLs, then pass the full URL as the id parameter.',
+      inputSchema: fetchMeteoSwissContentSchema.shape,
+      outputSchema: ContentResponseSchema.shape,
+    },
     async (params: FetchMeteoSwissContentInput) => {
       const _t0 = performance.now();
       try {
@@ -125,6 +143,7 @@ export function createServer(): McpServer {
               text: JSON.stringify(content, null, 2),
             },
           ],
+          structuredContent: content,
         };
       } catch (error: unknown) {
         console.error('Error in fetch tool:', error);
@@ -146,9 +165,10 @@ export function createServer(): McpServer {
 
   // Register getLocalForecast tool (OGD)
   debugServer('Registering tool: getLocalForecast');
-  server.tool(
+  server.registerTool(
     'meteoswissLocalForecast',
-    `Get a multi-day weather forecast for any Swiss location. Returns daily summaries (temperature, precipitation, sunshine, wind, weather icon) plus a hierarchical hourly breakdown of every series.
+    {
+      description: `Get a multi-day weather forecast for any Swiss location. Returns daily summaries (temperature, precipitation, sunshine, wind, weather icon) plus a hierarchical hourly breakdown of every series.
 
 This uses official MeteoSwiss Open Data — the same forecasts powering the MeteoSwiss app and website.
 
@@ -185,7 +205,9 @@ useful for judging *when* rain, sun, or wind is expected, not just the daily sum
   stations and are always derived from the hourly series. For postal codes/mountain
   points, every summary field is derived from the same hourly series shown alongside it,
   so it always matches summing/averaging that series exactly.`,
-    GetLocalForecastParamsSchema.shape,
+      inputSchema: GetLocalForecastParamsSchema.shape,
+      outputSchema: LocalForecastResponseSchema.shape,
+    },
     async (params: GetLocalForecastParams) => {
       const _t0 = performance.now();
       try {
@@ -204,6 +226,7 @@ useful for judging *when* rain, sun, or wind is expected, not just the daily sum
               text: JSON.stringify(result, null, 2),
             },
           ],
+          structuredContent: result,
         };
       } catch (error: unknown) {
         console.error('Error in getLocalForecast tool:', error);
@@ -225,14 +248,17 @@ useful for judging *when* rain, sun, or wind is expected, not just the daily sum
 
   // Register getCurrentWeather tool (OGD)
   debugServer('Registering tool: getCurrentWeather');
-  server.tool(
+  server.registerTool(
     'meteoswissCurrentWeather',
-    `Get real-time weather measurements from ~300 Swiss automatic weather stations (~160 full weather + ~140 precipitation-only). Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes. Precipitation-only stations return only rainfall data.
+    {
+      description: `Get real-time weather measurements from ~300 Swiss automatic weather stations (~160 full weather + ~140 precipitation-only). Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes. Precipitation-only stations return only rainfall data.
 
 For 8 stations (Zurich, Basel, Chur, Sion, Altdorf, Säntis, Jungfraujoch, Grand St-Bernard), also includes daily visual observations: cloud cover, fog, rain, snowfall, hail, and snow coverage.
 
 Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplatz 1 Bern"), or WGS84 coordinates. Automatically finds the nearest station.`,
-    GetCurrentWeatherParamsSchema.shape,
+      inputSchema: GetCurrentWeatherParamsSchema.shape,
+      outputSchema: CurrentWeatherResponseSchema.shape,
+    },
     async (params: GetCurrentWeatherParams) => {
       const _t0 = performance.now();
       try {
@@ -243,7 +269,10 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
         const result = await getCurrentWeather(params);
         console.error('Successfully retrieved current weather');
         recordToolCall('meteoswissCurrentWeather', performance.now() - _t0);
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
       } catch (error: unknown) {
         console.error('Error in meteoswissCurrentWeather tool:', error);
         debugTools('Error in getCurrentWeather: %O', error);
@@ -263,10 +292,13 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
 
   // Register listStations tool (OGD)
   debugServer('Registering tool: listStations');
-  server.tool(
+  server.registerTool(
     'meteoswissStations',
-    `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of ~160 stations across Switzerland.`,
-    ListStationsParamsSchema.shape,
+    {
+      description: `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of ~160 stations across Switzerland.`,
+      inputSchema: ListStationsParamsSchema.shape,
+      outputSchema: StationListResponseSchema.shape,
+    },
     async (params: ListStationsParams) => {
       const _t0 = performance.now();
       try {
@@ -277,7 +309,10 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
         const result = await listStations(params);
         console.error(`Successfully listed ${result.total} stations`);
         recordToolCall('meteoswissStations', performance.now() - _t0);
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
       } catch (error: unknown) {
         console.error('Error in meteoswissStations tool:', error);
         debugTools('Error in listStations: %O', error);
@@ -297,10 +332,13 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
 
   // Register getPollenData tool (OGD)
   debugServer('Registering tool: getPollenData');
-  server.tool(
+  server.registerTool(
     'meteoswissPollenData',
-    `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels for 7 measured species (alder, birch, hazel, beech, ash, oak, grasses) — each is always included, with a "no-current-data" status when out of season. Ambrosia (ragweed) is a MeteoSwiss forecast-only category and is not part of this OGD measurement network, so it is not included. Useful for allergy sufferers.`,
-    GetPollenDataParamsSchema.shape,
+    {
+      description: `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels for 7 measured species (alder, birch, hazel, beech, ash, oak, grasses) — each is always included, with a "no-current-data" status when out of season. Ambrosia (ragweed) is a MeteoSwiss forecast-only category and is not part of this OGD measurement network, so it is not included. Useful for allergy sufferers.`,
+      inputSchema: GetPollenDataParamsSchema.shape,
+      outputSchema: PollenDataResponseSchema.shape,
+    },
     async (params: GetPollenDataParams) => {
       const _t0 = performance.now();
       try {
@@ -311,7 +349,10 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
         const result = await getPollenData(params);
         console.error(`Successfully retrieved pollen data for ${result.stations.length} stations`);
         recordToolCall('meteoswissPollenData', performance.now() - _t0);
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
       } catch (error: unknown) {
         console.error('Error in meteoswissPollenData tool:', error);
         debugTools('Error in getPollenData: %O', error);
@@ -331,16 +372,19 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
 
   // Register getClimateData tool (OGD NBCN)
   debugServer('Registering tool: getClimateData');
-  server.tool(
+  server.registerTool(
     'meteoswissClimateData',
-    `Get homogeneous climate measurement series from Switzerland's National Basic Climatic Network (NBCN). Returns temperature, precipitation, sunshine, radiation, wind, pressure, and climate indicators (frost days, summer days, heat days) going back decades.
+    {
+      description: `Get homogeneous climate measurement series from Switzerland's National Basic Climatic Network (NBCN). Returns temperature, precipitation, sunshine, radiation, wind, pressure, and climate indicators (frost days, summer days, heat days) going back decades.
 
 29 climate stations + 46 precipitation stations with daily, monthly, and yearly resolution.
 
 Use cases: "What are typical January temperatures in Zurich?", "How has precipitation changed in Basel over 50 years?", "How many heat days did Lugano have last year?"
 
 Accepts station names ("Zurich", "Basel"), abbreviations ("SMA", "BAS"), or WGS84 coordinates.`,
-    GetClimateDataParamsSchema.shape,
+      inputSchema: GetClimateDataParamsSchema.shape,
+      outputSchema: ClimateDataResponseSchema.shape,
+    },
     async (params: GetClimateDataParams) => {
       const _t0 = performance.now();
       try {
@@ -351,7 +395,10 @@ Accepts station names ("Zurich", "Basel"), abbreviations ("SMA", "BAS"), or WGS8
         const result = await getClimateData(params);
         console.error(`Successfully retrieved climate data: ${result.data.length} rows`);
         recordToolCall('meteoswissClimateData', performance.now() - _t0);
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
       } catch (error: unknown) {
         console.error('Error in meteoswissClimateData tool:', error);
         debugTools('Error in getClimateData: %O', error);
