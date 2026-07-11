@@ -121,23 +121,27 @@ export function localDate(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: "Europe/Zurich" });
 }
 
+/** One future local calendar day, with the weekday name questions embed. */
+export type UpcomingDay = { date: string; weekday: string };
+
 /**
- * The upcoming (or current) weekend's Saturday and Sunday as local dates.
- * On a Saturday this returns today + tomorrow; questions are generated and answered
- * within the same capture window, so this has to be deterministic, not clever.
+ * The next two local calendar days after `now` — always inside the 4-day forecast
+ * horizon captured for ground truth, on ANY weekday and on either side of midnight
+ * (unlike weekend-anchored dates, which sail past the horizon on a Sunday capture).
+ * Questions embed the absolute date + weekday name; nothing relative like "tomorrow".
  */
-export function weekendDates(now: Date): { saturday: string; sunday: string } {
-  const dayName = now.toLocaleDateString("en-US", {
-    timeZone: "Europe/Zurich",
-    weekday: "short",
-  });
-  const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
-    dayName,
-  );
-  const daysUntilSaturday = (6 - dayIndex + 7) % 7;
-  const saturday = new Date(now.getTime() + daysUntilSaturday * 86_400_000);
-  const sunday = new Date(saturday.getTime() + 86_400_000);
-  return { saturday: localDate(saturday), sunday: localDate(sunday) };
+export function upcomingDays(now: Date): { d1: UpcomingDay; d2: UpcomingDay } {
+  const day = (offsetDays: number): UpcomingDay => {
+    const date = new Date(now.getTime() + offsetDays * 86_400_000);
+    return {
+      date: localDate(date),
+      weekday: date.toLocaleDateString("en-US", {
+        timeZone: "Europe/Zurich",
+        weekday: "long",
+      }),
+    };
+  };
+  return { d1: day(1), d2: day(2) };
 }
 
 /** Minimal forecast shape extracted from meteoswissLocalForecast JSON. */

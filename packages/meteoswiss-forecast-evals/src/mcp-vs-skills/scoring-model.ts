@@ -48,14 +48,18 @@ export function normalizeName(value: string): string {
  */
 export function canonicalPollenSpecies(value: string): string | null {
   const n = normalizeName(value);
+  // Synonyms cover English/Latin/German names AND the OGD parameter-code prefixes
+  // (kabetu...) — a skill-method answer quoting raw CSV codes is factually right even
+  // if stylistically poor; the naming difference is a qualitative finding, not an
+  // accuracy failure.
   const table: Record<string, string[]> = {
-    alder: ["alder", "alnus", "erle"],
-    birch: ["birch", "betula", "birke"],
-    hazel: ["hazel", "corylus", "hasel"],
-    beech: ["beech", "fagus", "buche"],
-    ash: ["ash", "fraxinus", "esche"],
-    oak: ["oak", "quercus", "eiche"],
-    grasses: ["grass", "grasses", "poaceae", "graser", "gramineae"],
+    alder: ["alder", "alnus", "erle", "kaalnu"],
+    birch: ["birch", "betula", "birke", "kabetu"],
+    hazel: ["hazel", "corylus", "hasel", "kacory"],
+    beech: ["beech", "fagus", "buche", "kafagu"],
+    ash: ["ash", "fraxinus", "esche", "kafrax"],
+    oak: ["oak", "quercus", "eiche", "kaquer"],
+    grasses: ["grass", "grasses", "poaceae", "graser", "gramineae", "khpoac"],
   };
   for (const [canonical, synonyms] of Object.entries(table)) {
     if (synonyms.some((s) => n === s || n.includes(s))) {

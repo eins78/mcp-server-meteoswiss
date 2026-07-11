@@ -123,8 +123,8 @@ function extractSubstitutions(input: string): {
 
 function validateStatement(statement: string): GuardResult {
   const trimmed = statement.trim();
-  if (trimmed.length === 0) {
-    return { ok: true };
+  if (trimmed.length === 0 || trimmed.startsWith("#")) {
+    return { ok: true }; // blank or comment line
   }
   for (const segment of trimmed.split("|")) {
     let seg = segment.trim();
@@ -175,12 +175,14 @@ function validateCommandList(input: string): GuardResult {
   if (remainder.includes("`")) {
     return { ok: false, reason: "backticks not allowed" };
   }
-  // Redirects: only /dev/null variants are allowed.
+  // Redirects: only /dev/null variants are allowed. `&&`/`||` are plain statement
+  // separators here (each side is validated on its own).
   const redirectStripped = remainder
     .replaceAll("2>/dev/null", " ")
     .replaceAll(">/dev/null", " ")
     .replaceAll("2>&1", " ")
-    .replaceAll("&&", "\n");
+    .replaceAll("&&", "\n")
+    .replaceAll("||", "\n");
   if (/[<>]/.test(redirectStripped)) {
     return { ok: false, reason: "redirects not allowed" };
   }
@@ -200,10 +202,18 @@ function validateCommandList(input: string): GuardResult {
  * Validate a candidate command. Exported for tests; runGuardedBash calls this first.
  */
 export function guardCommand(rawCommand: string): GuardResult {
-  // Expand the skill-dir variable both ways so path checks see absolute paths.
+  // Expand the skill-dir variable both ways so path checks see absolute paths, and
+  // join backslash line continuations BEFORE statement splitting (models copy the
+  // SKILL.md examples verbatim, multi-line `curl ... \ | jq` included).
+  // Full-line comments go FIRST — before quote masking — or an apostrophe in a
+  // comment ("# Geneva's point_id") opens a phantom quote that swallows the rest.
   const expanded = rawCommand
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("#"))
+    .join("\n")
     .replaceAll("${CLAUDE_SKILL_DIR}", SKILL_DIR)
-    .replaceAll("$CLAUDE_SKILL_DIR", SKILL_DIR);
+    .replaceAll("$CLAUDE_SKILL_DIR", SKILL_DIR)
+    .replace(/\\\r?\n/g, " ");
 
   // URL allowlist runs on the raw (unmasked) text so quoted URLs are checked too.
   for (const urlMatch of expanded.matchAll(/https?:\/\/[^\s"'()|]+/g)) {

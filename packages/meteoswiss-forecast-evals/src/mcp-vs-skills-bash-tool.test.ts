@@ -92,3 +92,23 @@ test("single-quoted metacharacters in awk programs do not trip the guard", () =>
     "curl -s 'https://data.geo.admin.ch/a.csv' | awk -F';' '$3 > 20 && $1 != \"x\" { print $0 }'",
   );
 });
+
+test("allows backslash line continuations and comment lines (models copy SKILL.md verbatim)", () => {
+  expectAllowed(
+    "# find the meta URL\ncurl -s 'https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting' \\\n  | jq -r '.assets | length'",
+  );
+});
+
+test("pollen param codes canonicalize to species in scoring", async () => {
+  const { canonicalPollenSpecies } =
+    await import("./mcp-vs-skills/scoring-model.js");
+  assert.equal(canonicalPollenSpecies("khpoacd1"), "grasses");
+  assert.equal(canonicalPollenSpecies("kacoryd0"), "hazel");
+});
+
+test("allows || fallbacks and apostrophes inside comments", () => {
+  expectAllowed("${CLAUDE_SKILL_DIR}/scripts/pollen.sh PBS || echo failed");
+  expectAllowed(
+    "# Find Geneva's point_id first\ncurl -s 'https://data.geo.admin.ch/x.csv' | head -3",
+  );
+});

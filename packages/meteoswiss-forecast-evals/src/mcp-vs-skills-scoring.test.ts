@@ -21,7 +21,7 @@ import {
   precipInWindow,
   minTempInWindow,
   stationNamesFromCsv,
-  weekendDates,
+  upcomingDays,
 } from "./mcp-vs-skills/ground-truth-live.js";
 
 // --- scoring ---
@@ -192,17 +192,17 @@ test("climateMonthlyFromCsv keys by YYYY-MM", () => {
   assert.equal(monthly.get("2026-05"), 15.3);
 });
 
-test("weekendDates: Friday and Saturday both resolve to the same weekend", () => {
-  // 2026-07-10 was a Friday, 2026-07-11 a Saturday (Europe/Zurich).
-  const friday = new Date("2026-07-10T22:00:00+02:00");
-  const saturdayNight = new Date("2026-07-11T01:00:00+02:00");
-  assert.deepEqual(weekendDates(friday), {
-    saturday: "2026-07-11",
-    sunday: "2026-07-12",
+test("upcomingDays: next two local days, correct across midnight and weekdays", () => {
+  // 2026-07-11 was a Saturday (Europe/Zurich).
+  const lateSaturday = new Date("2026-07-11T23:30:00+02:00");
+  assert.deepEqual(upcomingDays(lateSaturday), {
+    d1: { date: "2026-07-12", weekday: "Sunday" },
+    d2: { date: "2026-07-13", weekday: "Monday" },
   });
-  assert.deepEqual(weekendDates(saturdayNight), {
-    saturday: "2026-07-11",
-    sunday: "2026-07-12",
+  const earlySunday = new Date("2026-07-12T00:30:00+02:00");
+  assert.deepEqual(upcomingDays(earlySunday), {
+    d1: { date: "2026-07-13", weekday: "Monday" },
+    d2: { date: "2026-07-14", weekday: "Tuesday" },
   });
 });
 

@@ -20,7 +20,7 @@
     "eval": "pnpm run generate && bash scripts/run.sh promptfooconfig.yaml -o generated/results.json",
     "eval:judge": "pnpm run generate && bash scripts/run.sh promptfooconfig.judge.yaml -o generated/results-judge.json",
     "summarize": "tsx src/summarize.ts",
-    "mcp-skills:smoke": "bash scripts/run-mcp-skills.sh --filter-providers haiku --filter-pattern 'current-temp-zurich|forecast-weekend-lugano|pollen-grasses-zurich'",
+    "mcp-skills:smoke": "bash scripts/run-mcp-skills.sh --filter-providers haiku --filter-pattern 'current-temp-zurich|forecast-two-days-lugano|pollen-grasses-zurich'",
     "mcp-skills:eval": "bash scripts/run-mcp-skills.sh",
     "mcp-skills:summarize": "tsx src/mcp-vs-skills/summarize.ts",
     "mcp-skills:charts": "tsx src/mcp-vs-skills/render-charts.ts",

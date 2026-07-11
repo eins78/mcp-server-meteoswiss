@@ -74,9 +74,10 @@ Point columns: `point_id`, `point_type_id` (1=station, 2=postal_code, 3=mountain
 Two steps: get the latest STAC item, then download parameter CSVs.
 
 ```bash
-# Step 1: Get latest forecast item
+# Step 1: Get latest forecast item WITH assets (a brand-new item can exist with its
+# assets not yet uploaded — skip those or every parameter comes back empty)
 ITEM=$(curl -s 'https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting/items?limit=10' \
-  | jq -r '[.features[].id] | sort | reverse | .[0]')
+  | jq -r '[.features[] | select((.assets | length) > 0) | .id] | sort | reverse | .[0]')
 
 # Step 2: Get a parameter CSV (e.g., daily max temperature for Zurich station, point_id=71)
 ASSET_URL=$(curl -s "https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting/items/$ITEM" \
