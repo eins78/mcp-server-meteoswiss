@@ -9,6 +9,8 @@
         <string>/bin/bash</string>
         <string>/Users/user/CODE/mcp-server-meteoswiss/packages/meteoswiss-forecast-evals/scripts/start-viewer.sh</string>
     </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/user/CODE/mcp-server-meteoswiss/packages/meteoswiss-forecast-evals</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -18,6 +20,8 @@
     <true/>
     <key>KeepAlive</key>
     <true/>
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
     <key>StandardOutPath</key>
     <string>/Users/user/Library/Logs/meteoswiss-evals-viewer.log</string>
     <key>StandardErrorPath</key>

@@ -72,6 +72,37 @@ on it instead — launchd supervises the wrapper script's lifetime, which now ma
 - The final, permanent LaunchAgent (pointing at the merged `main` checkout, not the worktree)
   is installed and verified as a separate step after this PR merges — see the follow-ups below.
 
+## /simplify pass (4 parallel review agents: reuse, simplification, efficiency, altitude)
+
+Applied:
+- **Reuse**: `WorkingDirectory` plist key, matching the sibling `li.kiste.hermes-kokoro-bridge`
+  agent's pattern, instead of the script computing its own dir and `cd`-ing.
+- **Reuse + simplification (same finding, independently)**: dropped the script's own
+  `export PATH=...` — the plist's `EnvironmentVariables.PATH` was already the same fact stated
+  twice; one source of truth now.
+- **Efficiency**: added an explicit `ThrottleInterval` (30s) rather than relying on launchd's
+  implicit default — if the viewer can't bind at all, each retry re-runs the full
+  clear/spawn/30s-poll/reassert sequence, which is expensive enough per-iteration to want an
+  explicit, considered value rather than whatever the default happens to be.
+
+Tried and reverted after empirical testing disproved it:
+- **Efficiency** also suggested skipping the `tailscale serve ... off` step when the existing
+  mapping already pointed at the right target, to avoid a brief reachability gap on an ordinary
+  crash-restart. Implemented it, re-ran the bootstrap → kill -9 → restart test — and it broke:
+  `EADDRINUSE` again. Root cause the suggestion missed: `tailscale serve --bg` mappings are held
+  by tailscaled independent of backend liveness — killing/restarting the viewer does *not*
+  release tailscaled's specific-address bind, so "does the existing mapping already point at the
+  right target" is not a valid signal for "safe to skip clearing." The bind must always be
+  cleared before every fresh promptfoo start, full stop. Reverted to the unconditional `off`,
+  with a comment recording why the seemingly-obvious optimization doesn't hold.
+
+Not applied (out of scope for this PR, noted as follow-ups): the altitude review correctly
+pointed out this Tailscale-wildcard-bind conflict class isn't documented anywhere at the
+workspace level (`~/OPS/home-workspace/docs/launchd-agents.md`), so any *future* `li.kiste.*`
+service with the same shape (wildcard bind + fronted by `tailscale serve`) will rediscover this
+the same way this session did. That doc lives in a different repo — flagged for Max rather than
+edited here.
+
 ## Pending / follow-ups
 
 - [ ] Confirm GitHub Pages builds green after merge (added `.nojekyll` to fix the pre-merge
