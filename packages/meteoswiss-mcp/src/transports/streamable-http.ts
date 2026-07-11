@@ -119,6 +119,9 @@ export async function createHttpServer(
   debugTransport('Creating HTTP server on port %d, host %s', port, host);
   debugTransport('Configuration: %O', config);
 
+  /** The Node HTTP listener, retained so stop() can close it. */
+  let httpServer: ReturnType<express.Application['listen']> | undefined;
+
   const app = express();
 
   // Trust the reverse proxy (Caddy) so `req.ip` reflects the real client via
@@ -260,6 +263,14 @@ export async function createHttpServer(
       let isNewTransport = false;
       if (!transport) {
         if (req.method === 'POST') {
+          // Enforce the session cap here so it surfaces as a proper 503 up front.
+          // The manager also throws inside onsessioninitialized, but that path
+          // returns a generic 500 and can double-close the transport (FUN-13).
+          if (sessionManager.size >= config.MAX_SESSIONS) {
+            debugTransport('Session capacity reached (%d), rejecting', config.MAX_SESSIONS);
+            res.status(503).json({ error: 'Server capacity reached' });
+            return;
+          }
           // Could be an initialize request — create a new transport + server pair
           try {
             transport = await createAndRegisterTransport(createMcpServer, sessionManager);
@@ -350,6 +361,9 @@ export async function createHttpServer(
         reject(err);
       });
 
+      // Retain the listener so stop() can actually close it (see below).
+      httpServer = server;
+
       // Store server reference for tests to access
       // This is a workaround for test compatibility
       (app as express.Application & { __server?: unknown }).__server = server;
@@ -366,7 +380,13 @@ export async function createHttpServer(
   const stop = (): void => {
     debugTransport('Stopping HTTP server, cleaning up %d sessions', sessionManager.size);
     sessionManager.stop();
-    // Note: Express app handles server cleanup internally
+    // Close the HTTP listener too — Express does NOT do this for us, so without
+    // it the listener stayed open (harmless today only because callers
+    // process.exit after stop(), but a silent trap for future graceful shutdown).
+    if (httpServer) {
+      httpServer.close();
+      httpServer = undefined;
+    }
     debugTransport('Server stopped');
   };
 
