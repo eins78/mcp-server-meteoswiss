@@ -144,6 +144,19 @@ async function readBodyCapped(response: Response, maxBytes: number, url: string)
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 /**
+ * Whether an HTTP error status is worth retrying. 4xx are client errors that
+ * won't change on retry (retrying wastes ~1.2s each) — except 408 Request
+ * Timeout and 429 Too Many Requests, which are transient. 5xx and anything else
+ * are retryable.
+ */
+function isRetryableStatus(status: number): boolean {
+  if (status >= 400 && status < 500) {
+    return status === 408 || status === 429;
+  }
+  return true;
+}
+
+/**
  * Performs a fetch, following redirects manually when `validateUrl` is supplied
  * so the caller can re-run its allowlist on every hop (defends against an
  * upstream open redirect escaping the domain allowlist — SEC-4). When
@@ -260,7 +273,8 @@ export async function fetchWithRetry(
         const error = new HttpRequestError(
           `HTTP error ${response.status}: ${response.statusText}`,
           url,
-          response.status
+          response.status,
+          isRetryableStatus(response.status)
         );
         debugHttp('HTTP error: %O', error);
         throw error;
@@ -403,7 +417,8 @@ export async function fetchBinary(url: string, options: HttpRequestOptions = {})
         throw new HttpRequestError(
           `HTTP error ${response.status}: ${response.statusText}`,
           url,
-          response.status
+          response.status,
+          isRetryableStatus(response.status)
         );
       }
 

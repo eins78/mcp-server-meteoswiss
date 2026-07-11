@@ -98,6 +98,29 @@ describe('fetchWithRetry — retry behaviour', () => {
     expect(text).toBe('ok');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('does not retry a 404 (non-retryable 4xx)', async () => {
+    fetchMock.mockResolvedValue(new Response('missing', { status: 404, statusText: 'Not Found' }));
+
+    await expect(
+      fetchWithRetry('https://data.geo.admin.ch/gone', { useCache: false, retryDelay: 1 })
+    ).rejects.toBeInstanceOf(HttpRequestError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('still retries a 429 (transient 4xx)', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response('slow down', { status: 429, statusText: 'Too Many' }))
+      .mockResolvedValueOnce(new Response('ok', { status: 200 }));
+
+    const text = await fetchWithRetry('https://data.geo.admin.ch/throttled', {
+      useCache: false,
+      retryDelay: 1,
+    });
+
+    expect(text).toBe('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('fetchBinary — body size cap (SEC-3)', () => {
