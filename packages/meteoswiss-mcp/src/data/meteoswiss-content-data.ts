@@ -22,8 +22,18 @@ const TEST_FIXTURES_ROOT = existsSync(TEST_FIXTURES_DEV_PATH)
 
 const USE_TEST_FIXTURES = process.env.USE_TEST_FIXTURES === 'true';
 
-// Get Document type from JSDOM
+/**
+ * Hard cap on HTML size before parsing. `new JSDOM(html)` is synchronous and
+ * blocks the single-threaded event loop for the full parse; an unbounded input
+ * from a large upstream page therefore stalls every other session. The largest
+ * real MeteoSwiss page is well under 500 KB, so 5 MB leaves generous headroom
+ * while preventing a pathological multi-MB block. Must stay ≤ MAX_RESPONSE_BYTES.
+ */
+const MAX_HTML_BYTES = 5_000_000;
+
+// Get Document/Element types from JSDOM (no DOM globals in the Node lint env)
 type Document = InstanceType<typeof JSDOM>['window']['document'];
+type Element = NonNullable<ReturnType<Document['querySelector']>>;
 
 // Allowed MeteoSwiss domains
 const ALLOWED_DOMAINS = [
@@ -119,14 +129,10 @@ async function fetchFromWeb(
     const html = await fetchHtml(fullUrl);
     debugData('Content fetched successfully, size: %d bytes', html.length);
 
-    // Add timeout protection for HTML processing
-    const processingTimeout = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('HTML processing timeout after 10 seconds')), 10000);
-    });
-
-    const contentProcessing = processHtmlContent(html, fullUrl, format, includeMetadata);
-
-    return await Promise.race([contentProcessing, processingTimeout]);
+    // processHtmlContent is synchronous; a Promise.race timeout around it was
+    // dead code (the parse completes before the race is evaluated). The parse is
+    // bounded instead by MAX_HTML_BYTES inside processHtmlContent.
+    return processHtmlContent(html, fullUrl, format, includeMetadata);
   } catch (error) {
     debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
@@ -212,9 +218,11 @@ function processHtmlContent(
     html.length
   );
 
-  // Warn if HTML is very large
-  if (html.length > 500000) {
-    debugData('WARNING: Large HTML document (%d bytes), processing may be slow', html.length);
+  // Reject oversized input before the synchronous (event-loop-blocking) parse.
+  if (html.length > MAX_HTML_BYTES) {
+    throw new Error(
+      `HTML document too large to process: ${html.length} characters exceeds ${MAX_HTML_BYTES} cap`
+    );
   }
 
   const dom = new JSDOM(html);
@@ -223,8 +231,10 @@ function processHtmlContent(
   // Expand MeteoSwiss web components into standard HTML before extraction
   expandWebComponents(document);
 
-  // Extract main content
-  const mainContent = extractMainContent(document);
+  // Extract main content element (parsed once; the text path reuses this DOM
+  // node's textContent rather than instantiating a second JSDOM).
+  const mainElement = extractMainContent(document);
+  const mainHtml = mainElement?.innerHTML ?? '';
 
   // Extract title - try multiple selectors
   const title =
@@ -250,14 +260,14 @@ function processHtmlContent(
   let content: string;
   switch (format) {
     case 'markdown':
-      content = turndownService.turndown(mainContent);
+      content = turndownService.turndown(mainHtml);
       // Prepend title as H1 if we have one and it's not already in the content
       if (title && title !== 'Untitled' && !content.includes(`# ${title}`)) {
         content = `# ${title}\n\n${content}`;
       }
       break;
     case 'text':
-      content = extractTextContent(mainContent);
+      content = cleanTextContent(mainElement?.textContent ?? '');
       // Prepend title for text format too
       if (title && title !== 'Untitled') {
         content = `${title}\n\n${content}`;
@@ -280,9 +290,14 @@ function processHtmlContent(
 }
 
 /**
- * Extract main content from the page
+ * Extract the main content element from the page.
+ *
+ * Returns the DOM element (not serialized HTML) so callers can derive both
+ * `innerHTML` (markdown path) and `textContent` (text path) from a single parse.
+ *
+ * @returns The main-content element, or `null` if the document has no body
  */
-function extractMainContent(document: Document): string {
+function extractMainContent(document: Document): Element | null {
   // Remove screenreader titles in all languages
   const screenreaderTitles = [
     'Inhaltsbereich', // German
@@ -353,7 +368,7 @@ function extractMainContent(document: Document): string {
   for (const selector of selectors) {
     const element = document.querySelector(selector);
     if (element) {
-      return element.innerHTML;
+      return element;
     }
   }
 
@@ -363,20 +378,18 @@ function extractMainContent(document: Document): string {
     // Remove navigation, header, footer, scripts, styles
     const toRemove = body.querySelectorAll('nav, header, footer, script, style, noscript');
     toRemove.forEach((el) => el.remove());
-    return body.innerHTML;
+    return body;
   }
 
-  return '';
+  return null;
 }
 
 /**
- * Extract text content from HTML
+ * Normalize extracted plain text: trim each line and drop blank lines.
+ * Operates on already-extracted `textContent` — no HTML parsing (a second
+ * JSDOM instantiation here previously doubled the parse cost for text format).
  */
-function extractTextContent(html: string): string {
-  const tempDom = new JSDOM(html);
-  const text = tempDom.window.document.body.textContent || '';
-
-  // Clean up whitespace
+function cleanTextContent(text: string): string {
   return text
     .split('\n')
     .map((line: string) => line.trim())
