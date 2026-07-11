@@ -236,8 +236,94 @@ Max reviewed PR #119 and asked for four changes, delivered in this round:
 - [ ] Does the skill's separate 4-location manual version-sync problem belong in the same lint script?
 - [ ] Close the `meteoswissClimateData` gap as the bake-in's first real content addition?
 
+---
+
+## Round 3 — implementation started, then paused on a design finding (ON HOLD)
+
+Max approved the round-2 plan and said to implement. Began by validating the plan's central
+assumption against the real code before writing any linter — and that validation surfaced a
+load-bearing finding the plan did not anticipate, which paused implementation.
+
+### Confirmed (as the plan predicted)
+
+- Ran a real in-process introspection: `pnpm install` to repair the worktree's broken `.pnpm`
+  symlinks (root `node_modules` was absent — the known `project_worktree_node_modules_drift`
+  condition), then spun up `createServer()` over `InMemoryTransport`, connected an SDK `Client`, and
+  called `listTools()`. It returned all 7 tools with descriptions and every input parameter's name,
+  type, `.describe()` text, and enum values. No `outputSchema` on any tool (all use `server.tool()`),
+  exactly as the plan said. So the generated-inventory source of truth is real and works today.
+
+### The finding that paused things (contradicts the plan's *matching* mechanism)
+
+The plan's completeness check was specified as: "for every tool name and every input-parameter name
+in the generated dump, assert it's mentioned somewhere in `SKILL.md`/`REFERENCE.md`." Measured this
+against the actual skill and it does **not** hold:
+
+- **Tool names: 0 mentions.** `meteoswissLocalForecast`, `meteoswissCurrentWeather`,
+  `meteoswissStations`, `meteoswissPollenData`, `meteoswissClimateData` each appear **zero** times in
+  the skill. The skill is organized by *capability* (`## 1. Get Current Weather`, `## 2. Find
+  Stations`, …), not by MCP tool name — it teaches direct curl access and never names the tools.
+- **Param names: mostly 0.** The skill documents raw OGD parameter codes (`tre200s0`) and CSV column
+  names, not the tool's calling interface. Literal coverage: `station` 13, `search` 6, everything
+  that actually distinguishes a capability param — `location`, `days`, `coordinates`, `canton`,
+  `resolution`, `start_date`, `end_date` — is **0**.
+
+So literal name-matching (tool or param) can't be the gate — it would fail all 5 OGD tools on day one.
+Building a param alias table (`location`→"postal code"/"place name", …) was considered and rejected:
+it drift-prone and hand-maintained, i.e. it recreates the exact manifest Max rejected, at param
+granularity. Keyword heuristics were also rejected (a keyword being present ≠ skill current).
+
+### Advisor-validated redesign for the STRUCTURAL gate (design only — not yet built)
+
+Two small, generated-in-spirit, hard-fail pieces that survive Max's "no hand-maintained inventory"
+constraint:
+
+1. **Per-tool coverage markers in the skill** — an HTML comment like `<!-- mcp-tool: meteoswissCurrentWeather -->`
+   beside each capability section. This is the completeness enforcer and a natural evolution of the
+   skill's *existing* `<!-- Canonical source: … -->` convention. Co-located, so it can't silently
+   drift: add a tool → red until a section+marker exists; rename/remove a tool → stale marker → red.
+2. **A committed generated inventory snapshot** the linter diffs against the live server each run —
+   the param/description drift catcher. "Generated, not hand-edited" in Max's exact spirit; staleness
+   is structurally impossible because it's diffed against the real server every run.
+
+Markers = coverage; snapshot = drift. Both deterministic and hard-fail. Crucial framing correction:
+these verify **structure** (every tool is *mentioned/marked*, no *dead references*) — they do **not**
+verify semantic parity (whether the skill *correctly describes* the tool). Calling that "parity"
+would overclaim.
+
+### Max's HOLD (received mid-session) — reframe to two layers
+
+Max is rethinking the design around exactly that structural-vs-semantic distinction. Likely new
+shape:
+
+1. **A static coverage + staleness GATE** — roughly the structural pieces above, but explicitly
+   scoped and *labelled* as structural (mentioned + no-dead-refs), not "parity".
+2. **An agent** that reads a structured report + the tool schemas + the skill and judges *semantic*
+   parity (whether the skill's descriptions match the tools). Runs on release PRs; verdict likely
+   advisory, not a hard block.
+
+Instruction: stop expanding the static linter, preserve the finding, do **not** rework the plan doc
+yet, and wait for the confirmed two-layer design.
+
+### State at hold
+
+- **No linter implementation code was written** — implementation paused at the design-fork advisor
+  consult, before any gate code, so there is nothing half-built to commit. This sessionlog entry is
+  the durable record of the finding + design direction, committed so it survives the wait.
+- `pnpm install` was run to make introspection testable; it repaired local `node_modules` only (no
+  lockfile change, nothing to commit there). Its `postinstall` also copied the skill to
+  `~/.claude/skills/` as a side effect — local-only, outside the repo.
+- Plan doc left untouched, per instruction.
+
 ## Pending / follow-ups
 
-- [ ] PR #119 is still a draft, not merged — awaiting Max's review of the reworked plan.
-- [ ] No implementation work (lint script, `parity-exceptions.yml`, CI wiring) has started; gated on
-      approval of this plan, same as round 1.
+- [ ] **Waiting on Max's confirmed two-layer design** before building the structural gate.
+- [ ] When it lands: build layer 1 as an explicitly-labelled **structural coverage + staleness gate**
+      (tool markers + inventory snapshot, per the finding above) — not "parity".
+- [ ] Layer 2 (agent semantic judge on release PRs, advisory) — design TBD by Max.
+- [ ] Two calls still Max's, unchanged by the reframe: param-level strictness of the static gate, and
+      how the `meteoswissClimateData` gap is resolved for day-one green (out-of-scope-with-reason +
+      follow-up, vs. authoring a skill section — the latter needs live-verified NBCN curl, so not to
+      be done unilaterally).
+- [ ] PR #119 stays a draft — not marking ready-for-review until the gate is built, CI-wired, green,
+      and Max's two calls are answered.
