@@ -9,6 +9,7 @@ import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { roundByUnit } from '../support/round-measurements.js';
 import { normalize } from '../support/normalize.js';
 import { debugData } from '../support/logging.js';
+import { normalizeOgdTimestamp } from '../support/ogd-timestamp.js';
 import { OGD_COLLECTIONS, SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
 import type {
   GetPollenDataParams,
@@ -167,7 +168,7 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
               lon: parseNumeric(stationRow.station_coordinates_wgs84_lon ?? null) ?? 0,
             },
           },
-          timestamp: latestRow.reference_timestamp ?? latestRow.Date ?? '',
+          timestamp: normalizeOgdTimestamp(latestRow.reference_timestamp ?? latestRow.Date ?? ''),
           pollen,
         };
       } catch (error) {

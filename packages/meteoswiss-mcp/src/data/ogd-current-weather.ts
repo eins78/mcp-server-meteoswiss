@@ -18,6 +18,7 @@ import type {
   MeasurementValue,
 } from '../schemas/ogd-current-weather.js';
 import type { CsvRow } from '../support/ogd-csv-parser.js';
+import { normalizeOgdTimestamp } from '../support/ogd-timestamp.js';
 import type { SmnStation } from './ogd-smn-stations.js';
 
 const REALTIME_CSV_URL = 'https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv';
@@ -184,7 +185,7 @@ export async function getCurrentWeather(
       distance_km,
       network: station.network,
     },
-    timestamp: row.Date ?? row.reference_timestamp ?? '',
+    timestamp: normalizeOgdTimestamp(row.Date ?? row.reference_timestamp ?? ''),
     measurements: {
       temperature: measurement(row, 'tre200s0', '\u00B0C'),
       humidity: measurement(row, 'ure200s0', '%'),
