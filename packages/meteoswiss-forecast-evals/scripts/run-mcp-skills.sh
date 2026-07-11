@@ -41,7 +41,11 @@ trap cleanup EXIT
 
 if ! curl -sf "$HEALTH_URL" >/dev/null 2>&1; then
   echo "starting local meteoswiss-mcp on ${MCP_URL} ..."
-  PORT="$(echo "$MCP_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')"
+  PORT="$(echo "$MCP_URL" | sed -nE 's|.*:([0-9]+)/.*|\1|p')"
+  if [ -z "$PORT" ]; then
+    echo "error: cannot extract a port from MCP_SKILLS_MCP_URL='$MCP_URL' — start the server yourself or use an explicit-port URL." >&2
+    exit 1
+  fi
   (cd ../meteoswiss-mcp && PORT="$PORT" exec npx tsx src/index.ts) &
   SERVER_PID=$!
   for _ in $(seq 1 30); do

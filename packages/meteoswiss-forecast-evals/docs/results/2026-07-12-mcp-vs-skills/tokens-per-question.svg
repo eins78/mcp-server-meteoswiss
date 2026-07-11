@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="616" viewBox="0 0 760 616" role="img" aria-label="Tokens per question by access method">
+<rect x="0" y="0" width="760" height="100%" rx="8" fill="#fcfcfb"/>
+<text x="24" y="34" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="16" font-weight="600" fill="#0b0b0b">Tokens per question — MCP server vs OGD skill</text>
+<text x="24" y="54" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">Mean total tokens per answer (prompt + completion, both models pooled)</text>
+<circle cx="240" cy="78" r="5" fill="#2a78d6"/>
+<text x="250" y="82" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">MCP server</text>
+<circle cx="340" cy="78" r="5" fill="#1baf7a"/>
+<text x="350" y="82" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">OGD skill</text>
+<text x="24" y="108" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" font-weight="600" letter-spacing="0.08em" fill="#898781">CURRENT</text>
+<text x="232" y="116" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">current-temp-zurich</text>
+<path d="M240,100 h71.83073631669146 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-71.83073631669146 z" fill="#2a78d6"/>
+<text x="321.83073631669146" y="111" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">8.2k</text>
+<path d="M240,116 h106.97893151775938 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-106.97893151775938 z" fill="#1baf7a"/>
+<text x="356.9789315177594" y="127" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">12.0k</text>
+<text x="232" y="156" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">current-wind-saentis</text>
+<path d="M240,140 h56.905615843601815 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-56.905615843601815 z" fill="#2a78d6"/>
+<text x="306.9056158436018" y="151" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">6.6k</text>
+<path d="M240,156 h197.113680809592 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-197.113680809592 z" fill="#1baf7a"/>
+<text x="447.113680809592" y="167" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">21.7k</text>
+<text x="232" y="196" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">current-warmest-station</text>
+<path d="M240,180 h406.7142857142856 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-406.7142857142856 z" fill="#2a78d6"/>
+<text x="656.7142857142856" y="191" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">44.3k</text>
+<path d="M240,196 h365.36892092547833 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-365.36892092547833 z" fill="#1baf7a"/>
+<text x="615.3689209254783" y="207" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">39.8k</text>
+<text x="24" y="228" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" font-weight="600" letter-spacing="0.08em" fill="#898781">FORECAST</text>
+<text x="232" y="236" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">forecast-rain-zurich</text>
+<path d="M240,220 h184.93719277145337 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-184.93719277145337 z" fill="#2a78d6"/>
+<text x="434.9371927714534" y="231" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">20.4k</text>
+<path d="M240,236 h186.5780289973769 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-186.5780289973769 z" fill="#1baf7a"/>
+<text x="436.5780289973769" y="247" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">20.6k</text>
+<text x="232" y="276" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">forecast-low-bern</text>
+<path d="M240,260 h177.03429512964658 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-177.03429512964658 z" fill="#2a78d6"/>
+<text x="427.0342951296466" y="271" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">19.5k</text>
+<path d="M240,276 h213.3180973232322 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-213.3180973232322 z" fill="#1baf7a"/>
+<text x="463.3180973232322" y="287" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">23.4k</text>
+<text x="232" y="316" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">forecast-jacket-basel</text>
+<path d="M240,300 h194.40212941929468 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-194.40212941929468 z" fill="#2a78d6"/>
+<text x="444.4021294192947" y="311" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">21.4k</text>
+<path d="M240,316 h134.99366075358353 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-134.99366075358353 z" fill="#1baf7a"/>
+<text x="384.9936607535835" y="327" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">15.0k</text>
+<text x="232" y="356" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">forecast-two-days-lugano</text>
+<path d="M240,340 h228.61866337343992 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-228.61866337343992 z" fill="#2a78d6"/>
+<text x="478.6186633734399" y="351" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">25.1k</text>
+<path d="M240,356 h195.8343847690415 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-195.8343847690415 z" fill="#1baf7a"/>
+<text x="445.8343847690415" y="367" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">21.6k</text>
+<text x="232" y="396" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">forecast-sunshine-geneva</text>
+<path d="M240,380 h231.98840330633936 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-231.98840330633936 z" fill="#2a78d6"/>
+<text x="481.98840330633936" y="391" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">25.5k</text>
+<path d="M240,396 h362.5553966623835 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-362.5553966623835 z" fill="#1baf7a"/>
+<text x="612.5553966623835" y="407" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">39.5k</text>
+<text x="24" y="428" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" font-weight="600" letter-spacing="0.08em" fill="#898781">POLLEN</text>
+<text x="232" y="436" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">pollen-grasses-zurich</text>
+<path d="M240,420 h56.06665720831324 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-56.06665720831324 z" fill="#2a78d6"/>
+<text x="306.06665720831325" y="431" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">6.5k</text>
+<path d="M240,436 h75.05215207097633 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-75.05215207097633 z" fill="#1baf7a"/>
+<text x="325.0521520709763" y="447" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">8.5k</text>
+<text x="232" y="476" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">pollen-types-basel</text>
+<path d="M240,460 h56.15935981994733 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-56.15935981994733 z" fill="#2a78d6"/>
+<text x="306.1593598199473" y="471" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">6.5k</text>
+<path d="M240,476 h116.71734086992129 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-116.71734086992129 z" fill="#1baf7a"/>
+<text x="366.71734086992126" y="487" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">13.0k</text>
+<text x="24" y="508" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" font-weight="600" letter-spacing="0.08em" fill="#898781">STATIONS</text>
+<text x="232" y="516" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">stations-graubuenden</text>
+<path d="M240,500 h83.20071163361347 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-83.20071163361347 z" fill="#2a78d6"/>
+<text x="333.2007116336135" y="511" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">9.4k</text>
+<path d="M240,516 h64.06689259233582 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-64.06689259233582 z" fill="#1baf7a"/>
+<text x="314.0668925923358" y="527" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">7.3k</text>
+<text x="24" y="548" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="10" font-weight="600" letter-spacing="0.08em" fill="#898781">CLIMATE</text>
+<text x="232" y="556" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">climate-may-zurich</text>
+<path d="M240,540 h70.07865695680702 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-70.07865695680702 z" fill="#2a78d6"/>
+<text x="320.07865695680704" y="551" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">8.0k</text>
+<path d="M240,556 h261.87572529717227 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-261.87572529717227 z" fill="#1baf7a"/>
+<text x="511.87572529717227" y="567" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#52514e" style="font-variant-numeric: tabular-nums">28.7k</text>
+<line x1="240" y1="92" x2="240" y2="576" stroke="#c3c2b7" stroke-width="1"/>
+</svg>

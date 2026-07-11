@@ -28,6 +28,8 @@ export type AgentUsage = {
   costUsd: number;
   requests: number;
   toolCalls: number;
+  /** Dispatches that threw (infra failures fed back to the model as error text). */
+  toolErrors: number;
 };
 
 export type AgentResult = {
@@ -119,18 +121,35 @@ async function completeOnce(
       ...extraBody,
     }),
   });
-  const body = (await response.json()) as CompletionResponse;
+  // Read text first: a 502 with an HTML body must surface as "HTTP 502", not as a
+  // JSON parse error that loses the status.
+  const rawBody = await response.text();
+  let body: CompletionResponse;
+  try {
+    body = JSON.parse(rawBody) as CompletionResponse;
+  } catch {
+    throw new Error(
+      `OpenRouter returned non-JSON (HTTP ${response.status}): ${rawBody.slice(0, 300)}`,
+    );
+  }
   if (!response.ok || body.error !== undefined) {
     throw new Error(
-      `OpenRouter error (HTTP ${response.status}): ${body.error?.message ?? JSON.stringify(body).slice(0, 500)}`,
+      `OpenRouter error (HTTP ${response.status}): ${body.error?.message ?? rawBody.slice(0, 500)}`,
     );
   }
   const usage = body.usage;
+  if (usage?.cost === undefined || usage.prompt_tokens === undefined) {
+    // Fail the row loudly rather than fabricate a $0/0-token measurement: silent zeros
+    // would both disable the budget guard and publish "free" rows in the results.
+    throw new Error(
+      `OpenRouter response for ${model} carries no usage accounting (usage.include not honored?) — refusing to record $0`,
+    );
+  }
   recordSpend({
     model,
-    costUsd: usage?.cost ?? 0,
-    promptTokens: usage?.prompt_tokens ?? 0,
-    completionTokens: usage?.completion_tokens ?? 0,
+    costUsd: usage.cost,
+    promptTokens: usage.prompt_tokens,
+    completionTokens: usage.completion_tokens ?? 0,
   });
   return body;
 }
@@ -151,6 +170,7 @@ export async function runAgentLoop(
     costUsd: 0,
     requests: 0,
     toolCalls: 0,
+    toolErrors: 0,
   };
 
   for (let iteration = 0; iteration < maxIterations; iteration += 1) {
@@ -210,7 +230,14 @@ export async function runAgentLoop(
         >;
         resultText = await options.dispatchTool(call.function.name, args);
       } catch (error) {
+        // A real agent sees tool errors too, so the loop continues — but count and log
+        // them so an infra failure (dead MCP server, guard bug) can't silently read as
+        // "the model answered wrong" in the published numbers.
+        usage.toolErrors += 1;
         resultText = `tool error: ${error instanceof Error ? error.message : String(error)}`;
+        console.error(
+          `[mcp-vs-skills] tool dispatch failed (${call.function.name}): ${resultText.slice(0, 200)}`,
+        );
       }
       if (resultText.length > MAX_TOOL_RESULT_CHARS) {
         resultText = `${resultText.slice(0, MAX_TOOL_RESULT_CHARS)}\n[tool result truncated at ${MAX_TOOL_RESULT_CHARS} chars]`;

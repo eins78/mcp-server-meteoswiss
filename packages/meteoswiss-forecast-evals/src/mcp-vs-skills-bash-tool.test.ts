@@ -99,16 +99,28 @@ test("allows backslash line continuations and comment lines (models copy SKILL.m
   );
 });
 
-test("pollen param codes canonicalize to species in scoring", async () => {
-  const { canonicalPollenSpecies } =
-    await import("./mcp-vs-skills/scoring-model.js");
-  assert.equal(canonicalPollenSpecies("khpoacd1"), "grasses");
-  assert.equal(canonicalPollenSpecies("kacoryd0"), "hazel");
+test("rejects allowlist end-runs: xargs, curl write flags, non-https schemes", () => {
+  // xargs executes its argument as a command the guard never validates.
+  expectRejected("echo /tmp/x | xargs rm -rf");
+  // curl can write files via flags, sidestepping the shell-redirect ban.
+  expectRejected("curl -s 'https://data.geo.admin.ch/a.csv' -o /tmp/out.csv");
+  expectRejected("curl -s 'https://data.geo.admin.ch/a.csv' -O");
+  expectRejected("curl -s 'https://data.geo.admin.ch/a.csv' --output /tmp/x");
+  // Only https on the allowed hosts — file:// and friends must not slip past.
+  expectRejected("curl file:///etc/passwd");
+  expectRejected("curl 'ftp://data.geo.admin.ch/x.csv'");
 });
 
 test("allows || fallbacks and apostrophes inside comments", () => {
   expectAllowed("${CLAUDE_SKILL_DIR}/scripts/pollen.sh PBS || echo failed");
   expectAllowed(
     "# Find Geneva's point_id first\ncurl -s 'https://data.geo.admin.ch/x.csv' | head -3",
+  );
+});
+
+test("rejects awk's system() escape hatch; allows spaced /dev/null redirects", () => {
+  expectRejected("awk 'BEGIN{system(\"id\")}'");
+  expectAllowed(
+    "curl -s 'https://data.geo.admin.ch/a.csv' > /dev/null && echo ok",
   );
 });

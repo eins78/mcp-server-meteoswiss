@@ -143,6 +143,47 @@ test("normalizeName strips diacritics; pollen synonyms canonicalize", () => {
   assert.equal(canonicalPollenSpecies("tulip"), null);
 });
 
+test("pollen param codes canonicalize to species (skill answers quote raw codes)", () => {
+  assert.equal(canonicalPollenSpecies("khpoacd1"), "grasses");
+  assert.equal(canonicalPollenSpecies("kacoryd0"), "hazel");
+});
+
+test("a field missing from FINAL_JSON scores 0 without crashing", () => {
+  const expected: Expected = {
+    fields: {
+      temperature_c: { kind: "number", value: 20, tolerance: 1 },
+      wind_kmh: { kind: "number", value: 10, tolerance: 1 },
+    },
+  };
+  const result = scoreAnswer('FINAL_JSON: {"temperature_c": 20}', expected);
+  assert.equal(result.pass, false);
+  assert.equal(result.score, 0.5);
+});
+
+test("set-match with empty expected: empty answer passes, non-empty fails", () => {
+  const expected: Expected = {
+    fields: { pollen_types: { kind: "set-match", expected: [] } },
+  };
+  assert.equal(
+    scoreAnswer('FINAL_JSON: {"pollen_types": []}', expected).pass,
+    true,
+  );
+  assert.equal(
+    scoreAnswer('FINAL_JSON: {"pollen_types": ["Birch"]}', expected).pass,
+    false,
+  );
+});
+
+test("numbers given as comma-decimal strings are accepted", () => {
+  const expected: Expected = {
+    fields: { temperature_c: { kind: "number", value: 23.1, tolerance: 1 } },
+  };
+  assert.equal(
+    scoreAnswer('FINAL_JSON: {"temperature_c": "23,4"}', expected).pass,
+    true,
+  );
+});
+
 // --- parsers ---
 
 const VQHA80_SAMPLE = [
@@ -239,4 +280,92 @@ test("forecast window helpers aggregate the right hours", () => {
   assert.equal(precipInWindow(days, "2026-07-12", 0, 8), 0);
   assert.equal(minTempInWindow(days, "2026-07-12", 12, 22), 24);
   assert.throws(() => precipInWindow(days, "2026-07-13", 12, 18));
+});
+
+test("empty hourly data fails fast instead of becoming 'no rain' ground truth", () => {
+  const days = parseForecastJson(
+    JSON.stringify({
+      forecast: [{ date: "2026-07-12", hourly: [] }],
+    }),
+  );
+  assert.throws(() => precipInWindow(days, "2026-07-12", 12, 18), /no hourly/);
+  assert.throws(() => minTempInWindow(days, "2026-07-12", 12, 18), /no hourly/);
+});
+
+// --- question expected-answer construction (the two with real branching) ---
+
+import {
+  QUESTIONS,
+  type GroundTruthContext,
+} from "./mcp-vs-skills/questions.js";
+
+function syntheticCtx(): GroundTruthContext {
+  return {
+    capturedAt: new Date("2026-07-11T23:30:00+02:00"),
+    current: new Map([
+      ["AAA", { tre200s0: 30.0 }],
+      ["BBB", { tre200s0: 29.5 }], // within 0.7 °C of max — accepted
+      ["CCC", { tre200s0: 25.0 }], // not accepted
+      ["DDD", { tre200s0: null }], // precip-only station — skipped
+    ]),
+    stationNames: new Map([
+      ["AAA", "Alpha / Dorf"],
+      ["BBB", "Beta"],
+    ]),
+    grStations: [{ abbr: "ARO", name: "Arosa" }],
+    forecasts: new Map([
+      [
+        "basel",
+        [
+          {
+            date: "2026-07-12",
+            tMax: 33.6,
+            tMin: 20,
+            precipTotal: 0,
+            sunshineTotalMin: 600,
+            hourly: [
+              { time: "2026-07-12T12:00:00+02:00", temp: 30, precip: 0 },
+            ],
+          },
+        ],
+      ],
+    ]),
+    pollen: new Map(),
+    climateZurichMonthly: new Map([["2026-05", 15.3]]),
+  };
+}
+
+test("warmest-station accepts every station within 0.7°C of the max, by abbr or name", () => {
+  const question = QUESTIONS.find((q) => q.id === "current-warmest-station")!;
+  const expected = question.computeExpected(syntheticCtx());
+  const field = expected.fields["station"]!;
+  assert.equal(field.kind, "oneof");
+  const accepted = (field as { accepted: string[] }).accepted;
+  assert.deepEqual(
+    [...accepted].sort(),
+    ["AAA", "Alpha / Dorf", "BBB", "Beta"].sort(),
+  );
+});
+
+test("jacket question grades the boolean only outside the 15–22°C gray zone", () => {
+  const question = QUESTIONS.find((q) => q.id === "forecast-jacket-basel")!;
+  const hot = question.computeExpected(syntheticCtx());
+  assert.deepEqual(hot.fields["jacket_recommended"], {
+    kind: "boolean",
+    value: false,
+  });
+
+  const mild = syntheticCtx();
+  mild.forecasts.get("basel")![0]!.tMax = 18;
+  assert.deepEqual(
+    question.computeExpected(mild).fields["jacket_recommended"],
+    { kind: "any" },
+  );
+
+  const cold = syntheticCtx();
+  cold.forecasts.get("basel")![0]!.tMax = 10;
+  assert.deepEqual(
+    question.computeExpected(cold).fields["jacket_recommended"],
+    { kind: "boolean", value: true },
+  );
 });

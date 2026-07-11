@@ -35,7 +35,7 @@ const BASH_TOOL: ToolDefinition = {
   function: {
     name: "bash",
     description:
-      "Run a shell command (macOS, bash). Pipelines, $() substitution and VAR= assignments are supported. Network access is restricted to MeteoSwiss open-data hosts (data.geo.admin.ch, www.meteoschweiz.admin.ch); only read-only text tools (curl, awk, grep, jq, iconv, ...) and the skill's bundled scripts are allowed; no file redirects. Output is truncated at 10 KB.",
+      "Run a shell command (macOS, bash). Pipelines, $() substitution and VAR= assignments are supported. Network access is restricted to MeteoSwiss open-data hosts (data.geo.admin.ch, www.meteoschweiz.admin.ch); an allowlist of text tools (curl, awk, grep, jq, iconv, ...) and the skill's bundled scripts is available; no file redirects or writes. Output is truncated at 10 KB.",
     parameters: {
       type: "object",
       properties: {

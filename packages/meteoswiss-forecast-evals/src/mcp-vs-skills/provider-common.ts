@@ -105,6 +105,7 @@ export function toProviderResponse(
     qid,
     iterations: result.usage.requests,
     toolCalls: result.usage.toolCalls,
+    toolErrors: result.usage.toolErrors,
     stopReason: result.stopReason,
   };
   if (result.stopReason === "error") {

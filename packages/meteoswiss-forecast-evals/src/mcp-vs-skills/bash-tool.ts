@@ -5,8 +5,10 @@
  * Bash tool). To measure the skill access method honestly, the eval model gets a real shell —
  * but constrained to what the skill legitimately needs:
  *
- *   - pipeline segments may only start with allowlisted read-only text/HTTP tools
- *     (curl, awk, grep, jq, iconv, ...) or the skill's own bundled scripts,
+ *   - pipeline segments may only start with allowlisted text/HTTP tools (curl, awk,
+ *     grep, jq, iconv, ...) or the skill's own bundled scripts — best-effort: several
+ *     of these tools are Turing-complete (awk) or have write flags, so the allowlist
+ *     narrows the surface rather than guaranteeing read-only behavior,
  *   - variable assignments and `$(...)` command substitution are allowed, but the inner
  *     command is validated recursively (the skill's documented STAC flows use both),
  *   - literal URLs must point at the MeteoSwiss OGD hosts,
@@ -54,8 +56,12 @@ const ALLOWED_COMMANDS = new Set([
   "column",
   "paste",
   "date",
-  "xargs",
+  "true",
+  "false",
 ]);
+// NOT allowlisted on purpose: xargs (its argument is itself a command the guard never
+// sees — `echo rm | xargs ...` would defeat the whole allowlist), bash/sh/env, and
+// anything that writes files.
 
 const ALLOWED_URL_PATTERN =
   /^https:\/\/(data\.geo\.admin\.ch|www\.meteoschweiz\.admin\.ch)\//;
@@ -145,9 +151,22 @@ function validateStatement(statement: string): GuardResult {
     if (seg.length === 0) {
       continue; // pure assignment, e.g. ITEM=$(...)
     }
-    const firstWord = seg.split(/\s+/)[0] ?? "";
+    const words = seg.split(/\s+/);
+    const firstWord = words[0] ?? "";
     const base = firstWord.replace(/^['"]|['"]$/g, "");
     const isAllowedCommand = ALLOWED_COMMANDS.has(base);
+    // curl can write files via flags, sidestepping the shell-redirect ban.
+    if (base === "curl") {
+      const writeFlag = words.find((w) =>
+        ["-o", "-O", "--output", "--remote-name", "--output-dir"].includes(w),
+      );
+      if (writeFlag !== undefined) {
+        return {
+          ok: false,
+          reason: `curl write flag not allowed: ${writeFlag}`,
+        };
+      }
+    }
     const isSkillScript =
       base.startsWith(`${SKILL_DIR}${path.sep}scripts${path.sep}`) &&
       base.endsWith(".sh");
@@ -175,11 +194,13 @@ function validateCommandList(input: string): GuardResult {
   if (remainder.includes("`")) {
     return { ok: false, reason: "backticks not allowed" };
   }
-  // Redirects: only /dev/null variants are allowed. `&&`/`||` are plain statement
-  // separators here (each side is validated on its own).
+  // Redirects: only /dev/null variants are allowed (spaced forms too). `&&`/`||` are
+  // plain statement separators here (each side is validated on its own).
   const redirectStripped = remainder
     .replaceAll("2>/dev/null", " ")
+    .replaceAll("2> /dev/null", " ")
     .replaceAll(">/dev/null", " ")
+    .replaceAll("> /dev/null", " ")
     .replaceAll("2>&1", " ")
     .replaceAll("&&", "\n")
     .replaceAll("||", "\n");
@@ -215,10 +236,20 @@ export function guardCommand(rawCommand: string): GuardResult {
     .replaceAll("$CLAUDE_SKILL_DIR", SKILL_DIR)
     .replace(/\\\r?\n/g, " ");
 
+  // awk is allowlisted (the skill's pipelines depend on it) but its quoted program is
+  // invisible to the segment checks — reject its process-execution escape hatch by
+  // raw-text scan. Targeted, not exhaustive: see the header's best-effort caveat.
+  if (expanded.includes("system(")) {
+    return { ok: false, reason: "system() calls not allowed" };
+  }
+
   // URL allowlist runs on the raw (unmasked) text so quoted URLs are checked too.
-  for (const urlMatch of expanded.matchAll(/https?:\/\/[^\s"'()|]+/g)) {
+  // Matches ANY scheme (file://, ftp://, ...) so only https on the allowed hosts passes.
+  for (const urlMatch of expanded.matchAll(
+    /[a-z][a-z0-9+.-]*:\/\/[^\s"'()|]+/gi,
+  )) {
     if (!ALLOWED_URL_PATTERN.test(urlMatch[0])) {
-      return { ok: false, reason: `URL host not allowed: ${urlMatch[0]}` };
+      return { ok: false, reason: `URL not allowed: ${urlMatch[0]}` };
     }
   }
 
@@ -262,14 +293,31 @@ export async function runGuardedBash(rawCommand: string): Promise<BashResult> {
         },
       },
       (error, stdout, stderr) => {
-        const combined = `${stdout}${stderr.length > 0 ? `\n${stderr}` : ""}`;
+        let combined = `${stdout}${stderr.length > 0 ? `\n${stderr}` : ""}`;
+        // error.code is a number only for a plain non-zero exit. Timeouts arrive as
+        // killed/signal with code null, spawn failures as a STRING code ("ENOENT") —
+        // mapping those to 0 would present a dead command to the model as success and
+        // silently bias the skill method's accuracy.
+        let exitCode = 0;
+        if (error !== null) {
+          if (typeof error.code === "number") {
+            exitCode = error.code;
+          } else if (
+            error.killed === true ||
+            typeof error.signal === "string"
+          ) {
+            exitCode = 124;
+            combined += `\n[command timed out after ${TIMEOUT_MS / 1000}s]`;
+          } else {
+            exitCode = 127;
+            combined += `\n[command failed to run: ${String(error.code ?? error.message)}]`;
+          }
+        }
         const truncated =
           Buffer.byteLength(combined, "utf8") > OUTPUT_LIMIT_BYTES;
         const output = truncated
           ? `${Buffer.from(combined, "utf8").subarray(0, OUTPUT_LIMIT_BYTES).toString("utf8")}\n[output truncated at 10 KB — narrow it down, e.g. filter rows with awk/grep]`
           : combined;
-        const exitCode =
-          error !== null && typeof error.code === "number" ? error.code : 0;
         resolve({ output, exitCode, truncated, rejected: false });
       },
     );

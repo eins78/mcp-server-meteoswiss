@@ -209,14 +209,20 @@ export function precipInWindow(
   if (day === undefined) {
     throw new Error(`no forecast day for ${date}`);
   }
-  let total = 0;
-  for (const hour of day.hourly) {
-    const hh = Number.parseInt(hour.time.slice(11, 13), 10);
-    if (hh >= startHour && hh < endHour && hour.precip !== null) {
-      total += hour.precip;
-    }
+  const values = day.hourly
+    .filter((hour) => {
+      const hh = Number.parseInt(hour.time.slice(11, 13), 10);
+      return hh >= startHour && hh < endHour && hour.precip !== null;
+    })
+    .map((hour) => hour.precip as number);
+  if (values.length === 0) {
+    // Fail fast like minTempInWindow: an empty window would otherwise silently become
+    // "no rain" ground truth even when the capture is broken.
+    throw new Error(
+      `no hourly precipitation for ${date} ${startHour}-${endHour}`,
+    );
   }
-  return total;
+  return values.reduce((sum, v) => sum + v, 0);
 }
 
 /** Minimum hourly temperature on a local date within [startHour, endHour). */

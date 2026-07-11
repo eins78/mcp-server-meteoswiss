@@ -10,7 +10,7 @@
  * OpenRouter-side accounting differences).
  */
 
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -73,6 +73,9 @@ export function recordSpend(
   ledgerPath: string = LEDGER_PATH,
 ): void {
   const line = JSON.stringify({ ts: new Date().toISOString(), ...entry });
+  // The paid API call already happened when this runs — never lose its record to a
+  // missing generated/ dir on a fresh clone.
+  mkdirSync(path.dirname(ledgerPath), { recursive: true });
   appendFileSync(ledgerPath, `${line}\n`);
 }
 
