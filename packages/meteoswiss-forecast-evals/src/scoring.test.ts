@@ -209,6 +209,15 @@ describe("scoreResponse — leaf kinds", () => {
     });
     assert.equal(r.pass, true);
   });
+
+  test("unavailable: a prose note containing digits is NOT a fabrication (EVAL-1)", () => {
+    // The digit-run inside the note must not be misread as a fabricated number.
+    const r = scoreResponse('{"hourly_available": false, "note": "no data for 2026-04-06"}', {
+      key: "hourly_available",
+      kind: "unavailable",
+    });
+    assert.equal(r.pass, true);
+  });
 });
 
 describe("scoreResponse — compound + unparseable", () => {

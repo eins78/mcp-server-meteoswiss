@@ -18,7 +18,7 @@
       "temperature_max_c": 18.5,
       "precipitation_total_mm": 0.3,
       "sunshine_total_minutes": 383,
-      "wind_avg_kmh": 8.9,
+      "wind_avg_kmh": 9,
       "hourly": [
         {
           "time": "2026-04-06T00:00:00+02:00",
@@ -109,7 +109,7 @@
           "temperature_c": 15,
           "precip_mm": 0,
           "sunshine_minutes": 60,
-          "wind_kmh": 8
+          "wind_kmh": 10
         },
         {
           "time": "2026-04-06T13:00:00+02:00",

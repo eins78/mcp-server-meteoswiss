@@ -21,7 +21,7 @@
       },
       "precipitation_total_mm": 0.3,
       "sunshine_total_minutes": 383,
-      "wind_avg_kmh": 8.9,
+      "wind_avg_kmh": 9,
       "wind_gust_max_kmh": 35,
       "hourly": [
         {
@@ -125,7 +125,7 @@
           "temperature_c": 15,
           "precip_mm": 0,
           "sunshine_minutes": 60,
-          "wind_kmh": 8,
+          "wind_kmh": 10,
           "wind_gust_kmh": 13
         },
         {

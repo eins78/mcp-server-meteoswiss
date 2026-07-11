@@ -73,7 +73,7 @@ const HOURLY_TABLE: [number, number, number, number, number][] = [
   [0, 20, 12, 9.0, 35], // gust max (unique) — squall after the wind peak
   [0, 45, 10, 11.5, 16],
   [0, 55, 10, 13.5, 15],
-  [0, 60, 8, 15.0, 13], // sunshine max (unique)
+  [0, 60, 10, 15.0, 13], // sunshine max (unique); wind 10 (NOT calm) so it is NOT the best-walk hour
   [0, 58, 8, 16.5, 13],
   [0, 55, 10, 17.8, 16],
   [0, 40, 12, 18.5, 19], // temp max (unique)
@@ -140,6 +140,8 @@ export const multiseriesGroundTruth = (() => {
   ).hour;
   // "Best walk hour": dry AND some sunshine AND calm (wind < 10 km/h). Multiple hours can
   // qualify (they do, in this table) -- tie-break by most sunshine, derived not hand-typed.
+  // Deliberately NOT the sunshine-max hour (12, whose wind is 10 = not calm): the answer is
+  // hour 13, so a model that just returns the sunniest hour scores this compound question wrong.
   const walkCandidates = rows.filter(
     (r) => r.precipMm === 0 && r.sunshineMin > 0 && r.windKmh < 10,
   );
