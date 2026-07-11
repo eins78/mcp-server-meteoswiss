@@ -117,16 +117,21 @@ function utcTimestampToZurichDate(ts: string): string {
 }
 
 /**
- * Get today's date in YYYY-MM-DD format (UTC).
- * In test fixture mode, uses the earliest date from the data to avoid
- * filtering out all fixture dates.
+ * Get today's date in YYYY-MM-DD format as the **Europe/Zurich** local calendar
+ * date. Forecast days are bucketed by Zurich-local date (see
+ * {@link utcTimestampToZurichDate}); comparing them against a UTC "today" dropped
+ * the wrong day every night between local midnight and 01:00/02:00 UTC-offset
+ * (FUN-2). In test fixture mode, returns a far-past date so no fixture day is
+ * filtered out.
  */
-function todayUtc(): string {
+function todayZurich(): string {
   if (process.env.USE_TEST_FIXTURES === 'true') {
     // Don't filter dates in test mode — fixture dates are static
     return '1900-01-01';
   }
-  return new Date().toISOString().slice(0, 10);
+  const parts = zurichFormatter.formatToParts(new Date());
+  const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 /**
@@ -240,7 +245,7 @@ function buildStationForecast(
   days: number
 ): DailyForecast[] {
   const tempMaxData = paramData.get('tre200dx') ?? new Map<string, number | null>();
-  const today = todayUtc();
+  const today = todayZurich();
   const dates = [...new Set([...tempMaxData.keys()].map(timestampToDate))]
     .sort()
     .filter((d) => d >= today)
@@ -347,7 +352,7 @@ function buildHourlyAggregatedForecast(
   // dropped from `forecast[]` entirely instead of appearing with `hourly: []`, silently hiding
   // a day the forecast run does cover.
   const iconDates = new Set([...hourlyIcon.keys()].map(utcTimestampToZurichDate));
-  const today = todayUtc();
+  const today = todayZurich();
   const dates = [...new Set([...hourlyByDate.keys(), ...iconDates])]
     .sort()
     .filter((d) => d >= today)
