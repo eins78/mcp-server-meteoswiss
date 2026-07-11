@@ -6,6 +6,7 @@
 import { getCsvData, getLatin1CsvData } from './ogd-data-store.js';
 import { resolveSmnStation, loadSmnStations } from './ogd-smn-stations.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
+import { roundByUnit } from '../support/round-measurements.js';
 import { reverseGeocodeSwiss } from '../support/reverse-geocode.js';
 import type { ReverseGeocodeResult } from '../support/reverse-geocode.js';
 import { debugData } from '../support/logging.js';
@@ -46,7 +47,7 @@ async function getCachedReverseGeocode(
 function measurement(row: CsvRow, key: string, unit: string): MeasurementValue | undefined {
   const val = parseNumeric(row[key] ?? null);
   if (val === null) return undefined;
-  return { value: val, unit };
+  return { value: roundByUnit(val, unit), unit };
 }
 
 /**
@@ -238,7 +239,7 @@ async function fetchVisualObservations(
 
     return {
       date,
-      cloud_cover_percent: cloudCover ?? undefined,
+      cloud_cover_percent: cloudCover === null ? undefined : roundByUnit(cloudCover, '%'),
       is_clear_day: parseFlag(latestRow.nto002d0 ?? null),
       is_overcast_day: parseFlag(latestRow.nto008d0 ?? null),
       has_rain: parseFlag(latestRow.w1p012d0 ?? null),

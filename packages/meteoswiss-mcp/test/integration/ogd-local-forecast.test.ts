@@ -136,6 +136,27 @@ describe('meteoswissLocalForecast Tool', () => {
     expect(day.precipitation.hourly).toBeNull();
   });
 
+  it('rounds station-path temperature/precipitation to unit precision (1 decimal place)', async () => {
+    // Napf resolves to a station forecast (daily params, not hourly-aggregated).
+    // Fixture point 48, date 2026-03-26: tre200dn=-6.7, tre200dx=-3.7, rka150d0=11.3.
+    const result = await client.callTool('meteoswissLocalForecast', {
+      location: 'Napf',
+      days: 1,
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    const day = data.forecast[0];
+    expect(day.date).toBe('2026-03-26');
+    // Exact 1-decimal-place equality already proves the °C/mm rounding contract;
+    // a separate `value * 10` integer check would be flaky here since IEEE-754
+    // multiplication can turn an already-correct value like 12.3 into
+    // 123.00000000000001, making `Number.isInteger` fail on correct output.
+    expect(day.temperature.min).toBe(-6.7);
+    expect(day.temperature.max).toBe(-3.7);
+    expect(day.precipitation.total).toBe(11.3);
+  });
+
   it('should return error for empty location', async () => {
     const result = await client
       .callTool('meteoswissLocalForecast', { location: '' })

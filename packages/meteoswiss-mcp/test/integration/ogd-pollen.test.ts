@@ -121,6 +121,25 @@ describe('meteoswissPollenData Tool', () => {
     expect(birch!.value).toBe(1124); // d1 value, not d0=1326
   });
 
+  it('rounds pollen values to whole particles/m³ at assembly time', async () => {
+    // particles/m³ has 0 decimal places in UNIT_DECIMALS; every assembled
+    // *measured* value must respect that contract regardless of upstream CSV
+    // precision. 'no-current-data' entries carry no value/unit and are
+    // skipped here — they're a distinct, deliberately value-less variant.
+    const result = await client.callTool('meteoswissPollenData', { station: 'PZH' });
+    expect(result.isError).toBeFalsy();
+
+    const data = JSON.parse(result.content[0].text);
+    const station = data.stations[0];
+    const measured = station.pollen.filter(
+      (p: { status: string }) => p.status === 'measured'
+    );
+    expect(measured.length).toBeGreaterThan(0);
+    for (const p of measured) {
+      expect(Number.isInteger(p.value)).toBe(true);
+    }
+  });
+
   it('should return pollen data for a specific station', async () => {
     const result = await client.callTool('meteoswissPollenData', { station: 'PZH' });
     expect(result.isError).toBeFalsy();

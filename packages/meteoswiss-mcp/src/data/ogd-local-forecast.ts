@@ -9,6 +9,7 @@
 import { getLatestItem, resolveAssetUrl } from './ogd-stac-client.js';
 import { getCsvData } from './ogd-data-store.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
+import { roundByUnit, roundNullable } from '../support/round-measurements.js';
 import { resolveForecastPoint } from './ogd-station-resolver.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS, pointTypeFromId, SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
@@ -133,12 +134,12 @@ function buildStationForecast(
       weather: iconCode !== null ? weatherIconDescription(iconCode) : null,
       weather_icon_url: iconCode !== null ? weatherIconUrl(iconCode) : null,
       temperature: {
-        min: dateKeyed.get('tre200dn')?.get(date) ?? null,
-        max: dateKeyed.get('tre200dx')?.get(date) ?? null,
+        min: roundNullable(dateKeyed.get('tre200dn')?.get(date) ?? null, '°C'),
+        max: roundNullable(dateKeyed.get('tre200dx')?.get(date) ?? null, '°C'),
         unit: '\u00B0C',
       },
       precipitation: {
-        total: dateKeyed.get('rka150d0')?.get(date) ?? null,
+        total: roundNullable(dateKeyed.get('rka150d0')?.get(date) ?? null, 'mm'),
         unit: 'mm',
         // Stations use daily params (rka150d0) — hourly precip isn't fetched for them yet.
         hourly: null,
@@ -178,7 +179,7 @@ function groupPrecipByDate(hourlyMap: Map<string, number | null>): Map<string, H
     if (val === null) continue;
     const { date, time, offset } = zurichParts(ts);
     const existing = byDate.get(date) ?? [];
-    existing.push({ time: `${date}T${time}${offset}`, value: val });
+    existing.push({ time: `${date}T${time}${offset}`, value: roundByUnit(val, 'mm') });
     byDate.set(date, existing);
   }
   return byDate;
@@ -249,14 +250,19 @@ function buildHourlyAggregatedForecast(
     // they cannot disagree with each other.
     const hourly = precipByDate.get(date) ?? [];
     const precipTotal =
-      hourly.length > 0 ? Math.round(hourly.reduce((sum, h) => sum + h.value, 0) * 10) / 10 : null;
+      hourly.length > 0
+        ? roundByUnit(
+            hourly.reduce((sum, h) => sum + h.value, 0),
+            'mm'
+          )
+        : null;
     const iconCode = pickDaytimeIcon(hourlyIcon, date);
 
     return {
       date,
       temperature: {
-        min: temps.length > 0 ? Math.min(...temps) : null,
-        max: temps.length > 0 ? Math.max(...temps) : null,
+        min: temps.length > 0 ? roundByUnit(Math.min(...temps), '°C') : null,
+        max: temps.length > 0 ? roundByUnit(Math.max(...temps), '°C') : null,
         unit: '\u00B0C',
       },
       precipitation: { total: precipTotal, unit: 'mm', hourly },

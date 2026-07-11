@@ -101,6 +101,27 @@ describe('meteoswissClimateData Tool', () => {
     expect(result.content[0].text).toContain('station');
   });
 
+  it('rounds pressure_hpa and radiation_w_m2 at assembly time, leaving frost_days exact', async () => {
+    // Fixture row BAS 2024-01 has phsstam0=973.5 and ghs000m0=35.2, which must
+    // round to 974 and 35 respectively (both units have 0 decimal places).
+    // ths00nm0=12 (frost_days) is a day count, not a measurement, and must
+    // pass through byte-exact.
+    const result = await client.callTool('meteoswissClimateData', {
+      station: 'BAS',
+      resolution: 'monthly',
+      start_date: '2024-01-01',
+      end_date: '2024-01-31',
+      limit: 1,
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.data.length).toBe(1);
+    expect(data.data[0].pressure_hpa).toBe(974);
+    expect(data.data[0].radiation_w_m2).toBe(35);
+    expect(data.data[0].frost_days).toBe(12);
+  });
+
   // --- B2 regression tests (rc.2 failing cases) ---
 
   it('rejects gibberish station "INVALID_STATION_XYZ" with a helpful error', async () => {
