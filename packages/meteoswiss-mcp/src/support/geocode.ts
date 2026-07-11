@@ -79,6 +79,23 @@ export type GeocodeOptions = {
 /** In-memory cache for geocode results, keyed by normalized query + origins */
 const geocodeCache = new Map<string, GeocodeResult | null>();
 
+/**
+ * Entry cap for {@link geocodeCache}. It caches null misses too, so distinct
+ * query strings (including junk) would otherwise grow it without bound (SEC-6).
+ */
+const GEOCODE_CACHE_MAX = Number(process.env.GEOCODE_CACHE_MAX_ENTRIES) || 2000;
+
+/** Insert/refresh a geocode cache entry, evicting the oldest while over the cap. */
+function cacheGeocode(key: string, value: GeocodeResult | null): void {
+  geocodeCache.delete(key);
+  geocodeCache.set(key, value);
+  while (geocodeCache.size > GEOCODE_CACHE_MAX) {
+    const oldest = geocodeCache.keys().next().value;
+    if (oldest === undefined) break;
+    geocodeCache.delete(oldest);
+  }
+}
+
 /** Result from the swisstopo geocoding API */
 export type GeocodeResult = {
   name: string;
@@ -135,7 +152,9 @@ export async function geocodeSwissLocation(
   const cacheKey = `${originsPreset}:${query.trim().toLowerCase()}`;
   if (geocodeCache.has(cacheKey)) {
     debugData('[geocode] Cache hit for: %s (origins=%s)', query, originsPreset);
-    return geocodeCache.get(cacheKey) ?? null;
+    const cached = geocodeCache.get(cacheKey) ?? null;
+    cacheGeocode(cacheKey, cached); // promote to most-recently-used
+    return cached;
   }
 
   const url = buildGeocodeUrl(query, originsPreset);
@@ -144,7 +163,7 @@ export async function geocodeSwissLocation(
   // In test mode, return null (geocoding requires live API)
   if (USE_TEST_FIXTURES) {
     debugData('[geocode] Test mode — skipping geocode for: %s', query);
-    geocodeCache.set(cacheKey, null);
+    cacheGeocode(cacheKey, null);
     return null;
   }
 
@@ -155,7 +174,7 @@ export async function geocodeSwissLocation(
 
   if (!result?.attrs?.lat || !result.attrs.lon) {
     debugData('[geocode] No results for: %s', query);
-    geocodeCache.set(cacheKey, null);
+    cacheGeocode(cacheKey, null);
     return null;
   }
 
@@ -176,7 +195,7 @@ export async function geocodeSwissLocation(
       geocoded.lat,
       geocoded.lon
     );
-    geocodeCache.set(cacheKey, null);
+    cacheGeocode(cacheKey, null);
     return null;
   }
 
@@ -187,6 +206,6 @@ export async function geocodeSwissLocation(
     geocoded.lat,
     geocoded.lon
   );
-  geocodeCache.set(cacheKey, geocoded);
+  cacheGeocode(cacheKey, geocoded);
   return geocoded;
 }

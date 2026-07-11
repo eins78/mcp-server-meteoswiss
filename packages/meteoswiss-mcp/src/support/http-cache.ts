@@ -17,6 +17,17 @@ interface CacheEntry<T> {
 export class HttpCache {
   private cache = new Map<string, CacheEntry<unknown>>();
   private readonly minCacheDuration = 60 * 1000; // 1 minute minimum cache
+  /**
+   * Hard cap on entry count. Without it the Map grows unbounded with URL
+   * cardinality (SEC-6). Map iteration order is insertion order, so the first
+   * key is the least-recently-inserted; reads promote their key to the end,
+   * making eviction least-recently-*used*.
+   */
+  private readonly maxEntries: number;
+
+  constructor(maxEntries = Number(process.env.HTTP_CACHE_MAX_ENTRIES) || 1000) {
+    this.maxEntries = maxEntries > 0 ? maxEntries : 1000;
+  }
 
   /**
    * Get a cached response if valid
@@ -40,6 +51,10 @@ export class HttpCache {
       this.cache.delete(key);
       return undefined;
     }
+
+    // Promote to most-recently-used (re-insert moves the key to the end).
+    this.cache.delete(key);
+    this.cache.set(key, entry);
 
     debugHttp('Cache hit for key: %s', key);
     return {
@@ -89,7 +104,16 @@ export class HttpCache {
       cachedAt: now,
     };
 
+    // Re-insert so an updated key becomes most-recently-used, then evict the
+    // oldest entries while over the cap.
+    this.cache.delete(key);
     this.cache.set(key, entry);
+    while (this.cache.size > this.maxEntries) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest === undefined) break;
+      this.cache.delete(oldest);
+      debugHttp('Evicted LRU cache entry: %s', oldest);
+    }
     debugHttp('Cached response for key: %s, TTL: %dms', key, ttl);
   }
 
