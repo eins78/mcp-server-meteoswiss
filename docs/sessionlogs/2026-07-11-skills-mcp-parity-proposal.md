@@ -1,8 +1,16 @@
-# Proposal: Skills ↔ MCP Parity Enforcement
+# Skills ↔ MCP Parity: Proposal (round 1) → Plan (round 2)
 
-**Date:** 2026-07-11
+**Date:** 2026-07-11 (both rounds, same day — round 2 is Max's PR review feedback on round 1)
 **Model:** Claude Opus 4.8 (planning) + Claude Sonnet 5 (writing), worktree `skills-mcp-parity`, branch `worktree-skills-mcp-parity`
 **PR:** [#119](https://github.com/eins78/meteoswiss-llm-tools/pull/119) (draft)
+
+This log covers both rounds of the same PR. Round 1 (below, unedited) produced a free-form design
+proposal. Round 2 (bottom of this file) reworks it into a Plot plan per Max's review feedback — see
+that section for what changed and why.
+
+---
+
+## Round 1 — initial proposal
 
 ## Motivation
 
@@ -139,8 +147,97 @@ a new required check with an unproven false-positive rate.
 - [ ] Should the `meteoswissClimateData` gap be closed now as the first real proof the process (once
       built) works end-to-end?
 
+## Round 1 status at handoff
+
+- Commit `15a6669` on branch `worktree-skills-mcp-parity`, pushed to origin; PR #119 draft.
+- Awaiting review — no implementation started, intentionally gated on Max's decision on the open
+  questions above.
+
+---
+
+## Round 2 — reworked into a Plot plan
+
+Max reviewed PR #119 and asked for four changes, delivered in this round:
+
+1. **Reframe as a Plot plan, not a proposal.** Invoked the `plot:plot-idea` skill to get the exact
+   plan template and conventions (pointed at the precedent: `docs/sessionlogs/2026-04-18-geocoding-plot-idea.md`
+   and its plan, `docs/plans/2026-04-18-geocoding-workarounds-review.md`, which extends the base
+   template with `### Findings` / `### Options` / `### Tentative recommendation` / `### Non-goals`
+   subsections — used the same shape here). Deleted `docs/proposals/skills-mcp-parity.md` (round 1's
+   home) and replaced it with `docs/plans/2026-07-11-skills-mcp-parity.md` + the
+   `docs/plans/active/skills-mcp-parity.md` symlink, per the Plot Config in the repo's `CLAUDE.md`.
+   Deliberately **did not** run the rest of `/plot-idea` (no new `idea/<slug>` branch, no new PR) —
+   Max explicitly said to keep working on the existing `worktree-skills-mcp-parity` branch/PR #119,
+   so only the plan-file convention was adopted, not the branch-naming one. Noted this deviation
+   explicitly in the plan's **Branches** section rather than silently diverging from the skill's
+   normal flow.
+
+2. **Rethink the source of truth.** Max was explicit: don't default to YAML — investigate whether
+   source code, the MCP server's tool surface, or generation from the MCP inspector beats a
+   hand-written manifest. Rather than reason from memory about what the MCP TypeScript SDK supports,
+   downloaded and read the actual installed version: `npm pack @modelcontextprotocol/sdk@1.28.0`,
+   extracted it, and grepped `dist/esm/server/mcp.js`'s `tools/list` handler directly. Confirmed
+   concretely:
+   - Every tool's `inputSchema` (name, type, and the `.describe()` text already written throughout
+     `src/schemas/*.ts`) is already mechanically derivable from the live server via `tools/list` —
+     no hand-transcription needed, today, with zero code changes.
+   - `tools/list` also emits `outputSchema` when a tool is registered via the newer `registerTool()`
+     API with a declared Zod output schema — this repo's 7 tools all use the older `server.tool()`
+     signature with plain-TS-type outputs, so output shape isn't protocol-visible yet, but the SDK
+     genuinely supports closing that gap (verified in the SDK source, not assumed).
+   - Confirmed `InMemoryTransport` + `Client.listTools()` both exist in the SDK, meaning the
+     generation step can run in-process (`createServer()` → linked in-memory client → `listTools()`)
+     without shelling out to `npx @modelcontextprotocol/inspector` or running an HTTP server — same
+     data the inspector CLI's `--method tools/list` would return (that CLI mode is real too, and is
+     explicitly documented for CI use; it's the manual/local equivalent, already reachable via the
+     existing `pnpm run dev:inspect` script).
+   - Isolated the actual residual that no schema can express: `src/support/weather-icons.ts` (a
+     119-entry value lookup table, not a schema shape) and a couple of prose-only gotchas
+     (Latin1 CSV encoding, the STAC "forcasting" typo) the skill documents with no schema analogue.
+   - Landed on: generated `tools/list` output is the source of truth for tool/param completeness;
+     a much smaller `parity-exceptions.yml` survives only for that residual, and is explicitly never
+     consulted for tool/param completeness — full detail and the comparison table are in the plan
+     file, not duplicated here.
+
+3. **Make linting mandatory.** Max's directive — "the lint fails the build on drift" — overrides
+   round 1's advisory-first phasing. Reworked the plan's enforcement section accordingly: the check
+   is a hard, required gate from the point it lands, with only a one-time bake-in commit (to seed
+   `parity-exceptions.yml` against the current codebase before the gate goes live) as a mechanical
+   softening, not a policy one. This also simplified round 1's Phase 1→2→3 rollout: with completeness
+   and staleness now deterministic and generated, Claude's role shrank from "judge whether drift
+   matters" (now answered mechanically by the lint) to a narrower, still-optional job — drafting a
+   suggested skill-doc diff once the lint has already flagged something. Kept explicitly out of the
+   blocking path.
+
+4. **Pursue Max's lean seriously, document any divergence.** Did not diverge from the core lean (map
+   against the MCP server, generate from tool-list introspection, lint completeness + staleness) — it
+   held up under verification. The one place this plan adds nuance rather than following the lean
+   literally: a small `parity-exceptions.yml` still exists, because a handful of things (the icon
+   table, prose gotchas) are structurally invisible to any schema-based introspection, generated or
+   not. This is flagged in the plan as an explicit, narrow exception to "generate everything," not a
+   silent reintroduction of the hand-maintained manifest Max pushed back on — its scope is a small
+   fraction of round 1's manifest and it's linted for staleness itself.
+
+### Result
+
+- New plan file: `docs/plans/2026-07-11-skills-mcp-parity.md`, plus `docs/plans/active/skills-mcp-parity.md`
+  (symlink). Round 1's `docs/proposals/skills-mcp-parity.md` removed (`git rm`).
+- This sessionlog extended in place (this section) rather than replaced, per the new "sessionlog
+  must ship inside the PR" policy — one coherent file covering both rounds.
+- Commit pending push to `worktree-skills-mcp-parity` / PR #119 (draft, unchanged PR number).
+
+### Open questions carried into round 2 (plan's own Open Questions section has the full list)
+
+- [ ] `registerTool()` + Zod `outputSchema` migration — prerequisite/companion plan, or is
+      input-side generation + a small residual exceptions file good enough long-term?
+- [ ] `search`/`fetch` scope — unresolved from round 1.
+- [ ] Bake-in step ownership/timing — part of the implementation PR, or its own PR right before the
+      gate flips to blocking?
+- [ ] Does the skill's separate 4-location manual version-sync problem belong in the same lint script?
+- [ ] Close the `meteoswissClimateData` gap as the bake-in's first real content addition?
+
 ## Pending / follow-ups
 
-- [ ] PR #119 is a draft, not merged — awaiting Max's review and answers to the open questions above.
-- [ ] No implementation work (workflow YAML, `parity-map.yml`, PR template, CONTRIBUTING.md) has
-      started; it is intentionally gated on Max's decision on the open questions.
+- [ ] PR #119 is still a draft, not merged — awaiting Max's review of the reworked plan.
+- [ ] No implementation work (lint script, `parity-exceptions.yml`, CI wiring) has started; gated on
+      approval of this plan, same as round 1.
