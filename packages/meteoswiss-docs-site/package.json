@@ -6,7 +6,6 @@
   "scripts": {
     "sync-content": "tsx scripts/sync-content.ts",
     "dev": "pnpm run sync-content && astro dev",
-    "start": "astro dev",
     "build": "pnpm run sync-content && astro build",
     "preview": "astro preview",
     "astro": "astro"

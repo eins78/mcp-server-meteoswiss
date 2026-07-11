@@ -57,9 +57,9 @@ function walkFiles(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
-    // Skip symlinks outright — docs/plans/active/*.md and docs/plans/delivered/*.md are literal
-    // symlinks back to sibling files in docs/plans/; following them would double-list the same
-    // plan under two sidebar paths.
+    // Skip symlinks outright — e.g. docs/plans/active/*.md are literal symlinks back to sibling
+    // files in docs/plans/ (the active/delivered curation convention from this repo's CLAUDE.md
+    // "Plot Config"); following them would double-list the same plan under two sidebar paths.
     if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       out.push(...walkFiles(full));
