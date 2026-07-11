@@ -244,12 +244,7 @@ function buildStationForecast(
   paramData: Map<string, Map<string, number | null>>,
   days: number
 ): DailyForecast[] {
-  const tempMaxData = paramData.get('tre200dx') ?? new Map<string, number | null>();
   const today = todayZurich();
-  const dates = [...new Set([...tempMaxData.keys()].map(timestampToDate))]
-    .sort()
-    .filter((d) => d >= today)
-    .slice(0, days);
 
   const dateKeyed = new Map(
     [...paramData.entries()].map(([param, tsMap]) => [
@@ -264,6 +259,16 @@ function buildStationForecast(
   // stations only report a subset of parameters) from "this point supports hourly data but
   // none was available for this specific day" ([] per day, handled below).
   const hourlyTrulyUnavailable = hourlyByDate.size === 0;
+
+  // Date set = union of EVERY official daily-aggregate's dates AND the hourly days,
+  // not just tre200dx's. Deriving from tre200dx alone returned an empty forecast
+  // when that single asset was missing even though hourly data was in hand (FUN-6);
+  // this mirrors the union the hourly-aggregated path already uses.
+  const dailyDates = DAILY_PARAMS.flatMap((param) => [...(dateKeyed.get(param)?.keys() ?? [])]);
+  const dates = [...new Set([...dailyDates, ...hourlyByDate.keys()])]
+    .sort()
+    .filter((d) => d >= today)
+    .slice(0, days);
 
   return dates.map((date) => {
     const iconCode = dateKeyed.get('jp2000d0')?.get(date) ?? null;

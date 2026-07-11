@@ -4,6 +4,7 @@
 
 Functional correctness fixes from the 2026-07-11 review, all addressing cases where a tool returned confidently wrong or empty data instead of an error:
 
+- **Station forecasts no longer drop all days when the `tre200dx` asset is missing (FUN-6):** the station day list derived solely from the `tre200dx` (daily max-temp) timestamps, so a run missing just that asset returned `forecast: []` even with all hourly data fetched. It now unions every daily-aggregate's dates with the hourly days, matching the non-station path.
 - **Climate date filters are validated as YYYY-MM-DD (FUN-5):** `start_date`/`end_date` were plain strings compared lexicographically against `YYYY-MM-DD` row dates, so `2020-1-1`, `01.01.2020`, or `2020/01/01` were accepted and silently mis-filtered (e.g. `"2020-01-15" >= "2020-1-1"` is false). Both fields now require `^\d{4}-\d{2}-\d{2}$`.
 - **Pollen tool fails loudly on a total outage (FUN-4):** when every per-station fetch failed, `meteoswissPollenData` returned `{stations: []}` as a success, which the model reported as "no pollen data available." It now throws (surfacing the underlying error) when no station yields any data.
 - **Measurement timestamps are now genuine ISO 8601 (FUN-3):** `meteoswissCurrentWeather` and `meteoswissPollenData` returned raw CSV cells (`202603281940` or `08.04.2026 14:30`) despite advertising ISO 8601, so an LLM could misparse the measurement time. Both fixed-width formats are now normalized to `YYYY-MM-DDTHH:mm:ssZ` (UTC).
