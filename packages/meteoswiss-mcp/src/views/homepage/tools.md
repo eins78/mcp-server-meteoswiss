@@ -9,7 +9,7 @@ Get a multi-day weather forecast for any Swiss location.
 | `location` | string | Yes | Postal code ("8001"), station abbreviation ("SMA"), or place name ("Zurich") |
 | `days` | number | No | Number of forecast days, 1-9 (default: 5) |
 
-**Returns:** Daily forecasts with temperature (min/max), precipitation, weather description, and weather icons.
+**Returns:** Daily forecasts with temperature (min/max), precipitation, sunshine, wind (speed + gust), weather description, and weather icons — plus an hourly breakdown of every series per day.
 
 **Try:** "What's the weather forecast for Zurich this week?" or "Will it rain in Bern tomorrow?"
 

@@ -148,7 +148,7 @@ export function createServer(): McpServer {
   debugServer('Registering tool: getLocalForecast');
   server.tool(
     'meteoswissLocalForecast',
-    `Get a multi-day weather forecast for any Swiss location. Returns daily summaries with temperature, precipitation, and weather icons.
+    `Get a multi-day weather forecast for any Swiss location. Returns daily summaries (temperature, precipitation, sunshine, wind, weather icon) plus a hierarchical hourly breakdown of every series.
 
 This uses official MeteoSwiss Open Data — the same forecasts powering the MeteoSwiss app and website.
 
@@ -160,18 +160,31 @@ Accepts:
 Coverage: ~6000 Swiss locations (all postal codes + weather stations + mountain points).
 Forecast horizon: up to 9 days. Updated hourly.
 
-For postal codes and mountain points, each day also includes an hourly precipitation
-breakdown (precipitation.hourly) — useful for judging *when* rain is expected, not just
-the daily total:
+Each day's summary fields: temperature_min_c, temperature_max_c, precipitation_total_mm,
+sunshine_total_minutes, wind_avg_kmh, wind_gust_max_kmh, weather, weather_icon_url.
+
+Each day also includes "hourly": one array of per-hour objects covering every series
+together — { time, temperature_c, precip_mm, sunshine_minutes, wind_kmh, wind_gust_kmh } —
+useful for judging *when* rain, sun, or wind is expected, not just the daily summary:
 - Each entry's "time" is already local wall-clock time for the location (Europe/Zurich),
   with the UTC offset included, e.g. "2026-07-09T14:00:00+02:00". It is NOT UTC — do not
   convert it.
-- A dry hour is reported as value: 0, not omitted. A fully dry day is still a full array
-  of zero-value hours, not an empty array.
-- precipitation.hourly is null when no hourly breakdown exists for this location at all
-  (weather stations only have a daily total, precipitation.total).
-- precipitation.hourly is [] (empty array) only for postal codes/mountain points where
-  hourly readings are missing for that specific day (a data gap) — distinct from null.`,
+- A dry/calm/sunless hour is reported as its measured value (often 0), not omitted. A
+  fully dry day is still a full array of zero-precipitation hours, not an empty array.
+- Each field is independently null if just THAT series has no reading for a given hour —
+  the other fields for that same hour are still populated. An hour is omitted entirely
+  only when every series is missing for it.
+- "hourly" itself is null when no hourly breakdown exists for this location at all (a
+  total data gap); [] only when this location supports hourly data but none was available
+  for that specific day.
+- For weather stations, temperature_min_c/temperature_max_c/precipitation_total_mm are
+  MeteoSwiss's own official daily aggregates — a different, separately-curated product
+  from the hourly series shown alongside them. They can legitimately NOT match summing/
+  averaging the hourly entries for that day; this is expected, not a data error.
+  sunshine_total_minutes/wind_avg_kmh/wind_gust_max_kmh have no official daily product for
+  stations and are always derived from the hourly series. For postal codes/mountain
+  points, every summary field is derived from the same hourly series shown alongside it,
+  so it always matches summing/averaging that series exactly.`,
     GetLocalForecastParamsSchema.shape,
     async (params: GetLocalForecastParams) => {
       const _t0 = performance.now();
