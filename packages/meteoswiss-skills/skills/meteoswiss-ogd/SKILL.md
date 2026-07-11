@@ -71,13 +71,13 @@ Two steps: get the latest STAC item, then download parameter CSVs.
 ITEM=$(curl -s 'https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting/items?limit=10' \
   | jq -r '[.features[].id] | sort | reverse | .[0]')
 
-# Step 2: Get a parameter CSV (e.g., daily max temperature for Zurich station, point_id=48)
+# Step 2: Get a parameter CSV (e.g., daily max temperature for Zurich station, point_id=71)
 ASSET_URL=$(curl -s "https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting/items/$ITEM" \
   | jq -r '[.assets | to_entries[] | select(.key | contains("tre200dx"))] | sort_by(.key) | last | .value.href')
-curl -s "$ASSET_URL" | awk -F';' 'NR==1 || $1=="48"'
+curl -s "$ASSET_URL" | awk -F';' 'NR==1 || $1=="71"'
 ```
 
-**Station forecasts** (point_type_id=1) have daily params: `tre200dx` (max temp), `tre200dn` (min temp), `rka150d0` (precip), `jp2000d0` (weather icon). **Postal codes/mountains** (type 2,3) have hourly params: `tre200h0`, `rre150h0`, `jww003i0` — aggregate to daily by grouping on first 8 timestamp chars. Common point_ids: Zurich=48, Bern=29, Geneva=53.
+**Station forecasts** (point_type_id=1) have official daily params: `tre200dx` (max temp), `tre200dn` (min temp), `rka150d0` (precip), `jp2000d0` (weather icon). **Every point type** (stations, postal codes, mountains) also has hourly params: `tre200h0` (temp), `rre150h0` (precip), `sre000h0` (sunshine), `fu3010h0` (wind speed), `fu3010h1` (wind gust) — plus `jww003i0` (weather icon), which is **3-hourly**, not hourly, and is used for daily icon selection rather than an hourly reading series. Timestamps are `YYYYMMDDHHmm` in UTC, so grouping on the first 8 chars aggregates by UTC calendar day. The MCP server instead buckets hourly readings by the **local Europe/Zurich calendar day** (DST-aware), so a UTC-day grouping and the MCP tool's `hourly[]` can disagree for late-evening UTC hours that fall on the next local day — convert to Europe/Zurich time first if you need exact parity with the MCP tool's daily buckets. For stations, prefer the official daily params for temp/precip (a separately-curated MeteoSwiss product that may not exactly match summing/averaging the hourly series); use the hourly params for sunshine/wind (no official daily product) and for an hourly breakdown. Common station point_ids: Zurich (SMA)=71, Bern (BER)=78, Geneva (GVE)=58.
 
 **Weather icon SVGs**: `https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/{CODE}.svg` — replace `{CODE}` with the numeric icon code (e.g., `1.svg` for sunny, `101.svg` for clear night). See `${CLAUDE_SKILL_DIR}/REFERENCE.md` for all codes.
 
@@ -108,7 +108,7 @@ Token-efficient CLI tools that output structured key=value pairs. Use these inst
 ${CLAUDE_SKILL_DIR}/scripts/current-weather.sh SMA          # current weather for Zurich
 ${CLAUDE_SKILL_DIR}/scripts/search-stations.sh zurich        # find weather stations
 ${CLAUDE_SKILL_DIR}/scripts/search-forecast-points.sh 8001   # find forecast point_id by postal code
-${CLAUDE_SKILL_DIR}/scripts/forecast.sh 48                   # forecast for Zurich (point_id=48)
+${CLAUDE_SKILL_DIR}/scripts/forecast.sh 71                   # forecast for Zurich (point_id=71)
 ${CLAUDE_SKILL_DIR}/scripts/pollen.sh ZUE                    # pollen data for Zurich
 ```
 

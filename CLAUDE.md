@@ -337,8 +337,7 @@ Description of the change.
 ## Open Tasks and Issues
 
 - Re-add climate normals tool when MeteoSwiss publishes `ch.meteoschweiz.ogd-climate-normals` data
-- Add more forecast parameters to meteoswissLocalForecast (wind, sunshine, cloud cover)
-- Add precipitation data to postal code forecasts (hourly aggregation)
+- Add cloud cover to meteoswissLocalForecast's hourly series (temperature/precipitation/sunshine/wind done in #101)
 - Consider Open-Meteo proxy for NWP model data (ICON-CH1/CH2)
 
 ## Design Decisions

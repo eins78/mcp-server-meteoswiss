@@ -193,6 +193,22 @@ describe("scoreResponse — leaf kinds", () => {
     });
     assert.equal(r.pass, true);
   });
+
+  test("unavailable: fabrication check is generic, not hardcoded to 'mm' — a differently-named numeric key (e.g. a gust question's 'gust_kmh') also fails", () => {
+    const r = scoreResponse('{"gust_available": false, "gust_kmh": 35}', {
+      key: "gust_available",
+      kind: "unavailable",
+    });
+    assert.equal(r.pass, false);
+  });
+
+  test("unavailable: a non-numeric other key (e.g. a units string) does not count as fabrication", () => {
+    const r = scoreResponse('{"gust_available": false, "unit": "km/h"}', {
+      key: "gust_available",
+      kind: "unavailable",
+    });
+    assert.equal(r.pass, true);
+  });
 });
 
 describe("scoreResponse — compound + unparseable", () => {

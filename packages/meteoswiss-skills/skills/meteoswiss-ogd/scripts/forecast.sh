@@ -4,7 +4,7 @@ set -euo pipefail
 # Get weather forecast for a Swiss location by point_id
 # Usage: forecast.sh <point_id> [point_type_id]
 # Requires: curl, jq, awk
-# Example: forecast.sh 48 1
+# Example: forecast.sh 71 1
 
 POINT_ID="${1:-}"
 POINT_TYPE="${2:-1}"
@@ -19,11 +19,11 @@ if [[ -z "$POINT_ID" || "$1" == "--help" || "$1" == "-h" ]]; then
   echo "  point_id       Forecast point ID (use search-forecast-points.sh to find)"
   echo "  point_type_id  1=station (default), 2=postal_code, 3=mountain"
   echo ""
-  echo "Common point_ids (stations): Zurich=48, Bern=29, Geneva=53"
+  echo "Common point_ids (stations): Zurich (SMA)=71, Bern (BER)=78, Geneva (GVE)=58"
   echo ""
   echo "Examples:"
-  echo "  $(basename "$0") 48       # Zurich station"
-  echo "  $(basename "$0") 48 1     # explicit station type"
+  echo "  $(basename "$0") 71       # Zurich station"
+  echo "  $(basename "$0") 71 1     # explicit station type"
   exit "${POINT_ID:+1}"
 fi
 
@@ -37,11 +37,16 @@ ITEM=$(curl -sf "$STAC_BASE/collections/$COLLECTION/items?limit=10" \
 ITEM_URL="$STAC_BASE/collections/$COLLECTION/items/$ITEM"
 ITEM_JSON=$(curl -sf "$ITEM_URL") || { echo "Error: failed to fetch item $ITEM" >&2; exit 1; }
 
-# Step 2: Choose parameters based on point type
+# Step 2: Choose parameters based on point type. Every point type has the hourly params;
+# stations ALSO have official daily aggregates for temp/precip (prefer those over summing/
+# averaging the hourly series — a separately-curated MeteoSwiss product, see SKILL.md).
+# jww003i0 (weather pictogram) is 3-hourly, not hourly, and used only for daily icon selection —
+# stations skip it since their icon comes from the official jp2000d0 daily param instead.
+HOURLY_PARAMS="tre200h0 rre150h0 sre000h0 fu3010h0 fu3010h1"
 if [[ "$POINT_TYPE" == "1" ]]; then
-  PARAMS="tre200dx tre200dn rka150d0 jp2000d0"
+  PARAMS="tre200dx tre200dn rka150d0 jp2000d0 $HOURLY_PARAMS"
 else
-  PARAMS="tre200h0 rre150h0 jww003i0"
+  PARAMS="$HOURLY_PARAMS jww003i0"
 fi
 
 echo "forecast_item=$ITEM"
