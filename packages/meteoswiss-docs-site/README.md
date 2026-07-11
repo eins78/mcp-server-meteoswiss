@@ -38,4 +38,5 @@ pnpm run preview   # preview a production build locally
 ## Deploy
 
 Published via GitHub Actions to GitHub Pages on push to `main` — see
-`.github/workflows/pages.yml` at the repo root.
+[`../../.github/workflows/pages.yml`](../../.github/workflows/pages.yml) (repo root, not this
+package).
