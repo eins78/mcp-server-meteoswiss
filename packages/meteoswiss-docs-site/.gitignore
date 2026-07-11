@@ -21,7 +21,18 @@ pnpm-debug.log*
 .DS_Store
 
 # content synced from outside this package by scripts/sync-content.ts — regenerated on every
-# `pnpm run dev`/`build`, never hand-edited. index.mdx is the one hand-authored exception.
+# `pnpm run dev`/`build`, never hand-edited. index.mdx files (the homepage, plus a landing page
+# per sidebar group with no natural overview source) are the hand-authored exceptions. A parent
+# directory excluded by a wildcard must be re-included explicitly before its own contents can be
+# un-ignored (git limitation) — hence the two-step un-ignore per protected file below.
 src/content/docs/*
 !src/content/docs/index.mdx
+!src/content/docs/plans/
+src/content/docs/plans/*
+!src/content/docs/plans/index.mdx
+!src/content/docs/forecast-evals/
+src/content/docs/forecast-evals/*
+!src/content/docs/forecast-evals/results/
+src/content/docs/forecast-evals/results/*
+!src/content/docs/forecast-evals/results/index.mdx
 public/forecast-evals-results/

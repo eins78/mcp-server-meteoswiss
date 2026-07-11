@@ -64,8 +64,8 @@ function walkFiles(dir: string): string[] {
 
 function titleFromContent(markdown: string, fallbackName: string): string {
   const h1 = markdown.match(/^#\s+(.+)$/m);
-  if (h1) return h1[1].trim().replace(/"/g, "'");
-  return fallbackName
+  if (h1) return h1[1].trim();
+  return basename(fallbackName)
     .replace(/\.md$/, '')
     .replace(/[-_]+/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -74,7 +74,9 @@ function titleFromContent(markdown: string, fallbackName: string): string {
 function ensureFrontmatter(markdown: string, fallbackName: string): string {
   if (markdown.startsWith('---\n')) return markdown; // already has frontmatter, leave as-is
   const title = titleFromContent(markdown, fallbackName);
-  const escapedTitle = title.replace(/"/g, '\\"');
+  // Escape backslashes before quotes so a literal backslash doesn't get swallowed into a
+  // still-unescaped quote's escape sequence.
+  const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   return `---\ntitle: "${escapedTitle}"\n---\n\n${markdown}`;
 }
 
@@ -129,14 +131,22 @@ function syncHtmlSnapshots(srcDir: string, destDir: string): { count: number; sl
   return { count, slugs };
 }
 
+// Hand-authored landing pages that live inside otherwise sync-managed directories — the
+// homepage, plus a group index for each sidebar section that has no natural "overview" source
+// file (autogenerate has no group-level page to link to otherwise, which left the homepage's own
+// hero buttons 404ing at e.g. /plans/).
+const PROTECTED_CONTENT_FILES = [
+  'index.mdx',
+  join('plans', 'index.mdx'),
+  join('forecast-evals', 'results', 'index.mdx'),
+];
+
 function clearSyncTargets(): void {
-  for (const { destSubdir } of SOURCES) {
-    const target = destSubdir ? join(CONTENT_DOCS_DIR, destSubdir) : CONTENT_DOCS_DIR;
-    if (!existsSync(target)) continue;
-    for (const entry of readdirSync(target)) {
-      // Never wipe index.mdx (the hand-authored homepage) when clearing the root content dir.
-      if (destSubdir === '' && entry === 'index.mdx') continue;
-      rmSync(join(target, entry), { recursive: true, force: true });
+  if (existsSync(CONTENT_DOCS_DIR)) {
+    for (const file of walkFiles(CONTENT_DOCS_DIR)) {
+      const rel = relative(CONTENT_DOCS_DIR, file);
+      if (PROTECTED_CONTENT_FILES.includes(rel)) continue;
+      rmSync(file, { force: true });
     }
   }
   if (existsSync(PUBLIC_RESULTS_DIR)) rmSync(PUBLIC_RESULTS_DIR, { recursive: true, force: true });

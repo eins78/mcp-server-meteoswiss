@@ -7,13 +7,14 @@ hero:
   actions:
     # hero.actions[].link is passed straight to an <a href> with no `base` rewriting (verified
     # against node_modules/@astrojs/starlight/components/Hero.astro) — unlike sidebar
-    # autogenerate entries, which Starlight resolves from routing. Must be kept in sync with
-    # BASE in site.config.mjs by hand.
+    # autogenerate entries, which Starlight resolves from routing. Relative (no leading `/`)
+    # rather than an absolute path hardcoding BASE: the homepage is served at exactly `{BASE}/`,
+    # so a relative href resolves correctly against it without risking drift from site.config.mjs.
     - text: Browse plans
-      link: /meteoswiss-llm-tools/plans/
+      link: plans/
       icon: right-arrow
     - text: Forecast eval results
-      link: /meteoswiss-llm-tools/forecast-evals/results/
+      link: forecast-evals/results/
       icon: external
       variant: minimal
 ---
