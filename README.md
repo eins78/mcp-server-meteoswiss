@@ -102,6 +102,8 @@ nvm use && pnpm install
 
 See each package's README for package-specific commands. The repo uses [changesets](https://github.com/changesets/changesets) for versioning.
 
+Manual, point-in-time test reports (e.g. live MCP tool test passes) live in `docs/test-reports/`.
+
 ## Data Source
 
 All weather data comes from [MeteoSwiss Open Government Data (OGD)](https://opendatadocs.meteoswiss.ch/) — the official free data offering from Switzerland's Federal Office of Meteorology and Climatology. The same data powers the MeteoSwiss app and website.
