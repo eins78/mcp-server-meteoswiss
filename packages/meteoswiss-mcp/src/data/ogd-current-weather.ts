@@ -37,9 +37,18 @@ async function getCachedReverseGeocode(
   if (reverseGeoCache.has(stationAbbr)) {
     return reverseGeoCache.get(stationAbbr) ?? null;
   }
-  const result = await reverseGeocodeSwiss(lat, lon).catch(() => null);
-  reverseGeoCache.set(stationAbbr, result);
-  return result;
+  try {
+    // Cache only resolved outcomes (a hit, or a genuine "no result" null).
+    const result = await reverseGeocodeSwiss(lat, lon);
+    reverseGeoCache.set(stationAbbr, result);
+    return result;
+  } catch (error) {
+    // A transient network error is NOT cached, so a later request can retry —
+    // otherwise one blip would suppress this station's municipality until restart
+    // (FUN-10). municipality is enrichment; canton falls back to metadata.
+    debugData('[ogd-weather] Reverse geocode failed for %s (not cached): %O', stationAbbr, error);
+    return null;
+  }
 }
 
 /**

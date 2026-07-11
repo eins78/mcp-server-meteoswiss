@@ -4,6 +4,7 @@
 
 Functional correctness fixes from the 2026-07-11 review, all addressing cases where a tool returned confidently wrong or empty data instead of an error:
 
+- **Reverse-geocode failures are no longer cached (FUN-10):** a single transient error while resolving a station's municipality was stored as a permanent `null`, suppressing that field until restart. Only resolved outcomes (a hit or a genuine no-result) are cached now; transient errors are retried on the next request.
 - **Input schemas are hardened (FUN-16, FUN-17, FUN-18, FUN-15):** free-text inputs (`query`, `location`, `station`, `search`) are capped at 200 chars and `fetch.id` at 2048; `search.page` is capped at 1000; `parseNumeric` now rejects non-finite values (`Infinity`, `1e309`); and the `station`/`coordinates` precedence ("coordinates wins") is documented on both tools that accept them.
 - **The Solr search response is Zod-validated (FUN-9):** it was cast (`as SolrResponse`) with all-optional fields and `|| 0` / `|| []` fallbacks, so a valid-JSON error payload or shape change silently became "0 results". It's now validated (requiring `response.docs` to be an array) and throws on mismatch.
 - **Non-retryable 4xx responses are no longer retried (FUN-8):** 404/400 etc. were retried 3× (≈3.6 s wasted latency per missing resource); the retry loop now skips 4xx except 408/429.
