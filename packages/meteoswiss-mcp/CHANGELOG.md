@@ -82,7 +82,7 @@
   - **Transport**: Migrate from SSE to MCP Streamable HTTP (SDK 1.28+)
   - **Dependencies**: Upgrade to Zod 4
 
-## 1.0.0 - 2026-03-29
+## 1.0.0 - 2025-06-09
 
 ### Major Changes
 
