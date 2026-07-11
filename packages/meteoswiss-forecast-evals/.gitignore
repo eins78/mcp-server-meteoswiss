@@ -8,3 +8,8 @@ dist/
 # generated/tests.json, generated/judge-tests.json and generated/fixtures/* ARE committed
 # (they're the reviewable, deterministic inputs); only run *outputs* are ignored here.
 generated/results*.json
+
+# Ad-hoc `promptfoo export` snapshots (e.g. `-o generated/report.html`) are scratch output too —
+# never committed from this path. To publish a snapshot, deliberately copy it into
+# docs/results/<date>-<slug>.html (see docs/results/ convention in the README).
+generated/*.html
