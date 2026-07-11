@@ -32,3 +32,28 @@ export const fetchMeteoSwissContentSchema = z.object({
 });
 
 export type FetchMeteoSwissContentInput = z.infer<typeof fetchMeteoSwissContentSchema>;
+
+/** Fetched page content response (field names match the ChatGPT Deep Research MCP contract) */
+export const ContentResponseSchema = z.object({
+  id: z.string().describe('The id the content was fetched for (the page URL)'),
+  title: z.string().optional().describe('Page title'),
+  text: z.string().describe('Canonical body field (matches ChatGPT Deep Research spec)'),
+  format: z.enum(['markdown', 'text']).describe('Format of `text`'),
+  url: z
+    .string()
+    .describe(
+      'Canonical URL field (matches ChatGPT Deep Research spec). For this server `url === id`.'
+    ),
+  metadata: z
+    .object({
+      url: z.string(),
+      language: z.string().optional(),
+      lastModified: z.string().optional(),
+      contentType: z.string().optional(),
+      keywords: z.array(z.string()).optional(),
+      description: z.string().optional(),
+    })
+    .optional()
+    .describe('Page metadata (present when includeMetadata is true)'),
+});
+export type ContentResponse = z.infer<typeof ContentResponseSchema>;

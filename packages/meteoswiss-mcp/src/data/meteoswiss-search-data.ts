@@ -4,7 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fetchJson, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
-import type { SearchMeteoSwissContentInput } from '../schemas/meteoswiss-search.js';
+import type {
+  SearchMeteoSwissContentInput,
+  SearchResultItem,
+  SearchResults,
+} from '../schemas/meteoswiss-search.js';
+
+export type { SearchResultItem, SearchResults } from '../schemas/meteoswiss-search.js';
 
 // Solr response types
 interface SolrDocument {
@@ -55,31 +61,6 @@ const USE_TEST_FIXTURES = process.env.USE_TEST_FIXTURES === 'true';
  * doesn't honor — see GitHub issue #110, DECISION-1.
  */
 const UPSTREAM_PAGE_SIZE = 10;
-
-/**
- * Search result item from the API
- */
-export interface SearchResultItem {
-  id: string;
-  title: string;
-  url: string;
-  description?: string;
-  contentType?: string;
-  lastModified?: string;
-  path?: string;
-  lead?: string;
-  publicationDate?: string;
-}
-
-/**
- * Search results response
- */
-export interface SearchResults {
-  totalResults: number;
-  page: number;
-  pageSize: number;
-  results: SearchResultItem[];
-}
 
 /**
  * Search MeteoSwiss content

@@ -1,4 +1,4 @@
-import { fetchMeteoSwissContentSchema } from '../schemas/meteoswiss-fetch.js';
+import { fetchMeteoSwissContentSchema, type ContentResponse } from '../schemas/meteoswiss-fetch.js';
 import { fetchMeteoSwissContent } from '../data/meteoswiss-content-data.js';
 import { debugTools } from '../support/logging.js';
 
@@ -12,7 +12,7 @@ import { debugTools } from '../support/logging.js';
  * @param input Fetch parameters
  * @returns Content with optional metadata
  */
-export async function meteoswissFetchTool(input: unknown): Promise<unknown> {
+export async function meteoswissFetchTool(input: unknown): Promise<ContentResponse> {
   debugTools('Fetch tool called with input: %O', input);
 
   // Validate input

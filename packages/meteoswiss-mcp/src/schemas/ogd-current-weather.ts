@@ -24,50 +24,66 @@ export const GetCurrentWeatherParamsSchema = z.object({
 export type GetCurrentWeatherParams = z.infer<typeof GetCurrentWeatherParamsSchema>;
 
 /** Measurement value with unit (only present when data is available) */
-export type MeasurementValue = {
-  value: number;
-  unit: string;
-};
+export const MeasurementValueSchema = z.object({
+  value: z.number(),
+  unit: z.string(),
+});
+export type MeasurementValue = z.infer<typeof MeasurementValueSchema>;
 
 /** Current weather response */
-export type CurrentWeatherResponse = {
-  station: {
-    name: string;
-    abbreviation: string;
-    elevation: number;
-    coordinates: { lat: number; lon: number };
-    municipality?: string;
-    canton?: string;
-    distance_km?: number;
-    network?: string;
-  };
-  timestamp: string;
-  measurements: {
-    temperature?: MeasurementValue;
-    humidity?: MeasurementValue;
-    dew_point?: MeasurementValue;
-    precipitation?: MeasurementValue;
-    wind_speed?: MeasurementValue;
-    wind_gust?: MeasurementValue;
-    wind_direction?: MeasurementValue;
-    sunshine?: MeasurementValue;
-    radiation?: MeasurementValue;
-    pressure_station?: MeasurementValue;
-    pressure_sea_level?: MeasurementValue;
-    snow_depth?: MeasurementValue;
-  };
-  /** Visual observations (only for 8 OBS stations: ALT, BAS, CHU, GSB, JUN, SAE, SIO, SMA) */
-  visual_observations?: {
-    date: string;
-    cloud_cover_percent?: number;
-    is_clear_day?: boolean;
-    is_overcast_day?: boolean;
-    has_rain?: boolean;
-    has_rain_and_snow?: boolean;
-    has_snowfall?: boolean;
-    has_hail?: boolean;
-    has_fog?: boolean;
-    has_snow_coverage?: boolean;
-  };
-  source: string;
-};
+export const CurrentWeatherResponseSchema = z.object({
+  station: z.object({
+    name: z.string().describe('Station name'),
+    abbreviation: z.string().describe('Official station abbreviation (e.g. "SMA")'),
+    elevation: z.number().describe('Elevation in metres above sea level'),
+    coordinates: CoordinatesSchema.describe('WGS84 coordinates of the station'),
+    municipality: z.string().optional(),
+    canton: z.string().optional().describe('Canton abbreviation (e.g. "ZH")'),
+    distance_km: z
+      .number()
+      .optional()
+      .describe(
+        'Distance from the queried location to this station, km (when resolved by proximity)'
+      ),
+    network: z
+      .string()
+      .optional()
+      .describe('Measurement network ("smn" full weather, "smn-precip" precipitation-only)'),
+  }),
+  timestamp: z.string().describe('Measurement timestamp (ISO 8601)'),
+  measurements: z
+    .object({
+      temperature: MeasurementValueSchema.optional(),
+      humidity: MeasurementValueSchema.optional(),
+      dew_point: MeasurementValueSchema.optional(),
+      precipitation: MeasurementValueSchema.optional(),
+      wind_speed: MeasurementValueSchema.optional(),
+      wind_gust: MeasurementValueSchema.optional(),
+      wind_direction: MeasurementValueSchema.optional(),
+      sunshine: MeasurementValueSchema.optional(),
+      radiation: MeasurementValueSchema.optional(),
+      pressure_station: MeasurementValueSchema.optional(),
+      pressure_sea_level: MeasurementValueSchema.optional(),
+      snow_depth: MeasurementValueSchema.optional(),
+    })
+    .describe('Each measurement is present only when the station reports it'),
+  visual_observations: z
+    .object({
+      date: z.string(),
+      cloud_cover_percent: z.number().optional(),
+      is_clear_day: z.boolean().optional(),
+      is_overcast_day: z.boolean().optional(),
+      has_rain: z.boolean().optional(),
+      has_rain_and_snow: z.boolean().optional(),
+      has_snowfall: z.boolean().optional(),
+      has_hail: z.boolean().optional(),
+      has_fog: z.boolean().optional(),
+      has_snow_coverage: z.boolean().optional(),
+    })
+    .optional()
+    .describe(
+      'Visual observations (only for 8 OBS stations: ALT, BAS, CHU, GSB, JUN, SAE, SIO, SMA)'
+    ),
+  source: z.string().describe('Data attribution'),
+});
+export type CurrentWeatherResponse = z.infer<typeof CurrentWeatherResponseSchema>;
