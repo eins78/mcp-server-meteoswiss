@@ -26,7 +26,7 @@ Confirmed via Starlight's own docs, not assumed:
 Neither content tree already has Starlight-shaped frontmatter, and Starlight only reads from one
 directory (`src/content/docs/`) — so a small prep script runs before every build:
 
-`packages/meteoswiss-docs-site/scripts/sync-content.mjs`, roughly:
+`packages/meteoswiss-docs-site/scripts/sync-content.ts`, roughly:
 
 1. Walk `docs/**/*.md` (repo root). **Skip symlinks** — `docs/plans/active/*` and
    `docs/plans/delivered/*` are literal symlinks back to sibling files in `docs/plans/` (verified:
@@ -41,11 +41,10 @@ directory (`src/content/docs/`) — so a small prep script runs before every bui
 4. Walk `packages/meteoswiss-forecast-evals/docs/results/*.html` — copy verbatim into
    `public/forecast-evals-results/`, **no parsing, no frontmatter, not a content-collection page**.
 
-**Linking a markdown writeup to its paired HTML snapshot:** no automatic wiring for v1 — the
-existing convention already pairs them by filename (`YYYY-MM-DD-<slug>.md` /
-`YYYY-MM-DD-<slug>.html`), so whoever adds a new dated writeup adds one line linking to
-`/forecast-evals-results/YYYY-MM-DD-<slug>.html` in the markdown body, same as any other inline
-link. Auto-injecting that link is a cheap follow-up if this gets tedious, not needed to ship.
+**Linking a markdown writeup to its paired HTML snapshot:** auto-wired — the sync script matches
+files by filename slug (`YYYY-MM-DD-<slug>.md` / `YYYY-MM-DD-<slug>.html`) and injects a "View the
+full static run snapshot →" link right after the markdown's frontmatter when a pair exists.
+Nothing to add by hand when a new dated writeup lands.
 
 ## Sidebar structure
 

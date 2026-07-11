@@ -1,6 +1,8 @@
 # GH Pages site generator — stack options
 
-**Decision needed from Max before implementation.** Do not build until one option is picked.
+**Superseded.** Max picked Astro Starlight — see
+[`2026-07-11-pages-starlight-implementation-plan.md`](2026-07-11-pages-starlight-implementation-plan.md)
+for the implemented design. Kept for the record of what was considered.
 
 ## Context
 
