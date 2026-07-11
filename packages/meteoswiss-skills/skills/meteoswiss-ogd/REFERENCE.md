@@ -14,6 +14,7 @@ Full reference tables for MeteoSwiss Open Government Data parameters, weather ic
 - [Weather Icon Codes — Night](#weather-icon-codes--night)
 - [Pollen Types](#pollen-types)
 - [Pollen Stations](#pollen-stations)
+- [Climate Parameters (NBCN)](#climate-parameters-nbcn)
 - [STAC Collections](#stac-collections)
 
 ## Current Weather Parameters
@@ -193,6 +194,27 @@ Values are in particles/m³. Not all pollen types are measured at every station.
 
 URL pattern (lowercase abbreviation): `https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/{abbr}/ogd-pollen_{abbr}_d_recent.csv`
 
+## Climate Parameters (NBCN)
+
+Column names encode the resolution: `…y0`/`…yx`/`…yn` yearly, `…m0` monthly, `…d0` daily.
+
+| Yearly | Monthly | Description | Unit |
+|--------|---------|-------------|------|
+| `ths200y0` | `ths200m0` | Mean temperature | °C |
+| `ths2dyyx` | `ths2dymx` | Mean daily maximum temperature | °C |
+| `ths2dyyn` | `ths2dymn` | Mean daily minimum temperature | °C |
+| `rhs150y0` | `rhs150m0` | Precipitation total | mm |
+| `shs000y0` | `shs000m0` | Sunshine duration | min |
+| `ghs000y0` | `ghs000m0` | Global radiation | W/m² |
+| `fhs010y0` | `fhs010m0` | Wind speed | m/s |
+| `phsstay0` | `phsstam0` | Air pressure at station | hPa |
+| `ths00ny0` | `ths00nm0` | Frost days (min < 0 °C) | count |
+| `ths25xy0` | `ths25xm0` | Summer days (max ≥ 25 °C) | count |
+| `ths30xy0` | `ths30xm0` | Heat days (max ≥ 30 °C) | count |
+| `ths00xy0` | `ths00xm0` | Ice days (max < 0 °C) | count |
+
+Daily files carry `ths200d0` (mean), `ths200dx` (max), `ths200dn` (min) temperature only.
+
 ## STAC Collections
 
 All collections available under `https://data.geo.admin.ch/api/stac/v1/collections/{ID}`.
@@ -205,4 +227,5 @@ All collections available under `https://data.geo.admin.ch/api/stac/v1/collectio
 | `ch.meteoschweiz.ogd-smn-precip` | Precipitation measurements |
 | `ch.meteoschweiz.ogd-smn-tower` | Tower measurements |
 | `ch.meteoschweiz.ogd-nbcn` | Swiss NBCN climate stations |
+| `ch.meteoschweiz.ogd-nbcn-precip` | NBCN precipitation-only stations |
 | `ch.meteoschweiz.ogd-radiosounding` | Radiosounding data |
