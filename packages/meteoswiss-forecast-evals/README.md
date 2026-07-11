@@ -87,13 +87,73 @@ an estimated cost itself from `tokenUsage x` a hardcoded pricing table (checked 
 [OpenRouter's Activity page](https://openrouter.ai/activity) before trusting it hard against the
 $10 ceiling, especially after OpenRouter re-prices any model.
 
+## Publishing a results snapshot
+
+`pnpm run view` (= `promptfoo view`) is a live, local-only browser over everything in your
+`~/.promptfoo` database — great for interactive digging, but nothing is durable or shareable from
+it. To turn a specific stored run into a permanent, shareable artifact:
+
+```bash
+promptfoo list evals                                    # find the eval id you want (check
+                                                          # tokenUsage/numRequests to confirm it's
+                                                          # the real run, not a dry-run/smoke test)
+promptfoo export eval <evalId> -o generated/report.html # self-contained static snapshot
+```
+
+`generated/*.html` is gitignored scratch — exporting there does **not** publish anything.
+**Publishing is a deliberate copy**, pairing the snapshot with its dated write-up:
+
+```bash
+cp generated/report.html docs/results/YYYY-MM-DD-<slug>.html   # same date-slug as the .md writeup
+```
+
+**This repo is public, and GitHub Pages serves the whole `/docs` folder from `main`** — committing
+a snapshot to `docs/results/` publishes it at
+`https://code.178.is/meteoswiss-llm-tools/results/YYYY-MM-DD-<slug>.html` (this account's Pages
+custom domain — same site also resolves at the default `eins78.github.io/meteoswiss-llm-tools/`).
+Treat `git commit` + merge to `main` as the publish action, not something that happens implicitly.
+The snapshot export was checked to contain no API keys, hostnames, or other secrets before this
+convention was adopted (provider config only carries model IDs/labels/generation params) —
+re-check if a future provider integration changes what gets embedded in
+`tokenUsage`/`vars`/`metadata`.
+
+## Live viewer (persistent, Tailscale-only)
+
+For interactive browsing of past runs without exporting anything, `promptfoo view` runs
+persistently on `mac-zrh` as a launchd LaunchAgent — it survives reboots/sleep and restarts on
+crash, and is exposed **only on the tailnet** (never the public internet) via `tailscale serve`.
+
+- **Source of truth**: `scripts/start-viewer.sh` (starts the viewer, re-asserts the Tailscale
+  serve mapping) + `scripts/li.kiste.meteoswiss-evals-viewer.plist` (launchd unit). The live
+  `~/Library/LaunchAgents/` entry is a **symlink** to the plist in this checkout — edit the repo
+  file, then bootout/bootstrap to reload, per this workspace's launchd convention.
+- **Install** (from a `mac-zrh` checkout of this repo):
+  ```bash
+  ln -s "$(pwd)/packages/meteoswiss-forecast-evals/scripts/li.kiste.meteoswiss-evals-viewer.plist" \
+        ~/Library/LaunchAgents/li.kiste.meteoswiss-evals-viewer.plist
+  launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/li.kiste.meteoswiss-evals-viewer.plist
+  ```
+- **Verify**: `launchctl print gui/$(id -u)/li.kiste.meteoswiss-evals-viewer | grep -E 'runs|last exit'`
+  (liveness — ask launchd, not the log). Logs (events only, not heartbeats):
+  `~/Library/Logs/meteoswiss-evals-viewer.log`.
+- **Reload after editing** `start-viewer.sh` or the plist:
+  ```bash
+  launchctl bootout   gui/$(id -u) ~/Library/LaunchAgents/li.kiste.meteoswiss-evals-viewer.plist
+  launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/li.kiste.meteoswiss-evals-viewer.plist
+  ```
+- **URL** (tailnet-only — reachable from any device on the same Tailscale network, e.g. phone/iPad):
+  `https://mac-zrh.siren-trout.ts.net:15500/`
+
 ## Package layout
 
 ```
 fixtures/         committed, static, captured-or-hand-authored JSON samples
-generated/        committed prompts/expected-answers; gitignored run outputs (results*.json)
+generated/        committed prompts/expected-answers; gitignored run outputs (results*.json, *.html)
+docs/results/     published, dated findings (.md) + optional static run snapshots (.html)
 src/              fixture/ground-truth/question generation, scorer, summarize — see docs/spec.md
-scripts/          run.sh (wraps `promptfoo eval`), synth-7day-fixture.ts
+scripts/          run.sh (wraps `promptfoo eval`), synth-7day-fixture.ts,
+                  start-viewer.sh + li.kiste.meteoswiss-evals-viewer.plist (persistent viewer,
+                  see "Live viewer" above)
 promptfooconfig.yaml         programmatic (lookup) slice — the primary eval
 promptfooconfig.judge.yaml   open-ended, Opus-judged slice — secondary quality check
 pnpm-workspace.yaml, pnpm-lock.yaml   this package's own, independent pnpm project
@@ -114,7 +174,9 @@ with no build step: [`docs/spec.md`](./docs/spec.md) "Package layout".
   `tier/short-name` label convention — `summarize.ts` derives the tier from that prefix.
 - **New run**: any rerun's dated findings go in a new file under `docs/results/`
   (`YYYY-MM-DD-<slug>.md`) — see [`docs/spec.md`](./docs/spec.md) for why results files are
-  immutable and dated rather than one file that gets rewritten.
+  immutable and dated rather than one file that gets rewritten. Optionally pair it with a static
+  HTML snapshot of the same run (`YYYY-MM-DD-<slug>.html`) — see "Publishing a results snapshot"
+  above.
 
 ## Why plain TypeScript, no `.mjs`/`.cjs`
 
