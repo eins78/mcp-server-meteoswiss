@@ -66,6 +66,35 @@ describe('meteoswissClimateData Tool', () => {
     expect(row).toHaveProperty('temperature_min');
   });
 
+  it('should hint at monthly resolution when a daily out-of-range date filter yields no data (issue #110, BUG-5)', async () => {
+    // The daily fixture only covers 2026-04-05..2026-04-07; a pre-1900 range
+    // filters out every row.
+    const result = await client.callTool('meteoswissClimateData', {
+      station: 'BAS',
+      resolution: 'daily',
+      start_date: '1901-01-01',
+      end_date: '1901-01-03',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.data).toEqual([]);
+    expect(data.note).toBeDefined();
+    expect(data.note).toContain('monthly');
+    expect(data.note).toContain('2026-04-05');
+  });
+
+  it('should not include a note when daily data for the range exists', async () => {
+    const result = await client.callTool('meteoswissClimateData', {
+      station: 'BAS',
+      resolution: 'daily',
+      limit: 3,
+    });
+
+    const data = JSON.parse(result.content[0].text);
+    expect(data.note).toBeUndefined();
+  });
+
   it('should return error when neither station nor coordinates provided', async () => {
     const result = await client.callTool('meteoswissClimateData', {});
     expect(result.isError).toBe(true);

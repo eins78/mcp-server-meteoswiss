@@ -41,13 +41,6 @@ Invalid arguments for tool search: Search query cannot be empty. Please provide 
 Invalid arguments for tool search: Page number must be greater than 0
 ```
 
-### Page Size Too Large
-**Input:** `{ "query": "weather", "pageSize": 150 }`
-**Error:**
-```
-Invalid arguments for tool search: Page size cannot exceed 100 results per page
-```
-
 ## Fetch Tool
 
 ### Empty Content ID

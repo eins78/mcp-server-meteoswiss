@@ -9,7 +9,7 @@ export const GetLocalForecastParamsSchema = z.object({
     .string()
     .min(1)
     .describe(
-      'Swiss location: postal code (e.g., "8001"), station abbreviation (e.g., "ZUE"), or place name (e.g., "Zurich")'
+      'Swiss location: postal code (e.g., "8001"), station abbreviation (e.g., "SMA"), or place name (e.g., "Zurich")'
     ),
   days: z
     .number()

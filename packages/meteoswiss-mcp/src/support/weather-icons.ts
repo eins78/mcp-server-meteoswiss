@@ -7,7 +7,7 @@
  * SVG icons: https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/{code}.svg
  */
 
-/** Daytime weather descriptions (codes 1-35) */
+/** Daytime weather descriptions (codes 1-42) */
 const DAY_ICONS: Record<number, string> = {
   1: 'sunny',
   2: 'mostly sunny, some clouds',
@@ -44,6 +44,15 @@ const DAY_ICONS: Record<number, string> = {
   33: 'short sunny intervals, frequent rain',
   34: 'short sunny intervals, frequent snowfall',
   35: 'overcast and dry',
+  // 36-42 mirror night codes 136-142 (day/night code pairs offset by 100);
+  // previously missing from this table (issue #110, BUG-3).
+  36: 'slightly overcast, slightly stormy',
+  37: 'slightly overcast, stormy snow showers',
+  38: 'overcast, thundery showers',
+  39: 'overcast, thundery snow showers',
+  40: 'very cloudy, slightly stormy',
+  41: 'overcast, slightly stormy',
+  42: 'very cloudy, thundery snow showers',
 };
 
 /** Nighttime weather descriptions (codes 101-142) */
@@ -97,7 +106,7 @@ const ICON_BASE_URL = 'https://www.meteoschweiz.admin.ch/static/resources/weathe
 /**
  * Map a MeteoSwiss weather pictogram code to a human-readable description.
  *
- * @param code - Numeric pictogram code (1-35 for day, 101-142 for night)
+ * @param code - Numeric pictogram code (1-42 for day, 101-142 for night)
  * @returns Human-readable weather description, or "unknown ({code})" for unmapped codes
  */
 export function weatherIconDescription(code: number): string {
@@ -108,7 +117,7 @@ export function weatherIconDescription(code: number): string {
  * Get the SVG icon URL for a MeteoSwiss weather pictogram code.
  * Returns null for codes not in the known icon maps.
  *
- * @param code - Numeric pictogram code (1-35 for day, 101-142 for night)
+ * @param code - Numeric pictogram code (1-42 for day, 101-142 for night)
  * @returns URL to the SVG weather symbol, or null for unknown codes
  */
 export function weatherIconUrl(code: number): string | null {

@@ -185,13 +185,15 @@ describe('ChatGPT Deep Research compatibility', () => {
       expect(body.url).toMatch(/^https?:\/\//);
     });
 
-    it('preserves `content` as a back-compat alias of `text`', async () => {
-      // Documented in docs/plans/2026-04-19-chatgpt-fetch-compat.md §6.3.
-      // `content` is the v2.3.x field name; kept for one minor version so we don't
-      // break existing consumers in the same patch that adds `text`.
+    it('no longer includes the deprecated `content` alias', async () => {
+      // `content` duplicated `text` byte-for-byte since v2.3.x and was kept
+      // for one minor version as a back-compat alias (see
+      // docs/plans/2026-04-19-chatgpt-fetch-compat.md §6.3). Removed as a
+      // token-cost fix — `text` is the sole, canonical body field now
+      // (issue #110, BUG-2).
       const response = await client.callTool('fetch', { id: FIXTURE_FETCH_PATH });
       const body = JSON.parse(response.content[0].text);
-      expect(body.content).toBe(body.text);
+      expect(body).not.toHaveProperty('content');
     });
 
     it('rejects calls that omit the `id` argument', async () => {

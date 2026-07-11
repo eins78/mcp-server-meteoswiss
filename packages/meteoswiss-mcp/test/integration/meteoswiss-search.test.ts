@@ -48,10 +48,6 @@ describe('MeteoSwiss Search Tool', () => {
             type: 'integer',
             description: expect.stringContaining('Page number')
           },
-          pageSize: {
-            type: 'integer',
-            description: expect.stringContaining('results per page')
-          },
           sort: {
             type: 'string',
             enum: ['relevance', 'date-desc', 'date-asc'],
@@ -60,6 +56,9 @@ describe('MeteoSwiss Search Tool', () => {
         },
         required: ['query']
       });
+      // pageSize was removed: the upstream API ignores it and always returns
+      // a fixed 10 results per page (issue #110, DECISION-1).
+      expect(searchTool?.inputSchema.properties).not.toHaveProperty('pageSize');
     });
 
     it('should search for content in German', async () => {
@@ -109,31 +108,31 @@ describe('MeteoSwiss Search Tool', () => {
       });
     });
 
-    it('should support pagination', async () => {
+    it('should support pagination with a fixed upstream page size of 10', async () => {
+      // The "wetter" fixture has 12 docs, so page 1 is a full page of 10 and
+      // page 2 holds the remaining 2 — this exercises the real start-offset
+      // math (UPSTREAM_PAGE_SIZE) rather than a caller-requested pageSize,
+      // which is no longer accepted (issue #110, DECISION-1).
       const firstPageResponse = await client.callTool('search', {
         query: 'wetter',
         language: 'de',
-        page: 1,
-        pageSize: 5
+        page: 1
       });
 
       const secondPageResponse = await client.callTool('search', {
         query: 'wetter',
         language: 'de',
-        page: 2,
-        pageSize: 5
+        page: 2
       });
 
       const firstPage = JSON.parse(firstPageResponse.content[0].text);
       const secondPage = JSON.parse(secondPageResponse.content[0].text);
-      
-      expect(firstPage.results.length).toBeLessThanOrEqual(5);
-      expect(secondPage.results.length).toBeLessThanOrEqual(5);
-      
-      // Only check if both pages have results
-      if (firstPage.results.length > 0 && secondPage.results.length > 0) {
-        expect(firstPage.results[0]?.id).not.toBe(secondPage.results[0]?.id);
-      }
+
+      expect(firstPage.results.length).toBe(10);
+      expect(firstPage.pageSize).toBe(10);
+      expect(secondPage.results.length).toBe(2);
+      expect(secondPage.pageSize).toBe(2);
+      expect(firstPage.results[0].id).not.toBe(secondPage.results[0].id);
     });
 
     it('should support sorting by date', async () => {
@@ -164,9 +163,29 @@ describe('MeteoSwiss Search Tool', () => {
       });
 
       const result = JSON.parse(response.content[0].text);
-      
+
       expect(result).toMatchObject({
         totalResults: 0,
+        results: []
+      });
+    });
+
+    it('should echo the requested page when no fixtures exist for the language (PR #116 Copilot review)', async () => {
+      // 'it' (Italian) has no fixture directory at all, so this hits the
+      // final no-fixtures-found fallback in searchFromTestFixtures, which
+      // used to hardcode `page: 1` regardless of what was requested.
+      const response = await client.callTool('search', {
+        query: 'wetter',
+        language: 'it',
+        page: 2
+      });
+
+      const result = JSON.parse(response.content[0].text);
+
+      expect(result).toMatchObject({
+        totalResults: 0,
+        page: 2,
+        pageSize: 0,
         results: []
       });
     });

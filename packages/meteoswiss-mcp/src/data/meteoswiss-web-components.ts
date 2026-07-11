@@ -191,6 +191,11 @@ function removeNonContentElements(document: DomDocument): void {
     'mch-breadcrumb',
     'mch-skiplinks',
     'mch-go-to-top',
+    // Decorative icons (chevrons, arrows, social icons). Each wraps a nested
+    // <wb-icon><svg><title>{name}</title>...</svg></wb-icon> whose <title>
+    // text (e.g. "chevron-small-right") is otherwise picked up as visible
+    // page text by Turndown/textContent extraction (issue #110, BUG-6).
+    'mch-icon',
   ];
 
   for (const selector of selectorsToRemove) {

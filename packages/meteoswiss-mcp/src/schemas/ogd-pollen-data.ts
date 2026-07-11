@@ -14,12 +14,15 @@ export const GetPollenDataParamsSchema = z.object({
 });
 export type GetPollenDataParams = z.infer<typeof GetPollenDataParamsSchema>;
 
-/** Pollen measurement for a single type (only present when data is available) */
-export type PollenMeasurement = {
-  type: string;
-  value: number;
-  unit: string;
-};
+/**
+ * Pollen measurement for a single known species. All species the OGD network
+ * measures are always represented — `status: 'no-current-data'` makes an
+ * absent reading explicit (e.g. out of season) instead of silently omitting
+ * the type (issue #110, DECISION-3).
+ */
+export type PollenMeasurement =
+  | { type: string; status: 'measured'; value: number; unit: string }
+  | { type: string; status: 'no-current-data' };
 
 /** Pollen data for one station */
 export type StationPollenData = {

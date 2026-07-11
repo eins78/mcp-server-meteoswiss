@@ -124,7 +124,7 @@ export async function resolveForecastPoint(query: string): Promise<ResolveResult
   if (q === '') {
     throw new Error(
       'Location query must not be empty. Try a Swiss postal code (e.g., "8001"), ' +
-        'station abbreviation (e.g., "ZUE"), or place name (e.g., "Zurich").'
+        'station abbreviation (e.g., "SMA"), or place name (e.g., "Zurich").'
     );
   }
 

@@ -62,7 +62,7 @@ export function createServer(): McpServer {
   debugServer('Registering tool: search');
   server.tool(
     'search',
-    'Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Note: pagination may return duplicate results across pages (upstream API limitation).',
+    'Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Always returns up to 10 results per page — the upstream API has a fixed page size that cannot be changed. Note: pagination may return duplicate results across pages (upstream API limitation).',
     searchMeteoSwissContentSchema.shape,
     async (params: SearchMeteoSwissContentInput) => {
       const _t0 = performance.now();
@@ -154,7 +154,7 @@ This uses official MeteoSwiss Open Data — the same forecasts powering the Mete
 
 Accepts:
 - Postal codes: "8001" (Zurich), "3000" (Bern), "1200" (Geneva)
-- Station abbreviations: "ZUE" (Zurich Fluntern), "BER" (Bern)
+- Station abbreviations: "SMA" (Zurich Fluntern), "BER" (Bern)
 - Place names: "Zurich", "Basel", "Lugano"
 
 Coverage: ~6000 Swiss locations (all postal codes + weather stations + mountain points).
@@ -286,7 +286,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
   debugServer('Registering tool: getPollenData');
   server.tool(
     'meteoswissPollenData',
-    `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels by type (birch, grass, etc.). Useful for allergy sufferers.`,
+    `Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels for 7 measured species (alder, birch, hazel, beech, ash, oak, grasses) — each is always included, with a "no-current-data" status when out of season. Ambrosia (ragweed) is a MeteoSwiss forecast-only category and is not part of this OGD measurement network, so it is not included. Useful for allergy sufferers.`,
     GetPollenDataParamsSchema.shape,
     async (params: GetPollenDataParams) => {
       const _t0 = performance.now();

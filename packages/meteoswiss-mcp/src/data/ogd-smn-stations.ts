@@ -19,6 +19,22 @@ import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 /** Max distance (km) for geocoding fallback — rejects queries that geocode far from any station */
 const MAX_GEOCODE_DISTANCE_KM = 50;
 
+/**
+ * Canonical station aliases for city names that would otherwise be ambiguous
+ * among multiple same-city stations. "Zurich"/"Zürich" scores an equal
+ * fuzzy-match against both "Zürich / Fluntern" (SMA) and "Zürich / Kloten"
+ * (KLO); the shorter-name tie-break in resolveSmnStation would otherwise
+ * pick Kloten. SMA is the canonical city-center station (matches how
+ * meteoswissClimateData resolves "Zurich" — its NBCN station pool only has
+ * SMA) — see issue #110, DECISION-5. Keyed on the normalized query; checked
+ * before fuzzy scoring so it only fires on an exact alias match, not on
+ * queries that merely contain "zurich" (e.g. "Zurich Kloten" still resolves
+ * to KLO via scoring).
+ */
+const STATION_ALIASES: Record<string, string> = {
+  zurich: 'SMA',
+};
+
 /** Station network type — SMN (full weather) or SMN-precip (precipitation only) */
 export type SmnNetwork = 'smn' | 'smn-precip';
 
@@ -195,6 +211,15 @@ export async function resolveSmnStation(query: string): Promise<SmnStation> {
   // Exact match on abbreviation
   const exact = stationByAbbr.get(q);
   if (exact) return exact;
+
+  // Canonical alias — resolves ambiguous city names to one station before
+  // fuzzy scoring can pick an unintended same-city station (see
+  // STATION_ALIASES doc comment).
+  const aliasAbbr = STATION_ALIASES[q];
+  if (aliasAbbr) {
+    const aliased = stationByAbbr.get(aliasAbbr.toLowerCase());
+    if (aliased) return aliased;
+  }
 
   // Scored name match — word-boundary matches beat substring matches
   // This prevents "Bern" matching "Passo del Bernina" over "Bern / Zollikofen"

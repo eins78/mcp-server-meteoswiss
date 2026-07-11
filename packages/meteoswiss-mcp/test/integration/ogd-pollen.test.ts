@@ -56,11 +56,45 @@ describe('meteoswissPollenData Tool', () => {
       expect(t).not.toContain('daily average pollen concentration');
     }
 
-    // Assert measurements have correct structure
-    const measurement = station.pollen[0];
-    expect(measurement.type).toEqual(expect.any(String));
-    expect(measurement.value).toEqual(expect.any(Number));
-    expect(measurement.unit).toBe('particles/m\u00B3');
+    // Assert measured entries have correct structure
+    const birch = station.pollen.find((p: { type: string }) => p.type === 'Birch (Betula)');
+    expect(birch.status).toBe('measured');
+    expect(birch.value).toEqual(expect.any(Number));
+    expect(birch.unit).toBe('particles/m\u00B3');
+  });
+
+  it('should always represent all 7 known species, with an explicit no-current-data marker when absent (issue #110, DECISION-3)', async () => {
+    // The fixture has no Oak columns for PZH, exercising the genuinely-absent case.
+    const result = await client.callTool('meteoswissPollenData', { station: 'PZH' });
+    expect(result.isError).toBeFalsy();
+
+    const data = JSON.parse(result.content[0].text);
+    const station = data.stations[0];
+    expect(station.pollen.length).toBe(7);
+
+    const oak = station.pollen.find((p: { type: string }) => p.type === 'Oak (Quercus)');
+    expect(oak).toEqual({ type: 'Oak (Quercus)', status: 'no-current-data' });
+    expect(oak).not.toHaveProperty('value');
+
+    const birch = station.pollen.find((p: { type: string }) => p.type === 'Birch (Betula)');
+    expect(birch).toMatchObject({
+      type: 'Birch (Betula)',
+      status: 'measured',
+      value: expect.any(Number),
+      unit: 'particles/m\u00B3',
+    });
+  });
+
+  it('should not include Ambrosia \u2014 it is not part of the OGD measurement network', async () => {
+    const result = await client.callTool('meteoswissPollenData', { station: 'PZH' });
+    const data = JSON.parse(result.content[0].text);
+    const station = data.stations[0];
+    const types = station.pollen.map((p: { type: string }) => p.type);
+    expect(types.some((t: string) => t.toLowerCase().includes('ambrosia'))).toBe(false);
+
+    const tools = await client.listTools();
+    const tool = tools.find((t) => t.name === 'meteoswissPollenData');
+    expect(tool!.description).toContain('Ambrosia');
   });
 
   it('should not produce duplicate entries for d0 and d1', async () => {

@@ -49,16 +49,15 @@ turndownService.use(gfm);
  * Content response structure.
  *
  * Field naming follows the ChatGPT Deep Research MCP contract:
- * `id`, `title`, `text`, `url`, `metadata`. The `content` field is kept
- * as a back-compat alias for `text` and will be removed in 3.0.
+ * `id`, `title`, `text`, `url`, `metadata`. Prior to v2.4.0 this response
+ * also included a `content` field duplicating `text` byte-for-byte; it was
+ * removed as a token-cost fix (issue #110, BUG-2) — `text` is canonical.
  */
 export interface ContentResponse {
   id: string;
   title?: string;
   /** Canonical body field (matches ChatGPT Deep Research spec). */
   text: string;
-  /** @deprecated Alias of `text` kept for back-compat with v2.3.x callers. Will be removed in 3.0. */
-  content: string;
   format: 'markdown' | 'text';
   /** Canonical URL field (matches ChatGPT Deep Research spec). For this server `url === id`. */
   url: string;
@@ -291,7 +290,6 @@ function processHtmlContent(
     id: url,
     title,
     text: content,
-    content,
     format,
     url,
     metadata,
