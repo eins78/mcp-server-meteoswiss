@@ -105,6 +105,9 @@ jobs:
       - name: Validate skills
         run: pnpm --filter meteoswiss-skills test
 
+      - name: Skills-MCP parity (structural gate)
+        run: pnpm --filter meteoswiss-mcp run lint:parity
+
   security-audit:
     name: Security & Dependency Check
     runs-on: ubuntu-latest

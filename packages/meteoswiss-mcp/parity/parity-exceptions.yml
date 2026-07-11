@@ -1,0 +1,42 @@
+# Skills↔MCP parity — exclusions and non-schema residual.
+#
+# This file is deliberately tiny. Tool/param/output parity is GENERATED from the
+# server's own tools/list response (parity/tool-inventory.json, regenerated via
+# `pnpm --filter meteoswiss-mcp run parity:update`) — do NOT add entries here for
+# anything a schema can express. Only two things belong in this file:
+#
+#   excluded-tools: tools deliberately and permanently out of parity scope,
+#                   each with a reason. Staleness-checked: an excluded tool
+#                   that no longer exists on the server fails the lint.
+#   exceptions:     server artifacts no schema can express (value-level lookup
+#                   tables, prose-only gotchas), mapped to the skill content
+#                   that mirrors them. Staleness-checked: a source path that no
+#                   longer exists fails the lint.
+#
+# Checked by packages/meteoswiss-mcp/scripts/lint-skills-parity.ts (hard-blocking
+# in CI). Design: docs/plans/2026-07-11-skills-mcp-parity.md.
+
+excluded-tools:
+  - name: search
+    reason: >-
+      Experimental extension surfacing MeteoSwiss website content. The parity
+      focus is OGD data; the skill teaches direct OGD/STAC access and
+      intentionally has no website-search equivalent (resolved decision 2,
+      PR #119).
+  - name: fetch
+    reason: >-
+      Same as search — fetches MeteoSwiss web pages, not OGD data. Intentionally
+      no OGD-skill equivalent (resolved decision 2, PR #119).
+
+exceptions:
+  - source: packages/meteoswiss-mcp/src/support/weather-icons.ts
+    skill: packages/meteoswiss-skills/skills/meteoswiss-ogd/REFERENCE.md#weather-icon-codes
+    reason: >-
+      Value-level lookup table (numeric icon code → description) — a data
+      table, not a schema shape, so it is invisible to tools/list. The skill
+      mirrors it as the "Weather Icon Codes" tables.
+  - source: packages/meteoswiss-mcp/src/support/ogd-csv-parser.ts
+    skill: packages/meteoswiss-skills/skills/meteoswiss-ogd/SKILL.md
+    reason: >-
+      Latin1 CSV encoding handling — tribal knowledge with no schema analogue.
+      The skill documents it as the iconv pipe requirement for metadata CSVs.

@@ -1,0 +1,1335 @@
+{
+  "$comment": "GENERATED FILE — do not edit. Regenerate with: pnpm --filter meteoswiss-mcp run parity:update",
+  "tools": [
+    {
+      "name": "fetch",
+      "description": "Fetch full content from a MeteoSwiss webpage and convert to markdown or plain text. Use the search tool first to discover valid page URLs, then pass the full URL as the id parameter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Identifier of a MeteoSwiss page to fetch. For this server the id is a full URL returned by the search tool. Example: https://www.meteoschweiz.admin.ch/klima/klimawandel/steigende-temperaturen.html"
+          },
+          "format": {
+            "default": "markdown",
+            "description": "The output format for the content",
+            "type": "string",
+            "enum": [
+              "markdown",
+              "text"
+            ]
+          },
+          "includeMetadata": {
+            "default": true,
+            "description": "Whether to include metadata in the response",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The id the content was fetched for (the page URL)"
+          },
+          "title": {
+            "description": "Page title",
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "Canonical body field (matches ChatGPT Deep Research spec)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "markdown",
+              "text"
+            ],
+            "description": "Format of `text`"
+          },
+          "url": {
+            "type": "string",
+            "description": "Canonical URL field (matches ChatGPT Deep Research spec). For this server `url === id`."
+          },
+          "metadata": {
+            "description": "Page metadata (present when includeMetadata is true)",
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "language": {
+                "type": "string"
+              },
+              "lastModified": {
+                "type": "string"
+              },
+              "contentType": {
+                "type": "string"
+              },
+              "keywords": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "format",
+          "url"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "meteoswissClimateData",
+      "description": "Get homogeneous climate measurement series from Switzerland's National Basic Climatic Network (NBCN). Returns temperature, precipitation, sunshine, radiation, wind, pressure, and climate indicators (frost days, summer days, heat days) going back decades.\n\n29 climate stations + 46 precipitation stations with daily, monthly, and yearly resolution.\n\nUse cases: \"What are typical January temperatures in Zurich?\", \"How has precipitation changed in Basel over 50 years?\", \"How many heat days did Lugano have last year?\"\n\nAccepts station names (\"Zurich\", \"Basel\"), abbreviations (\"SMA\", \"BAS\"), or WGS84 coordinates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "station": {
+            "description": "Climate station name or abbreviation (e.g., \"Zurich\", \"BAS\", \"Davos\"). Part of the National Basic Climatic Network (29 climate + 46 precipitation stations).",
+            "type": "string",
+            "minLength": 1
+          },
+          "coordinates": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "minimum": 45.5,
+                "maximum": 48,
+                "description": "WGS84 latitude"
+              },
+              "lon": {
+                "type": "number",
+                "minimum": 5.9,
+                "maximum": 10.6,
+                "description": "WGS84 longitude"
+              }
+            },
+            "required": [
+              "lat",
+              "lon"
+            ],
+            "description": "WGS84 coordinates (alternative to station name)"
+          },
+          "resolution": {
+            "default": "monthly",
+            "description": "Data resolution: daily (temp min/max/mean), monthly (full climate summary), yearly (annual summary)",
+            "type": "string",
+            "enum": [
+              "daily",
+              "monthly",
+              "yearly"
+            ]
+          },
+          "start_date": {
+            "description": "Start date filter (YYYY-MM-DD). Only rows on or after this date are returned.",
+            "type": "string"
+          },
+          "end_date": {
+            "description": "End date filter (YYYY-MM-DD). Only rows on or before this date are returned.",
+            "type": "string"
+          },
+          "limit": {
+            "default": 30,
+            "description": "Maximum number of data rows to return (default 30)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "station": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Climate station name"
+              },
+              "abbreviation": {
+                "type": "string",
+                "description": "Official station abbreviation (e.g. \"SMA\")"
+              },
+              "elevation": {
+                "type": "number",
+                "description": "Elevation in metres above sea level"
+              },
+              "coordinates": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lon": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lon"
+                ],
+                "additionalProperties": false,
+                "description": "WGS84 coordinates of the station"
+              },
+              "canton": {
+                "description": "Canton abbreviation (e.g. \"ZH\")",
+                "type": "string"
+              },
+              "distance_km": {
+                "description": "Distance from the queried location to this station, km (when resolved by proximity)",
+                "type": "number"
+              },
+              "network": {
+                "type": "string",
+                "description": "NBCN network kind (\"climate\" full climate series, \"precipitation\" precipitation-only)"
+              }
+            },
+            "required": [
+              "name",
+              "abbreviation",
+              "elevation",
+              "coordinates",
+              "network"
+            ],
+            "additionalProperties": false
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "monthly",
+              "yearly"
+            ],
+            "description": "Resolution the returned rows are in"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "description": "Measurement date (YYYY-MM-DD; first day of period for monthly/yearly)"
+                },
+                "temperature_mean": {
+                  "description": "Mean temperature, °C",
+                  "type": "number"
+                },
+                "temperature_max": {
+                  "description": "Maximum temperature, °C",
+                  "type": "number"
+                },
+                "temperature_min": {
+                  "description": "Minimum temperature, °C",
+                  "type": "number"
+                },
+                "precipitation": {
+                  "description": "Precipitation total, mm",
+                  "type": "number"
+                },
+                "sunshine_duration_min": {
+                  "description": "Sunshine duration, minutes",
+                  "type": "number"
+                },
+                "radiation_w_m2": {
+                  "description": "Global radiation, W/m²",
+                  "type": "number"
+                },
+                "wind_speed_m_s": {
+                  "description": "Wind speed, m/s",
+                  "type": "number"
+                },
+                "pressure_hpa": {
+                  "description": "Air pressure, hPa",
+                  "type": "number"
+                },
+                "frost_days": {
+                  "description": "Days with minimum below 0 °C (monthly/yearly)",
+                  "type": "number"
+                },
+                "summer_days": {
+                  "description": "Days with maximum of 25 °C or above (monthly/yearly)",
+                  "type": "number"
+                },
+                "heat_days": {
+                  "description": "Days with maximum of 30 °C or above (monthly/yearly)",
+                  "type": "number"
+                },
+                "ice_days": {
+                  "description": "Days with maximum below 0 °C (monthly/yearly)",
+                  "type": "number"
+                },
+                "tropical_nights": {
+                  "description": "Nights with minimum of 20 °C or above (monthly/yearly)",
+                  "type": "number"
+                },
+                "rain_days": {
+                  "description": "Days with measurable precipitation (monthly/yearly)",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "date"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Measurement rows, filtered and limited as requested"
+          },
+          "note": {
+            "description": "Present only when `data` is empty because the requested date range fell outside the fetched series (e.g. a daily request older than the ~2-year `_recent` window). Explains why and suggests a fallback resolution.",
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "Data attribution"
+          }
+        },
+        "required": [
+          "station",
+          "resolution",
+          "data",
+          "source"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "meteoswissCurrentWeather",
+      "description": "Get real-time weather measurements from ~300 Swiss automatic weather stations (~160 full weather + ~140 precipitation-only). Returns temperature, precipitation, wind, humidity, pressure, sunshine, and more. Data updates every 10 minutes. Precipitation-only stations return only rainfall data.\n\nFor 8 stations (Zurich, Basel, Chur, Sion, Altdorf, Säntis, Jungfraujoch, Grand St-Bernard), also includes daily visual observations: cloud cover, fog, rain, snowfall, hail, and snow coverage.\n\nAccepts station names (\"Zurich\"), abbreviations (\"SMA\"), addresses (\"Bahnhofplatz 1 Bern\"), or WGS84 coordinates. Automatically finds the nearest station.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "station": {
+            "description": "Swiss weather station or location: name (e.g., \"Zurich\"), abbreviation (e.g., \"SMA\"), or address (e.g., \"Bahnhofplatz 1 Bern\")",
+            "type": "string",
+            "minLength": 1
+          },
+          "coordinates": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "minimum": 45.5,
+                "maximum": 48,
+                "description": "WGS84 latitude"
+              },
+              "lon": {
+                "type": "number",
+                "minimum": 5.9,
+                "maximum": 10.6,
+                "description": "WGS84 longitude"
+              }
+            },
+            "required": [
+              "lat",
+              "lon"
+            ],
+            "description": "WGS84 coordinates (alternative to station name)"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "station": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Station name"
+              },
+              "abbreviation": {
+                "type": "string",
+                "description": "Official station abbreviation (e.g. \"SMA\")"
+              },
+              "elevation": {
+                "type": "number",
+                "description": "Elevation in metres above sea level"
+              },
+              "coordinates": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lon": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lon"
+                ],
+                "additionalProperties": false,
+                "description": "WGS84 coordinates of the station"
+              },
+              "municipality": {
+                "type": "string"
+              },
+              "canton": {
+                "description": "Canton abbreviation (e.g. \"ZH\")",
+                "type": "string"
+              },
+              "distance_km": {
+                "description": "Distance from the queried location to this station, km (when resolved by proximity)",
+                "type": "number"
+              },
+              "network": {
+                "description": "Measurement network (\"smn\" full weather, \"smn-precip\" precipitation-only)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "abbreviation",
+              "elevation",
+              "coordinates"
+            ],
+            "additionalProperties": false
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Measurement timestamp (ISO 8601)"
+          },
+          "measurements": {
+            "type": "object",
+            "properties": {
+              "temperature": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "humidity": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "dew_point": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "precipitation": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "wind_speed": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "wind_gust": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "wind_direction": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "sunshine": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "radiation": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "pressure_station": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "pressure_sea_level": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              "snow_depth": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false,
+            "description": "Each measurement is present only when the station reports it"
+          },
+          "visual_observations": {
+            "description": "Visual observations (only for 8 OBS stations: ALT, BAS, CHU, GSB, JUN, SAE, SIO, SMA)",
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "cloud_cover_percent": {
+                "type": "number"
+              },
+              "is_clear_day": {
+                "type": "boolean"
+              },
+              "is_overcast_day": {
+                "type": "boolean"
+              },
+              "has_rain": {
+                "type": "boolean"
+              },
+              "has_rain_and_snow": {
+                "type": "boolean"
+              },
+              "has_snowfall": {
+                "type": "boolean"
+              },
+              "has_hail": {
+                "type": "boolean"
+              },
+              "has_fog": {
+                "type": "boolean"
+              },
+              "has_snow_coverage": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "date"
+            ],
+            "additionalProperties": false
+          },
+          "source": {
+            "type": "string",
+            "description": "Data attribution"
+          }
+        },
+        "required": [
+          "station",
+          "timestamp",
+          "measurements",
+          "source"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "meteoswissLocalForecast",
+      "description": "Get a multi-day weather forecast for any Swiss location. Returns daily summaries (temperature, precipitation, sunshine, wind, weather icon) plus a hierarchical hourly breakdown of every series.\n\nThis uses official MeteoSwiss Open Data — the same forecasts powering the MeteoSwiss app and website.\n\nAccepts:\n- Postal codes: \"8001\" (Zurich), \"3000\" (Bern), \"1200\" (Geneva)\n- Station abbreviations: \"SMA\" (Zurich Fluntern), \"BER\" (Bern)\n- Place names: \"Zurich\", \"Basel\", \"Lugano\"\n\nCoverage: ~6000 Swiss locations (all postal codes + weather stations + mountain points).\nForecast horizon: up to 9 days. Updated hourly.\n\nEach day's summary fields: temperature_min_c, temperature_max_c, precipitation_total_mm,\nsunshine_total_minutes, wind_avg_kmh, wind_gust_max_kmh, weather, weather_icon_url.\n\nEach day also includes \"hourly\": one array of per-hour objects covering every series\ntogether — { time, temperature_c, precip_mm, sunshine_minutes, wind_kmh, wind_gust_kmh } —\nuseful for judging *when* rain, sun, or wind is expected, not just the daily summary:\n- Each entry's \"time\" is already local wall-clock time for the location (Europe/Zurich),\n  with the UTC offset included, e.g. \"2026-07-09T14:00:00+02:00\". It is NOT UTC — do not\n  convert it.\n- A dry/calm/sunless hour is reported as its measured value (often 0), not omitted. A\n  fully dry day is still a full array of zero-precipitation hours, not an empty array.\n- Each field is independently null if just THAT series has no reading for a given hour —\n  the other fields for that same hour are still populated. An hour is omitted entirely\n  only when every series is missing for it.\n- \"hourly\" itself is null when no hourly breakdown exists for this location at all (a\n  total data gap); [] only when this location supports hourly data but none was available\n  for that specific day.\n- For weather stations, temperature_min_c/temperature_max_c/precipitation_total_mm are\n  MeteoSwiss's own official daily aggregates — a different, separately-curated product\n  from the hourly series shown alongside them. They can legitimately NOT match summing/\n  averaging the hourly entries for that day; this is expected, not a data error.\n  sunshine_total_minutes/wind_avg_kmh/wind_gust_max_kmh have no official daily product for\n  stations and are always derived from the hourly series. For postal codes/mountain\n  points, every summary field is derived from the same hourly series shown alongside it,\n  so it always matches summing/averaging that series exactly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Swiss location: postal code (e.g., \"8001\"), station abbreviation (e.g., \"SMA\"), or place name (e.g., \"Zurich\")"
+          },
+          "days": {
+            "default": 5,
+            "description": "Number of forecast days (1-9, default 5)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          }
+        },
+        "required": [
+          "location"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Resolved location name"
+              },
+              "type": {
+                "type": "string",
+                "description": "Point type: \"station\", \"postal_code\", or \"mountain\""
+              },
+              "elevation": {
+                "type": "number",
+                "description": "Elevation in metres above sea level"
+              },
+              "coordinates": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lon": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lon"
+                ],
+                "additionalProperties": false,
+                "description": "WGS84 coordinates of the resolved point"
+              }
+            },
+            "required": [
+              "name",
+              "type",
+              "elevation",
+              "coordinates"
+            ],
+            "additionalProperties": false
+          },
+          "generated": {
+            "type": "string",
+            "description": "Timestamp the forecast was generated (ISO 8601)"
+          },
+          "forecast": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "description": "Local Europe/Zurich calendar date (YYYY-MM-DD) for postal codes/mountain points; the station data source's native daily date for weather stations."
+                },
+                "weather": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Human-readable weather description"
+                },
+                "weather_icon_url": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "URL of the official MeteoSwiss weather icon"
+                },
+                "temperature_min_c": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Daily temperature minimum, °C. For postal codes/mountain points, derived from the same hourly series as `hourly` (so they cannot disagree). For weather stations, MeteoSwiss's official daily aggregate (`tre200dn`) — may capture sub-hourly extremes the hourly series alone wouldn't show."
+                },
+                "temperature_max_c": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Daily temperature maximum, °C. Same sourcing rules as temperature_min_c (station aggregate: `tre200dx`)."
+                },
+                "precipitation_total_mm": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Daily precipitation total, mm. For postal codes/mountain points, the sum of `hourly`'s `precip_mm` (cannot disagree with the series). For weather stations, MeteoSwiss's official daily aggregate (`rka150d0`) — a *different* product than re-summing the station's hourly series, so it may legitimately NOT equal `sum(hourly precip_mm)` for stations. This is expected, not a data inconsistency."
+                },
+                "sunshine_total_minutes": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Daily sunshine total, minutes. Derived from `hourly`'s `sunshine_minutes` for every point type (no official daily aggregate exists for this parameter)."
+                },
+                "wind_avg_kmh": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Daily mean wind speed, km/h. Derived from `hourly`'s `wind_kmh` for every point type."
+                },
+                "wind_gust_max_kmh": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Daily peak wind gust, km/h. Derived from `hourly`'s `wind_gust_kmh` for every point type."
+                },
+                "hourly": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "time": {
+                            "type": "string",
+                            "description": "ISO 8601 timestamp with UTC offset, in local Europe/Zurich time (e.g. \"2026-03-28T09:00:00+01:00\")"
+                          },
+                          "temperature_c": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Temperature at this hour, in °C"
+                          },
+                          "precip_mm": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Precipitation sum for this hour, in mm"
+                          },
+                          "sunshine_minutes": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Sunshine duration within this hour, in minutes"
+                          },
+                          "wind_kmh": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Mean wind speed for this hour, in km/h"
+                          },
+                          "wind_gust_kmh": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Peak wind gust for this hour, in km/h"
+                          }
+                        },
+                        "required": [
+                          "time",
+                          "temperature_c",
+                          "precip_mm",
+                          "sunshine_minutes",
+                          "wind_kmh",
+                          "wind_gust_kmh"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Per-hour breakdown across every series, keyed to the local Europe/Zurich calendar day this `date` represents (each entry's `time` always falls within this day). `null` when no hourly breakdown exists for this location at all (a total data gap); `[]` when the point type supports hourly data but none was available for this specific day. A dry/calm/sunless hour still appears with its measured 0 value — 0-valued readings are kept, not omitted."
+                }
+              },
+              "required": [
+                "date",
+                "weather",
+                "weather_icon_url",
+                "temperature_min_c",
+                "temperature_max_c",
+                "precipitation_total_mm",
+                "sunshine_total_minutes",
+                "wind_avg_kmh",
+                "wind_gust_max_kmh",
+                "hourly"
+              ],
+              "additionalProperties": false
+            },
+            "description": "One entry per forecast day, in date order"
+          },
+          "source": {
+            "type": "string",
+            "description": "Data attribution"
+          }
+        },
+        "required": [
+          "location",
+          "generated",
+          "forecast",
+          "source"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "meteoswissPollenData",
+      "description": "Get current pollen concentration data from MeteoSwiss monitoring stations (~15 stations across Switzerland). Shows pollen levels for 7 measured species (alder, birch, hazel, beech, ash, oak, grasses) — each is always included, with a \"no-current-data\" status when out of season. Ambrosia (ragweed) is a MeteoSwiss forecast-only category and is not part of this OGD measurement network, so it is not included. Useful for allergy sufferers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "station": {
+            "description": "Pollen monitoring station name or abbreviation. Omit for an overview of all stations.",
+            "type": "string"
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "stations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "station": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Pollen station name"
+                    },
+                    "abbreviation": {
+                      "type": "string",
+                      "description": "Pollen station abbreviation (e.g. \"PZH\")"
+                    },
+                    "coordinates": {
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "type": "number"
+                        },
+                        "lon": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lon"
+                      ],
+                      "additionalProperties": false,
+                      "description": "WGS84 coordinates of the station"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "abbreviation",
+                    "coordinates"
+                  ],
+                  "additionalProperties": false
+                },
+                "timestamp": {
+                  "type": "string",
+                  "description": "Measurement timestamp (ISO 8601)"
+                },
+                "pollen": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "description": "Pollen species (e.g. \"birch\", \"grasses\")"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "measured"
+                          },
+                          "value": {
+                            "type": "number",
+                            "description": "Concentration reading"
+                          },
+                          "unit": {
+                            "type": "string",
+                            "description": "Concentration unit (particles/m³)"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "status",
+                          "value",
+                          "unit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "description": "Pollen species (e.g. \"birch\", \"grasses\")"
+                          },
+                          "status": {
+                            "type": "string",
+                            "const": "no-current-data",
+                            "description": "No current reading for this species (e.g. out of season) — explicit, not omitted"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "description": "One entry per measured species — every known species always appears"
+                }
+              },
+              "required": [
+                "station",
+                "timestamp",
+                "pollen"
+              ],
+              "additionalProperties": false
+            },
+            "description": "One entry per pollen station"
+          },
+          "source": {
+            "type": "string",
+            "description": "Data attribution"
+          }
+        },
+        "required": [
+          "stations",
+          "source"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "meteoswissStations",
+      "description": "List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of ~160 stations across Switzerland.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "description": "Search by station name or abbreviation",
+            "type": "string"
+          },
+          "canton": {
+            "description": "Filter by canton abbreviation (e.g., \"ZH\", \"BE\", \"GR\")",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "limit": {
+            "default": 20,
+            "description": "Maximum number of results (1-200, default 20)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "Total number of stations matching the filter"
+          },
+          "stations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "abbreviation": {
+                  "type": "string",
+                  "description": "Official station abbreviation (e.g. \"SMA\")"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Station name"
+                },
+                "canton": {
+                  "type": "string",
+                  "description": "Canton abbreviation (e.g. \"ZH\")"
+                },
+                "elevation": {
+                  "type": "number",
+                  "description": "Elevation in metres above sea level"
+                },
+                "coordinates": {
+                  "type": "object",
+                  "properties": {
+                    "lat": {
+                      "type": "number"
+                    },
+                    "lon": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "lat",
+                    "lon"
+                  ],
+                  "additionalProperties": false,
+                  "description": "WGS84 coordinates of the station"
+                },
+                "data_since": {
+                  "type": "string",
+                  "description": "Date the station started reporting data"
+                }
+              },
+              "required": [
+                "abbreviation",
+                "name",
+                "canton",
+                "elevation",
+                "coordinates",
+                "data_since"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Matching stations, up to `limit`"
+          },
+          "source": {
+            "type": "string",
+            "description": "Data attribution"
+          }
+        },
+        "required": [
+          "total",
+          "stations",
+          "source"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search",
+      "description": "Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Always returns up to 10 results per page — the upstream API has a fixed page size that cannot be changed. Note: pagination may return duplicate results across pages (upstream API limitation).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The search query string"
+          },
+          "language": {
+            "default": "de",
+            "description": "The language for search results",
+            "type": "string",
+            "enum": [
+              "de",
+              "fr",
+              "it",
+              "en"
+            ]
+          },
+          "contentType": {
+            "description": "Filter by content type. Defaults to \"content\" to exclude application pages. Use \"publication\" for official reports.",
+            "type": "string",
+            "enum": [
+              "content",
+              "press-release",
+              "blog-article",
+              "publication"
+            ]
+          },
+          "page": {
+            "default": 1,
+            "description": "Page number for pagination (1-based). The upstream API always returns 10 results per page; page size is not configurable.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sort": {
+            "default": "relevance",
+            "description": "Sort order for results. Note: date-asc severely degrades relevance — results are dominated by page age rather than query match.",
+            "type": "string",
+            "enum": [
+              "relevance",
+              "date-desc",
+              "date-asc"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "totalResults": {
+            "type": "number",
+            "description": "Total number of matches across all pages"
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number (1-based)"
+          },
+          "pageSize": {
+            "type": "number",
+            "description": "Number of items in `results` for this page — at most 10 (the upstream API pages by a fixed 10), fewer on the last page"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Result identifier — the page URL (pass to the fetch tool)"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Page title"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Full page URL"
+                },
+                "description": {
+                  "description": "Short description of the page",
+                  "type": "string"
+                },
+                "contentType": {
+                  "description": "Content type of the result",
+                  "type": "string"
+                },
+                "lastModified": {
+                  "description": "Last modification date",
+                  "type": "string"
+                },
+                "path": {
+                  "description": "Site path of the page",
+                  "type": "string"
+                },
+                "lead": {
+                  "description": "Lead/teaser text",
+                  "type": "string"
+                },
+                "publicationDate": {
+                  "description": "Publication date",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Result items for this page"
+          }
+        },
+        "required": [
+          "totalResults",
+          "page",
+          "pageSize",
+          "results"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      }
+    }
+  ]
+}

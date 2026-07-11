@@ -206,6 +206,7 @@ When implementing MCP tools:
 3. Register tool in `src/server.ts` using `server.registerTool(name, { description, inputSchema, outputSchema }, handler)` — declare the output schema so `tools/list` advertises it, and return `structuredContent` (the SDK validates it against the output schema on every call; the plain `content` JSON text stays alongside it for compatibility)
 4. Add integration tests in `test/integration/`
 5. Document tool behavior and parameters
+6. Keep skills parity: run `pnpm --filter meteoswiss-mcp run parity:update` to regenerate `parity/tool-inventory.json`, and update the skill (`packages/meteoswiss-skills/skills/meteoswiss-ogd/`) with a `<!-- mcp-tool: <name> -->` coverage marker on the section covering the new/changed tool. The parity lint (`lint:parity`, part of `pnpm run lint` and CI) hard-fails on drift; deliberate exclusions go in `parity/parity-exceptions.yml` with a reason.
 
 ### Transport Support
 - **Streamable HTTP**: Server runs on configurable port (default: 3000)

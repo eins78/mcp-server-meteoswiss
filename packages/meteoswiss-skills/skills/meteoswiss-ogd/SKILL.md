@@ -31,6 +31,8 @@ STAC API base: `https://data.geo.admin.ch/api/stac/v1`
 
 ## 1. Get Current Weather
 
+<!-- mcp-tool: meteoswissCurrentWeather -->
+
 ```bash
 # Get weather for Zurich (station SMA) — key columns: tre200s0 (temp °C),
 # ure200s0 (humidity %), rre150z0 (precip mm), fu3010z0 (wind km/h)
@@ -41,6 +43,8 @@ curl -s 'https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv'
 Full parameter list in `${CLAUDE_SKILL_DIR}/REFERENCE.md`. Missing values appear as empty fields or `-`. Timestamps are `YYYYMMDDHHmm` in UTC.
 
 ## 2. Find Stations
+
+<!-- mcp-tool: meteoswissStations -->
 
 ```bash
 # Search weather stations by name (Latin1 encoded)
@@ -64,6 +68,8 @@ Point columns: `point_id`, `point_type_id` (1=station, 2=postal_code, 3=mountain
 
 ## 3. Get Forecasts
 
+<!-- mcp-tool: meteoswissLocalForecast -->
+
 Two steps: get the latest STAC item, then download parameter CSVs.
 
 ```bash
@@ -82,6 +88,8 @@ curl -s "$ASSET_URL" | awk -F';' 'NR==1 || $1=="71"'
 **Weather icon SVGs**: `https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/{CODE}.svg` — replace `{CODE}` with the numeric icon code (e.g., `1.svg` for sunny, `101.svg` for clear night). See `${CLAUDE_SKILL_DIR}/REFERENCE.md` for all codes.
 
 ## 4. Get Pollen Data
+
+<!-- mcp-tool: meteoswissPollenData -->
 
 ```bash
 # Stations: PBE, PBS, PBU, PCF, PDS, PGE, PJU, PLO, PLS, PLU, PLZ, PMU, PNE, PPY, PSN, PZH

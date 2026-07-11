@@ -38,6 +38,17 @@ compatibility: claude-code, cursor
 5. **Use checklists** for multi-step workflows
 6. **Test across models** — Haiku needs more guidance than Opus
 
+## Parity with the MCP server
+
+The `meteoswiss-ogd` skill mirrors the MCP server's OGD tools. Each skill section that covers an
+MCP tool carries an invisible coverage marker, e.g. `<!-- mcp-tool: meteoswissCurrentWeather -->`.
+A CI lint (`pnpm --filter meteoswiss-mcp run lint:parity`, hard-blocking) checks that every
+in-scope tool from the server's generated `tools/list` inventory has a marker, and that no marker
+names a tool that no longer exists. When adding or renaming a skill section for a tool, keep its
+marker; when the server adds a tool, the lint stays red until the skill documents it (or it is
+deliberately excluded in `packages/meteoswiss-mcp/parity/parity-exceptions.yml` with a reason).
+Design: `docs/plans/2026-07-11-skills-mcp-parity.md`.
+
 ## Commands
 
 - **Validate skills**: `pnpm test` (runs `skills add . --list`)
