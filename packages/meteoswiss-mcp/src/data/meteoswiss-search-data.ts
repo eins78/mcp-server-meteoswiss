@@ -48,6 +48,15 @@ const TEST_FIXTURES_ROOT = existsSync(TEST_FIXTURES_DEV_PATH)
 const USE_TEST_FIXTURES = process.env.USE_TEST_FIXTURES === 'true';
 
 /**
+ * The upstream MeteoSwiss Solr search API ignores the `rows` parameter and
+ * always returns exactly 10 documents per request (verified against the live
+ * API: `rows=3` and `rows=30` both return 10 of N results). We mirror that
+ * fixed page size exactly rather than expose a `pageSize` knob that upstream
+ * doesn't honor — see GitHub issue #110, DECISION-1.
+ */
+const UPSTREAM_PAGE_SIZE = 10;
+
+/**
  * Search result item from the API
  */
 export interface SearchResultItem {
@@ -81,31 +90,23 @@ export interface SearchResults {
 export async function searchMeteoSwissContent(
   params: SearchMeteoSwissContentInput
 ): Promise<SearchResults> {
-  const {
-    query,
-    language = 'de',
-    contentType,
-    page = 1,
-    pageSize = 12,
-    sort = 'relevance',
-  } = params;
+  const { query, language = 'de', contentType, page = 1, sort = 'relevance' } = params;
 
   debugData('searchMeteoSwissContent called with params: %o', {
     query,
     language,
     contentType,
     page,
-    pageSize,
     sort,
   });
 
   if (USE_TEST_FIXTURES) {
     debugData('Using test fixtures for search');
-    return searchFromTestFixtures(query, language, contentType, page, pageSize, sort);
+    return searchFromTestFixtures(query, language, contentType, page, sort);
   }
 
   debugData('Using live API for search');
-  return searchFromApi(query, language, contentType, page, pageSize, sort);
+  return searchFromApi(query, language, contentType, page, sort);
 }
 
 /**
@@ -116,7 +117,6 @@ async function searchFromApi(
   language: string,
   contentType?: string,
   page: number = 1,
-  pageSize: number = 12,
   sort: string = 'relevance'
 ): Promise<SearchResults> {
   const tenant = 'mchweb';
@@ -135,8 +135,11 @@ async function searchFromApi(
   url.searchParams.append('fullText', processedQuery);
   url.searchParams.append('tenant', tenant);
   url.searchParams.append('pageGroup', pageGroup);
-  url.searchParams.append('rows', String(pageSize));
-  url.searchParams.append('start', String((page - 1) * pageSize));
+  // Upstream ignores `rows` and always returns UPSTREAM_PAGE_SIZE docs, but it
+  // does honor `start` — so the offset must be computed from the fixed page
+  // size, not a requested one, for `page` navigation to be consistent.
+  url.searchParams.append('rows', String(UPSTREAM_PAGE_SIZE));
+  url.searchParams.append('start', String((page - 1) * UPSTREAM_PAGE_SIZE));
 
   // Always set content type, defaulting to 'content' to exclude application pages
   // Only allow specific content types that are relevant
@@ -182,7 +185,9 @@ async function searchFromApi(
     return {
       totalResults: response.response?.numFound || 0,
       page,
-      pageSize,
+      // Report what upstream actually delivered, not a requested value it
+      // ignores — see UPSTREAM_PAGE_SIZE comment above.
+      pageSize: results.length,
       results,
     };
   } catch (error) {
@@ -208,7 +213,6 @@ async function searchFromTestFixtures(
   language: string,
   contentType?: string,
   page: number = 1,
-  pageSize: number = 12,
   sort: string = 'relevance'
 ): Promise<SearchResults> {
   // Get the base domain for this language
@@ -260,14 +264,14 @@ async function searchFromTestFixtures(
       });
     }
 
-    // Apply pagination
-    const startIndex = (page - 1) * pageSize;
-    const paginatedResults = results.slice(startIndex, startIndex + pageSize);
+    // Mirror the live API's fixed upstream page size (see UPSTREAM_PAGE_SIZE).
+    const startIndex = (page - 1) * UPSTREAM_PAGE_SIZE;
+    const paginatedResults = results.slice(startIndex, startIndex + UPSTREAM_PAGE_SIZE);
 
     return {
       totalResults: response.response?.numFound || 0,
       page,
-      pageSize,
+      pageSize: paginatedResults.length,
       results: paginatedResults,
     };
   }
@@ -303,14 +307,14 @@ async function searchFromTestFixtures(
         publicationDate: doc.publicationDate,
       }));
 
-      // Apply pagination
-      const startIndex = (page - 1) * pageSize;
-      const paginatedResults = results.slice(startIndex, startIndex + pageSize);
+      // Mirror the live API's fixed upstream page size (see UPSTREAM_PAGE_SIZE).
+      const startIndex = (page - 1) * UPSTREAM_PAGE_SIZE;
+      const paginatedResults = results.slice(startIndex, startIndex + UPSTREAM_PAGE_SIZE);
 
       return {
         totalResults: results.length,
         page,
-        pageSize,
+        pageSize: paginatedResults.length,
         results: paginatedResults,
       };
     }
@@ -319,8 +323,8 @@ async function searchFromTestFixtures(
   // Return empty results if no fixtures found
   return {
     totalResults: 0,
-    page: 1,
-    pageSize: 12,
+    page,
+    pageSize: 0,
     results: [],
   };
 }

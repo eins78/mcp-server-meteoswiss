@@ -45,8 +45,9 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(data.source).toBe('MeteoSwiss Open Data');
   });
 
-  it('should return weather for coordinates', async () => {
-    // Coordinates near Adelboden (ABO station)
+  it('should return weather for coordinates, resolving to the nearest station (normal case)', async () => {
+    // Coordinates near Adelboden (ABO station), which has temperature data —
+    // the nearest-with-temperature selector should reduce to plain nearest.
     const result = await client.callTool('meteoswissCurrentWeather', {
       coordinates: { lat: 46.49, lon: 7.56 },
     });
@@ -54,8 +55,27 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
     expect(data.station).toBeDefined();
+    expect(data.station.abbreviation).toBe('ABO');
     expect(data.station.distance_km).toBeDefined();
     expect(typeof data.station.distance_km).toBe('number');
+    expect(data.measurements.temperature).toBeDefined();
+  });
+
+  it('should skip a geometrically-nearer sparse station in favor of the nearest station with temperature (issue #110, DECISION-4)', async () => {
+    // Coordinates near Zürich Kreis 3: UEB (Uetliberg, ~2.65km) is nearer
+    // than SMA (Fluntern, ~3.97km) but only reports sunshine/radiation in
+    // this fixture, mirroring the real-world Uetliberg gap. The tool must
+    // skip past it to SMA, which has temperature.
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      coordinates: { lat: 47.3667, lon: 8.5167 },
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.station.abbreviation).toBe('SMA');
+    expect(data.station.distance_km).toBeCloseTo(3.97, 1);
+    expect(data.measurements.temperature).toBeDefined();
+    expect(data.measurements.temperature.value).toBe(5.2);
   });
 
   it('should return error when neither station nor coordinates provided', async () => {
@@ -114,6 +134,30 @@ describe('meteoswissCurrentWeather Tool', () => {
     const data = JSON.parse(result.content[0].text);
     expect(data.station.abbreviation).toBe('BER');
     expect(data.station.name).toContain('Bern');
+  });
+
+  it('should resolve "Zurich" to SMA (Fluntern), not KLO (Kloten) (issue #110, DECISION-5)', async () => {
+    // Without the canonical alias, "Zurich" scores an equal fuzzy match
+    // against both stations and the shorter-name tie-break picks Kloten —
+    // SMA is the canonical Zürich city station, matching how
+    // meteoswissClimateData resolves "Zurich".
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'Zurich',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.station.abbreviation).toBe('SMA');
+  });
+
+  it('should still resolve "Zürich / Kloten" (full name) to KLO — the alias is targeted, not broad', async () => {
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'Zürich / Kloten',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.station.abbreviation).toBe('KLO');
   });
 
   it('should return error for whitespace-only station query', async () => {

@@ -8,6 +8,16 @@ describe('weatherIconDescription', () => {
     expect(weatherIconDescription(35)).toBe('overcast and dry');
   });
 
+  it('should return description for previously-unmapped day codes 36-42 (issue #110, BUG-3)', () => {
+    expect(weatherIconDescription(36)).toBe('slightly overcast, slightly stormy');
+    expect(weatherIconDescription(37)).toBe('slightly overcast, stormy snow showers');
+    expect(weatherIconDescription(38)).toBe('overcast, thundery showers');
+    expect(weatherIconDescription(39)).toBe('overcast, thundery snow showers');
+    expect(weatherIconDescription(40)).toBe('very cloudy, slightly stormy');
+    expect(weatherIconDescription(41)).toBe('overcast, slightly stormy');
+    expect(weatherIconDescription(42)).toBe('very cloudy, thundery snow showers');
+  });
+
   it('should return description for night codes', () => {
     expect(weatherIconDescription(101)).toBe('clear');
     expect(weatherIconDescription(128)).toBe('fog');
@@ -28,6 +38,9 @@ describe('weatherIconUrl', () => {
     );
     expect(weatherIconUrl(35)).toBe(
       'https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/35.svg'
+    );
+    expect(weatherIconUrl(36)).toBe(
+      'https://www.meteoschweiz.admin.ch/static/resources/weather-symbols/36.svg'
     );
   });
 

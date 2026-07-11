@@ -6,7 +6,7 @@ Get a multi-day weather forecast for any Swiss location.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `location` | string | Yes | Postal code ("8001"), station abbreviation ("ZUE"), or place name ("Zurich") |
+| `location` | string | Yes | Postal code ("8001"), station abbreviation ("SMA"), or place name ("Zurich") |
 | `days` | number | No | Number of forecast days, 1-9 (default: 5) |
 
 **Returns:** Daily forecasts with temperature (min/max), precipitation, weather description, and weather icons.

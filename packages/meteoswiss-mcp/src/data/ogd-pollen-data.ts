@@ -20,6 +20,16 @@ import type {
  * Map from the first 6 characters of a pollen parameter code to a short
  * species display name. MeteoSwiss codes follow the pattern:
  * k{a|h}{genus-4-chars}{resolution} where genus is a Latin-genus abbreviation.
+ *
+ * This is the complete set of species the OGD pollen network measures —
+ * verified against the live `ogd-pollen_meta_parameters.csv` and
+ * `ogd-pollen_meta_datainventory.csv` feeds (2026-07). Notably, Ambrosia
+ * (ragweed) is NOT in this set: despite being a monitored allergen on
+ * MeteoSwiss's web pollen *forecast*, it is not part of the OGD *measurement*
+ * network at all (no station has ever reported it) — see issue #110,
+ * DECISION-3. All species below are always represented in tool output, with
+ * a `no-current-data` marker for any species absent from a station's latest
+ * reading (e.g. out of season).
  */
 const POLLEN_SPECIES = {
   kaalnu: 'Alder (Alnus)',
@@ -123,15 +133,28 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
         }
 
         const pollen: PollenMeasurement[] = [];
+        const measuredPrefixes = new Set<string>();
         const allPrefixes = new Set([...d1Values.keys(), ...d0Values.keys()]);
         for (const prefix of allPrefixes) {
           const value = d1Values.get(prefix) ?? d0Values.get(prefix);
           if (value === undefined) continue;
+          measuredPrefixes.add(prefix);
           pollen.push({
             type: pollenDisplayName(prefix),
+            status: 'measured',
             value,
             unit: 'particles/m\u00B3',
           });
+        }
+
+        // Make absence explicit for every species the OGD network measures
+        // (e.g. out of season) instead of silently omitting it. Ambrosia is
+        // deliberately not included here \u2014 the OGD feed doesn't measure it
+        // at all, see the POLLEN_SPECIES doc comment.
+        for (const [prefix, label] of Object.entries(POLLEN_SPECIES)) {
+          if (!measuredPrefixes.has(prefix)) {
+            pollen.push({ type: label, status: 'no-current-data' });
+          }
         }
 
         return {

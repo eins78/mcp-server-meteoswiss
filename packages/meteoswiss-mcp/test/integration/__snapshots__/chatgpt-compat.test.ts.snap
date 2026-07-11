@@ -33,7 +33,7 @@ exports[`ChatGPT Deep Research compatibility manifest snapshot matches the canon
     "name": "fetch",
   },
   "search": {
-    "description": "Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Note: pagination may return duplicate results across pages (upstream API limitation).",
+    "description": "Search MeteoSwiss website content in multiple languages (DE, FR, IT, EN). Returns relevant pages with URLs that can be passed to the fetch tool. Always returns up to 10 results per page — the upstream API has a fixed page size that cannot be changed. Note: pagination may return duplicate results across pages (upstream API limitation).",
     "inputSchema": {
       "properties": {
         "contentType": {
@@ -59,12 +59,7 @@ exports[`ChatGPT Deep Research compatibility manifest snapshot matches the canon
         },
         "page": {
           "default": 1,
-          "description": "Page number for pagination (1-based)",
-          "type": "integer",
-        },
-        "pageSize": {
-          "default": 12,
-          "description": "Number of results per page (max 100)",
+          "description": "Page number for pagination (1-based). The upstream API always returns 10 results per page; page size is not configurable.",
           "type": "integer",
         },
         "query": {

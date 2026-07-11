@@ -144,6 +144,25 @@ export async function getClimateData(params: GetClimateDataParams): Promise<Clim
 
   const data = sliced.map((row) => stripUndefined(mapMeasurement(row)));
 
+  // If a date filter zeroed out the results, tell the caller why instead of
+  // returning a bare empty array (issue #110, BUG-5). The most common cause
+  // is a daily request predating the `_recent` (~2-year) window; derive the
+  // actually-available range from the unfiltered rows so the hint is honest
+  // even when the series is empty for other reasons.
+  let note: string | undefined;
+  if (data.length === 0 && (params.start_date || params.end_date) && rows.length > 0) {
+    const firstRow = rows[0];
+    const lastRow = rows[rows.length - 1];
+    const availableFrom = parseTimestamp(firstRow?.reference_timestamp ?? '');
+    const availableTo = parseTimestamp(lastRow?.reference_timestamp ?? '');
+    note =
+      `No ${resolution} data for the requested date range. ` +
+      `This series covers ${availableFrom} to ${availableTo}.` +
+      (resolution === 'daily'
+        ? ' Daily data only covers roughly the last 2 years; use resolution="monthly" or "yearly" for older dates.'
+        : '');
+  }
+
   return {
     station: {
       name: station.name,
@@ -156,6 +175,7 @@ export async function getClimateData(params: GetClimateDataParams): Promise<Clim
     },
     resolution,
     data,
+    ...(note ? { note } : {}),
     source: SOURCE_ATTRIBUTION,
   };
 }

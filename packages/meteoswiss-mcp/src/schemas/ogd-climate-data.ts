@@ -79,5 +79,11 @@ export type ClimateDataResponse = {
   };
   resolution: ClimateResolution;
   data: ClimateMeasurement[];
+  /**
+   * Present only when `data` is empty because the requested date range fell
+   * outside the fetched series (e.g. a daily request older than the ~2-year
+   * `_recent` window). Explains why and suggests a fallback resolution.
+   */
+  note?: string;
   source: string;
 };

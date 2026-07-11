@@ -31,15 +31,9 @@ export const searchMeteoSwissContentSchema = z.object({
     .positive({ message: 'Page number must be greater than 0' })
     .optional()
     .default(1)
-    .describe('Page number for pagination (1-based)'),
-  pageSize: z
-    .number({ message: 'Page size must be a number' })
-    .int({ message: 'Page size must be a whole number' })
-    .positive({ message: 'Page size must be greater than 0' })
-    .max(100, { message: 'Page size cannot exceed 100 results per page' })
-    .optional()
-    .default(12)
-    .describe('Number of results per page (max 100)'),
+    .describe(
+      'Page number for pagination (1-based). The upstream API always returns 10 results per page; page size is not configurable.'
+    ),
   sort: z
     .enum(['relevance', 'date-desc', 'date-asc'], {
       message: "Sort order must be one of: 'relevance', 'date-desc', or 'date-asc'.",

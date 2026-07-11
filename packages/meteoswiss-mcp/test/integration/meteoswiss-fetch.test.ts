@@ -63,7 +63,6 @@ describe('MeteoSwiss Fetch Tool', () => {
         id: expect.stringContaining('/wetter/gefahren/verhaltensempfehlungen/wind.html'),
         title: expect.any(String),
         text: expect.stringContaining('#'), // Markdown heading (canonical ChatGPT field)
-        content: expect.stringContaining('#'), // Back-compat alias
         format: 'markdown',
         url: expect.stringContaining('meteoswiss'),
         metadata: expect.objectContaining({
@@ -73,15 +72,20 @@ describe('MeteoSwiss Fetch Tool', () => {
         }),
       });
 
-      // text and content must hold identical strings (alias guarantee from
-      // docs/plans/2026-04-19-chatgpt-fetch-compat.md §6.3).
-      expect(result.text).toBe(result.content);
+      // The duplicate `content` field was removed as a token-cost fix
+      // (issue #110, BUG-2) — `text` is the sole, canonical body field now.
+      expect(result).not.toHaveProperty('content');
 
       // Body must include actual page text from web component attributes,
       // not just the page title (regression guard for empty-content body bug).
       expect(result.text).toContain('Verhaltensempfehlungen');
       expect(result.text).toContain('Windereignisse');
       expect(result.text).toContain('Gefahrenstufen von Wind');
+
+      // The wind.html fixture contains <mch-icon name="chevron-small-right">
+      // / "chevron-up" navigation icons whose nested SVG <title> text used to
+      // leak into the extracted body (issue #110, BUG-6).
+      expect(result.text).not.toContain('chevron');
     });
 
     it('should fetch content in plain text format', async () => {
@@ -94,9 +98,9 @@ describe('MeteoSwiss Fetch Tool', () => {
 
       expect(result).toMatchObject({
         text: expect.any(String),
-        content: expect.any(String),
         format: 'text',
       });
+      expect(result).not.toHaveProperty('content');
       expect(result.text).not.toContain('<'); // No HTML tags
       expect(result.text).not.toContain('#'); // No markdown
     });
