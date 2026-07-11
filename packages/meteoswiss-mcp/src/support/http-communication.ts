@@ -21,6 +21,8 @@ export type HttpRequestOptions = {
   headers?: Record<string, string>;
   /** Whether to use cache (default: true) */
   useCache?: boolean;
+  /** Hard cap on the response body size in bytes (defaults to {@link MAX_RESPONSE_BYTES}) */
+  maxBytes?: number;
 };
 
 /**
@@ -31,12 +33,15 @@ export class HttpRequestError extends Error {
   public statusCode?: number;
   /** Original URL that was requested */
   public url: string;
+  /** Whether retrying the request could plausibly succeed (false for e.g. oversized bodies, 4xx) */
+  public retryable: boolean;
 
-  constructor(message: string, url: string, statusCode?: number) {
+  constructor(message: string, url: string, statusCode?: number, retryable = true) {
     super(message);
     this.name = 'HttpRequestError';
     this.url = url;
     this.statusCode = statusCode;
+    this.retryable = retryable;
   }
 }
 
@@ -45,18 +50,87 @@ export class HttpRequestError extends Error {
  */
 const USER_AGENT = `MeteoSwiss-MCP-Server/${getVersion()}`;
 
+/** Default request timeout in ms (bounds *time*, applied on every path). */
+const DEFAULT_TIMEOUT_MS = 30000; // Increased from 5s to 30s for complex pages
+
+/**
+ * Hard ceiling on any single upstream response body, in bytes (bounds *bytes*).
+ * `AbortSignal.timeout` only bounds time; without a byte cap, undici buffers the
+ * entire body into the heap regardless. Configurable via `MAX_RESPONSE_BYTES`;
+ * mirrors the default validated in environment-validation.ts (50 MiB).
+ */
+export const MAX_RESPONSE_BYTES = ((): number => {
+  const parsed = parseInt(process.env.MAX_RESPONSE_BYTES ?? '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 52428800;
+})();
+
 /**
  * Default options for HTTP requests
  */
 const DEFAULT_OPTIONS: HttpRequestOptions = {
   retries: 3,
   retryDelay: 1000,
-  timeout: 30000, // Increased from 5s to 30s for complex pages
+  timeout: DEFAULT_TIMEOUT_MS,
   headers: {
     Accept: 'application/json, text/html',
     'User-Agent': USER_AGENT,
   },
 };
+
+/**
+ * Reads a {@link Response} body into a Buffer, aborting once `maxBytes` is exceeded.
+ *
+ * Checks the declared `Content-Length` first (cheap rejection), then enforces the
+ * cap while streaming in case the header lies or is absent. The overflow error is
+ * marked non-retryable so the retry loop does not re-stream the same oversized body.
+ *
+ * @param response - The fetch response to drain
+ * @param maxBytes - Maximum allowed body size in bytes
+ * @param url - Request URL (for error context)
+ * @returns The full body as a Buffer (never larger than `maxBytes`)
+ * @throws {HttpRequestError} If the body exceeds `maxBytes`
+ */
+async function readBodyCapped(response: Response, maxBytes: number, url: string): Promise<Buffer> {
+  const declared = response.headers.get('content-length');
+  if (declared !== null) {
+    const declaredBytes = Number(declared);
+    if (Number.isFinite(declaredBytes) && declaredBytes > maxBytes) {
+      throw new HttpRequestError(
+        `Response body too large: Content-Length ${declaredBytes} exceeds cap of ${maxBytes} bytes`,
+        url,
+        response.status,
+        false
+      );
+    }
+  }
+
+  const body = response.body;
+  if (!body) {
+    return Buffer.alloc(0);
+  }
+
+  const reader = body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new HttpRequestError(
+          `Response body too large: exceeded cap of ${maxBytes} bytes`,
+          url,
+          response.status,
+          false
+        );
+      }
+      chunks.push(Buffer.from(value));
+    }
+  }
+  return Buffer.concat(chunks);
+}
 
 /**
  * Fetches data from a URL with retry logic and error handling
@@ -74,6 +148,8 @@ export async function fetchWithRetry(
     retries = DEFAULT_OPTIONS.retries,
     retryDelay = DEFAULT_OPTIONS.retryDelay,
     useCache = true,
+    timeout = DEFAULT_TIMEOUT_MS,
+    maxBytes = MAX_RESPONSE_BYTES,
   } = options;
   debugHttp('Fetching URL: %s with options: %O', url, options);
 
@@ -107,7 +183,9 @@ export async function fetchWithRetry(
       const startTime = Date.now();
       const response = await fetch(url, {
         headers: requestHeaders,
-        signal: options.timeout ? AbortSignal.timeout(options.timeout) : undefined,
+        // Always bound time — the content-fetch path previously passed no timeout,
+        // leaving the signal undefined and the request unbounded in time.
+        signal: AbortSignal.timeout(timeout),
       });
       const duration = Date.now() - startTime;
 
@@ -139,8 +217,12 @@ export async function fetchWithRetry(
         throw error;
       }
 
-      const text = await response.text();
-      debugHttp('Successfully fetched %d bytes from %s', text.length, url);
+      // Bound *bytes*: stream into a capped buffer. `new TextDecoder().decode`
+      // strips a leading UTF-8 BOM exactly as `response.text()` does, so JSON
+      // parsing downstream is unaffected.
+      const buffer = await readBodyCapped(response, maxBytes, url);
+      const text = new TextDecoder().decode(buffer);
+      debugHttp('Successfully fetched %d bytes from %s', buffer.length, url);
 
       // Cache the response
       if (useCache) {
@@ -151,6 +233,13 @@ export async function fetchWithRetry(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       debugHttp('Request failed on attempt %d: %O', attempt + 1, error);
+
+      // Don't retry errors flagged non-retryable (e.g. oversized body) — retrying
+      // would only re-stream the same failure.
+      if (error instanceof HttpRequestError && !error.retryable) {
+        debugHttp('Non-retryable error, aborting retries for URL: %s', url);
+        break;
+      }
 
       // Don't retry on the last attempt
       if (attempt === retries) {
@@ -242,7 +331,12 @@ export async function fetchHtml(url: string, options: HttpRequestOptions = {}): 
  * @throws {HttpRequestError} If the request fails after all retries
  */
 export async function fetchBinary(url: string, options: HttpRequestOptions = {}): Promise<Buffer> {
-  const { retries = 3, retryDelay = 1000, timeout = 30000 } = options;
+  const {
+    retries = 3,
+    retryDelay = 1000,
+    timeout = DEFAULT_TIMEOUT_MS,
+    maxBytes = MAX_RESPONSE_BYTES,
+  } = options;
   debugHttp('Fetching binary from URL: %s', url);
 
   let lastError: Error | null = null;
@@ -253,7 +347,7 @@ export async function fetchBinary(url: string, options: HttpRequestOptions = {})
           'User-Agent': USER_AGENT,
           ...options.headers,
         },
-        signal: timeout ? AbortSignal.timeout(timeout) : undefined,
+        signal: AbortSignal.timeout(timeout),
       });
 
       if (!response.ok) {
@@ -264,11 +358,14 @@ export async function fetchBinary(url: string, options: HttpRequestOptions = {})
         );
       }
 
-      const buffer = Buffer.from(await response.arrayBuffer());
+      // Bound bytes: stream into a capped buffer instead of arrayBuffer()'ing the
+      // whole (potentially oversized) response into the heap.
+      const buffer = await readBodyCapped(response, maxBytes, url);
       debugHttp('Successfully fetched %d bytes (binary) from %s', buffer.length, url);
       return buffer;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      if (error instanceof HttpRequestError && !error.retryable) break;
       if (attempt === retries) break;
       const jitteredDelay = retryDelay + Math.random() * 200;
       await new Promise((resolve) => setTimeout(resolve, jitteredDelay));
