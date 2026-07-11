@@ -24,6 +24,10 @@ import { BASE } from '../site.config.mjs';
 type ContentSource = {
   srcDir: string;
   destSubdir: string;
+  // Only the forecast-evals results tree has paired HTML snapshots — scoping snapshot-link
+  // injection to just that source avoids an unrelated docs/ file accidentally getting linked to
+  // a snapshot that just happens to share its basename.
+  linkSnapshots: boolean;
 };
 
 const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -41,8 +45,12 @@ const FORECAST_EVALS_RESULTS_DIR = join(
 );
 
 const SOURCES: ContentSource[] = [
-  { srcDir: join(REPO_ROOT, 'docs'), destSubdir: '' },
-  { srcDir: FORECAST_EVALS_RESULTS_DIR, destSubdir: join('forecast-evals', 'results') },
+  { srcDir: join(REPO_ROOT, 'docs'), destSubdir: '', linkSnapshots: false },
+  {
+    srcDir: FORECAST_EVALS_RESULTS_DIR,
+    destSubdir: join('forecast-evals', 'results'),
+    linkSnapshots: true,
+  },
 ];
 
 function walkFiles(dir: string): string[] {
@@ -166,9 +174,9 @@ function main(): void {
   );
 
   let totalMd = 0;
-  for (const { srcDir, destSubdir } of SOURCES) {
+  for (const { srcDir, destSubdir, linkSnapshots } of SOURCES) {
     const destDir = destSubdir ? join(CONTENT_DOCS_DIR, destSubdir) : CONTENT_DOCS_DIR;
-    const count = syncMarkdownTree(srcDir, destDir, snapshotSlugs);
+    const count = syncMarkdownTree(srcDir, destDir, linkSnapshots ? snapshotSlugs : new Set());
     totalMd += count;
     console.log(
       `synced ${count} markdown file(s) from ${relative(REPO_ROOT, srcDir)} -> ${relative(PACKAGE_ROOT, destDir)}`,
