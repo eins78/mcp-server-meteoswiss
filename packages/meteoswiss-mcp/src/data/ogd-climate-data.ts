@@ -6,6 +6,7 @@
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { resolveNbcnStation, findNearestNbcnStation } from './ogd-nbcn-stations.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
+import { roundOptional } from '../support/round-measurements.js';
 import { debugData } from '../support/logging.js';
 import { SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
 import type { CsvRow } from '../support/ogd-csv-parser.js';
@@ -55,22 +56,43 @@ function mapMeasurement(row: CsvRow): ClimateMeasurement {
   return {
     date: parseTimestamp(row.reference_timestamp ?? ''),
     // Temperature (available at all resolutions)
-    temperature_mean:
+    temperature_mean: roundOptional(
       parseNumeric(row.ths200d0 ?? row.ths200m0 ?? row.ths200y0 ?? null) ?? undefined,
-    temperature_max:
+      '°C'
+    ),
+    temperature_max: roundOptional(
       parseNumeric(row.ths200dx ?? row.ths2dymx ?? row.ths2dyyx ?? null) ?? undefined,
-    temperature_min:
+      '°C'
+    ),
+    temperature_min: roundOptional(
       parseNumeric(row.ths200dn ?? row.ths2dymn ?? row.ths2dyyn ?? null) ?? undefined,
+      '°C'
+    ),
     // Precipitation (monthly/yearly)
-    precipitation: parseNumeric(row.rhs150m0 ?? row.rhs150y0 ?? null) ?? undefined,
+    precipitation: roundOptional(
+      parseNumeric(row.rhs150m0 ?? row.rhs150y0 ?? null) ?? undefined,
+      'mm'
+    ),
     // Sunshine (monthly/yearly)
-    sunshine_duration_min: parseNumeric(row.shs000m0 ?? row.shs000y0 ?? null) ?? undefined,
+    sunshine_duration_min: roundOptional(
+      parseNumeric(row.shs000m0 ?? row.shs000y0 ?? null) ?? undefined,
+      'min'
+    ),
     // Radiation (monthly/yearly)
-    radiation_w_m2: parseNumeric(row.ghs000m0 ?? row.ghs000y0 ?? null) ?? undefined,
+    radiation_w_m2: roundOptional(
+      parseNumeric(row.ghs000m0 ?? row.ghs000y0 ?? null) ?? undefined,
+      'W/m²'
+    ),
     // Wind (monthly/yearly)
-    wind_speed_m_s: parseNumeric(row.fhs010m0 ?? row.fhs010y0 ?? null) ?? undefined,
+    wind_speed_m_s: roundOptional(
+      parseNumeric(row.fhs010m0 ?? row.fhs010y0 ?? null) ?? undefined,
+      'm/s'
+    ),
     // Pressure (monthly/yearly)
-    pressure_hpa: parseNumeric(row.phsstam0 ?? row.phsstay0 ?? null) ?? undefined,
+    pressure_hpa: roundOptional(
+      parseNumeric(row.phsstam0 ?? row.phsstay0 ?? null) ?? undefined,
+      'hPa'
+    ),
     // Day counts (monthly/yearly)
     frost_days: parseNumeric(row.ths00nm0 ?? row.ths00ny0 ?? null) ?? undefined,
     summer_days: parseNumeric(row.ths25xm0 ?? row.ths25xy0 ?? null) ?? undefined,

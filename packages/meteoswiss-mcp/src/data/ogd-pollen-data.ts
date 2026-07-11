@@ -6,6 +6,7 @@
 import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric } from '../support/ogd-csv-parser.js';
+import { roundByUnit } from '../support/round-measurements.js';
 import { normalize } from '../support/normalize.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS, SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
@@ -142,7 +143,7 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
           pollen.push({
             type: pollenDisplayName(prefix),
             status: 'measured',
-            value,
+            value: roundByUnit(value, 'particles/m\u00B3'),
             unit: 'particles/m\u00B3',
           });
         }

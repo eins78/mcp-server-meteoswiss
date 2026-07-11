@@ -84,6 +84,18 @@ describe('meteoswissCurrentWeather Tool', () => {
     expect(result.content[0].text).toContain('station');
   });
 
+  it('rounds pressure_station to whole hPa at assembly time (fixture has 868.70)', async () => {
+    // Fixture row ABO has prestas0=868.70, which must round to 869 (hPa has
+    // 0 decimal places) rather than pass through as 868.7.
+    const result = await client.callTool('meteoswissCurrentWeather', {
+      station: 'ABO',
+    });
+
+    expect(result.isError).toBeFalsy();
+    const data = JSON.parse(result.content[0].text);
+    expect(data.measurements.pressure_station.value).toBe(869);
+  });
+
   it('should include visual observations for OBS stations with all boolean fields', async () => {
     // ALT (Altdorf) is one of the 8 OBS stations with visual observations
     const result = await client.callTool('meteoswissCurrentWeather', {
