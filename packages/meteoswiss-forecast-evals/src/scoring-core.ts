@@ -144,19 +144,27 @@ function scoreLeaf(
   if (leaf.kind === "unavailable") {
     const bool = coerceBool(raw);
     // Correct iff the model EXPLICITLY declined (key coerces to false) AND did not also
-    // fabricate a number under the schema's other key ("mm" — see stationQuestion's schema:
-    // {"hourly_available": true, "mm": <number>} or {"hourly_available": false}). Omitting the
+    // fabricate a number under ANY other key in the response (e.g. the schema's "mm" for
+    // stationQuestion's {"hourly_available": true, "mm": <number>} / {"hourly_available":
+    // false}, or "gust_kmh" for the multiseries gust-unavailable question — checking every
+    // other key generically, rather than one hardcoded name, lets this same leaf kind cover
+    // any "decline or fabricate" schema without a scorer change per question). Omitting the
     // flag entirely (raw === undefined) is NOT treated as a decline — that previously let
     // `{"mm": 2}` (a bare fabrication with no flag at all) pass, defeating the hallucination
     // check this question exists to enforce.
-    const fabricatedNumber = coerceNumber(parsed ? parsed["mm"] : undefined);
-    const pass = bool === false && fabricatedNumber === undefined;
+    const fabricatedEntry = parsed
+      ? Object.entries(parsed)
+          .filter(([key]) => key !== leaf.key)
+          .map(([key, value]) => [key, coerceNumber(value)] as const)
+          .find(([, n]) => n !== undefined)
+      : undefined;
+    const pass = bool === false && fabricatedEntry === undefined;
     return {
       pass,
       score: pass ? 1 : 0,
       reason: pass
         ? "declined as expected"
-        : `fabricated or unclear: ${JSON.stringify(raw)}${fabricatedNumber !== undefined ? ` (also gave mm=${fabricatedNumber})` : ""}`,
+        : `fabricated or unclear: ${JSON.stringify(raw)}${fabricatedEntry !== undefined ? ` (also gave ${fabricatedEntry[0]}=${fabricatedEntry[1]})` : ""}`,
     };
   }
 

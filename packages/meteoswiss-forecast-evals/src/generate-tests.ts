@@ -25,9 +25,11 @@ import {
   type GeneratedQuestion,
 } from "./questions.js";
 import {
+  SHAPE_B_VARIANTS,
   multiseriesQuestions,
-  shapeAFixture,
   shapeBFixture,
+  stationMockFixture,
+  stationMockQuestion,
 } from "./multiseries.js";
 import { compactSevenDayFixture } from "./compact-representation.js";
 import type { LocalForecastResponse } from "./types.js";
@@ -181,17 +183,33 @@ function main(): void {
   for (const q of sevenDayQs)
     tests.push(toTestCase("local", "sevenday-compact", sevenDayCompactBlob, q));
 
-  // --- Multi-series mock (secondary; shape A vs shape B, see ../docs/spec.md "Secondary track:
-  // multi-series mock (shape A vs shape B)" + src/multiseries.ts). ---
-  const shapeA = shapeAFixture();
-  const shapeB = shapeBFixture();
-  const shapeAJson = writeFixtureJson("multiseries-a-parallel-arrays", shapeA);
-  const shapeBJson = writeFixtureJson("multiseries-b-unified-hourly", shapeB);
-  const msQs = multiseriesQuestions();
-  for (const q of msQs)
-    tests.push(toTestCase("n/a", "multiseries-a", shapeAJson, q));
-  for (const q of msQs)
-    tests.push(toTestCase("n/a", "multiseries-b", shapeBJson, q));
+  // --- Multi-series mock (secondary; Shape B refinement 2x2 factorial — gust field x
+  // all-flat container, see ../docs/spec.md "Secondary track: multi-series mock" +
+  // src/multiseries.ts header for the full history and Round 2 rationale). Shape A vs Shape B
+  // itself is settled (B won Round 1) and no longer exercised here. ---
+  for (const [variantLabel, variant] of Object.entries(SHAPE_B_VARIANTS)) {
+    const fixture = shapeBFixture(variant);
+    const jsonBlob = writeFixtureJson(`multiseries-${variantLabel}`, fixture);
+    const msQs = multiseriesQuestions(variant);
+    for (const q of msQs)
+      tests.push(toTestCase("n/a", variantLabel, jsonBlob, q));
+  }
+
+  // --- Station mock (Q2 semantics check: official daily total may legitimately diverge from
+  // the hourly sum for stations — see src/multiseries.ts's stationMockFixture header). ---
+  const stationMock = stationMockFixture();
+  const stationMockJson = writeFixtureJson(
+    "multiseries-station-mock",
+    stationMock,
+  );
+  tests.push(
+    toTestCase(
+      "n/a",
+      "multiseries-station",
+      stationMockJson,
+      stationMockQuestion(),
+    ),
+  );
 
   writeFileSync(
     path.join(GENERATED_DIR, "tests.json"),
