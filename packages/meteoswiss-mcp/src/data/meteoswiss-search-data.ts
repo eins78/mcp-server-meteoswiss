@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { z } from 'zod';
 import { fetchJson, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
 import type {
@@ -12,24 +13,33 @@ import type {
 
 export type { SearchResultItem, SearchResults } from '../schemas/meteoswiss-search.js';
 
-// Solr response types
-interface SolrDocument {
-  path?: string;
-  id?: string;
-  title?: string;
-  lead?: string;
-  description?: string;
-  pageType?: string;
-  modificationDate?: string;
-  publicationDate?: string;
-  content?: string;
-}
+// Solr response schemas. Validated (not just cast) so a valid-JSON error payload
+// or a shape change throws instead of silently degrading to "0 results" (FUN-9).
+const SolrDocumentSchema = z.object({
+  path: z.string().optional(),
+  id: z.string().optional(),
+  title: z.string().optional(),
+  lead: z.string().optional(),
+  description: z.string().optional(),
+  pageType: z.string().optional(),
+  modificationDate: z.string().optional(),
+  publicationDate: z.string().optional(),
+  content: z.string().optional(),
+});
+type SolrDocument = z.infer<typeof SolrDocumentSchema>;
 
-interface SolrResponse {
-  response?: {
-    numFound?: number;
-    docs?: SolrDocument[];
-  };
+const SolrResponseSchema = z.object({
+  response: z.object({
+    numFound: z.number().optional(),
+    // Required array — an error envelope lacking it fails validation and throws.
+    docs: z.array(SolrDocumentSchema),
+  }),
+});
+type SolrResponse = z.infer<typeof SolrResponseSchema>;
+
+/** Parse and validate a raw Solr response, throwing on shape mismatch. */
+function parseSolrResponse(raw: unknown): SolrResponse {
+  return SolrResponseSchema.parse(raw);
 }
 
 // Language to domain mapping for MeteoSwiss
@@ -143,7 +153,7 @@ async function searchFromApi(
 
   try {
     debugData('Searching MeteoSwiss API: %s', url.toString());
-    const response = await fetchJson<SolrResponse>(url.toString());
+    const response = parseSolrResponse(await fetchJson(url.toString()));
 
     debugData('API response received: %d documents found', response.response?.numFound || 0);
 
@@ -214,7 +224,7 @@ async function searchFromTestFixtures(
   if (existsSync(fixtureFile)) {
     debugData('Loading test fixture from: %s', fixtureFile);
     const data = await fs.readFile(fixtureFile, 'utf-8');
-    const response = JSON.parse(data) as SolrResponse;
+    const response = parseSolrResponse(JSON.parse(data));
 
     // Transform fixture data to our format
     const results: SearchResultItem[] =
@@ -264,7 +274,7 @@ async function searchFromTestFixtures(
     if (files.length > 0 && files[0]) {
       const firstFile = files[0];
       const data = await fs.readFile(path.join(langDir, firstFile), 'utf-8');
-      const response = JSON.parse(data) as SolrResponse;
+      const response = parseSolrResponse(JSON.parse(data));
 
       // Filter results by query in fixtures
       const allDocs = response.response?.docs || [];

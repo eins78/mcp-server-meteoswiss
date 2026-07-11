@@ -4,6 +4,7 @@
 
 Functional correctness fixes from the 2026-07-11 review, all addressing cases where a tool returned confidently wrong or empty data instead of an error:
 
+- **The Solr search response is Zod-validated (FUN-9):** it was cast (`as SolrResponse`) with all-optional fields and `|| 0` / `|| []` fallbacks, so a valid-JSON error payload or shape change silently became "0 results". It's now validated (requiring `response.docs` to be an array) and throws on mismatch.
 - **Non-retryable 4xx responses are no longer retried (FUN-8):** 404/400 etc. were retried 3× (≈3.6 s wasted latency per missing resource); the retry loop now skips 4xx except 408/429.
 - **Station forecasts no longer drop all days when the `tre200dx` asset is missing (FUN-6):** the station day list derived solely from the `tre200dx` (daily max-temp) timestamps, so a run missing just that asset returned `forecast: []` even with all hourly data fetched. It now unions every daily-aggregate's dates with the hourly days, matching the non-station path.
 - **Climate date filters are validated as YYYY-MM-DD (FUN-5):** `start_date`/`end_date` were plain strings compared lexicographically against `YYYY-MM-DD` row dates, so `2020-1-1`, `01.01.2020`, or `2020/01/01` were accepted and silently mis-filtered (e.g. `"2020-01-15" >= "2020-1-1"` is false). Both fields now require `^\d{4}-\d{2}-\d{2}$`.
