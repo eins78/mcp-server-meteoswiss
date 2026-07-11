@@ -315,15 +315,50 @@ yet, and wait for the confirmed two-layer design.
   `~/.claude/skills/` as a side effect — local-only, outside the repo.
 - Plan doc left untouched, per instruction.
 
-## Pending / follow-ups
+---
 
-- [ ] **Waiting on Max's confirmed two-layer design** before building the structural gate.
-- [ ] When it lands: build layer 1 as an explicitly-labelled **structural coverage + staleness gate**
-      (tool markers + inventory snapshot, per the finding above) — not "parity".
-- [ ] Layer 2 (agent semantic judge on release PRs, advisory) — design TBD by Max.
-- [ ] Two calls still Max's, unchanged by the reframe: param-level strictness of the static gate, and
-      how the `meteoswissClimateData` gap is resolved for day-one green (out-of-scope-with-reason +
-      follow-up, vs. authoring a skill section — the latter needs live-verified NBCN curl, so not to
-      be done unilaterally).
-- [ ] PR #119 stays a draft — not marking ready-for-review until the gate is built, CI-wired, green,
-      and Max's two calls are answered.
+## Round 4 — decisions in, plan finalized, implementation pipeline started
+
+Max answered all five open questions on PR #119 and green-lit implementation (model switched to
+Fable 5 for the build). Decisions, now baked into the plan doc's "Resolved Decisions" section:
+
+1. **`registerTool()` + Zod `outputSchema` migration: YES, FIRST** — a distinct prerequisite
+   sub-task in its own PR, so output shape joins the generated/machine-checked surface before the
+   lint lands (the lint depends on it).
+2. **`search`/`fetch`: excluded**, with rationale documented in plan + exceptions file (OGD data is
+   the parity focus; those two are experimental website-content extensions, intentionally no
+   OGD-skill equivalent).
+3. **Bake-in: inside the implementation PR**, not separate.
+4. **Version-sync lint: out** — PR #123 (merged) already automates the 4-file version sync via
+   `pnpm run version`.
+5. **Proof-of-catch: yes, red first** — the completeness check must visibly fail CI on
+   `meteoswissClimateData`'s known gap before the gap is closed, so the red→green transition is
+   on record in the PR.
+
+The two-layer reframe from the round-3 HOLD is resolved in the plan as: this pipeline builds the
+**structural gate** (coverage markers + generated inventory snapshot + staleness, hard-blocking),
+explicitly labelled structural; the **semantic agent judge** (advisory, release PRs) stays an
+anticipated follow-on outside this plan's scope.
+
+### Plan-doc changes in this round
+
+- Status → Approved; Open Questions → Resolved Decisions.
+- The round-3 finding is now IN the plan's Design section: literal name-matching is dead (0 tool-name
+  mentions; interface params like `location`/`days`/`coordinates` never appear in the skill), replaced
+  by per-tool coverage markers (`<!-- mcp-tool: … -->`) + a committed generated inventory snapshot
+  (`parity/tool-inventory.json`) diffed against the live server every run.
+- Exceptions file gains an `excluded-tools` section (search/fetch + rationale), staleness-checked.
+- Branches section now records the pipeline: PR #119 = plan/record only;
+  `feature/register-tool-output-schemas` = STEP A (prerequisite, own PR);
+  `infra/skills-parity-lint` = STEP B (after A merges).
+
+### Pipeline status
+
+- [x] Plan finalized on PR #119 (this commit).
+- [ ] STEP A: `feature/register-tool-output-schemas` — in progress, branched off `origin/main`
+      (which moved: #122 hourly-timeseries, #123 skills-changesets-release, #124 changelog-backfill
+      all merged since this worktree branched). Own sessionlog on that branch per policy.
+- [ ] STEP B: blocked on A landing.
+- [ ] PR #119: stays draft until Max folds it into the record; implementation readiness is reported
+      per-PR (A, then B), with merges coordinated by Max (Copilot loop → manual rebase-fold →
+      merge commit, no squash).
