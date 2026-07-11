@@ -103,8 +103,19 @@ service with the same shape (wildcard bind + fronted by `tailscale serve`) will 
 the same way this session did. That doc lives in a different repo — flagged for Max rather than
 edited here.
 
+## /ai-review — blocked, skipped with Max's approval
+
+The `gemini` CLI's free-tier OAuth is dead: Google now returns `IneligibleTierError` /
+`UNSUPPORTED_CLIENT` for this client, pointing at migrating to "Antigravity." No
+`GEMINI_API_KEY` is configured, and the `codex` CLI fallback isn't installed. Asked Max; he
+chose to skip it for this PR (the /simplify pass already gave thorough, empirically-verified
+coverage) rather than install `codex` or set up billing mid-task. Follow-up: fix the `ai-review`
+skill's Gemini auth (or default to `codex`) before it's needed again.
+
 ## Pending / follow-ups
 
+- [ ] Fix `ai-review` skill's Gemini CLI auth (dead free-tier OAuth) or switch its default
+      provider to `codex`.
 - [ ] Confirm GitHub Pages builds green after merge (added `.nojekyll` to fix the pre-merge
       error; the fix targets `main`, which is what Pages actually builds from).
 - [ ] Install the permanent LaunchAgent from the merged `main` checkout (symlink into
