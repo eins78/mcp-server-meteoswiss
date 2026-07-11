@@ -8,6 +8,7 @@ import { CoordinatesSchema } from './ogd-shared.js';
 export const GetPollenDataParamsSchema = z.object({
   station: z
     .string()
+    .max(200, { message: 'Station must be at most 200 characters.' })
     .optional()
     .describe(
       'Pollen monitoring station name or abbreviation. Omit for an overview of all stations.'

@@ -15,9 +15,10 @@ export const GetCurrentWeatherParamsSchema = z.object({
   station: z
     .string()
     .min(1)
+    .max(200, { message: 'Station must be at most 200 characters.' })
     .optional()
     .describe(
-      'Swiss weather station or location: name (e.g., "Zurich"), abbreviation (e.g., "SMA"), or address (e.g., "Bahnhofplatz 1 Bern")'
+      'Swiss weather station or location: name (e.g., "Zurich"), abbreviation (e.g., "SMA"), or address (e.g., "Bahnhofplatz 1 Bern"). Provide either this or `coordinates`; if both are given, `coordinates` takes precedence.'
     ),
   coordinates: CoordinatesParamSchema.optional(),
 });

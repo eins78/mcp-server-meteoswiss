@@ -9,6 +9,7 @@ export const GetLocalForecastParamsSchema = z.object({
   location: z
     .string()
     .min(1)
+    .max(200, { message: 'Location must be at most 200 characters.' })
     .describe(
       'Swiss location: postal code (e.g., "8001"), station abbreviation (e.g., "SMA"), or place name (e.g., "Zurich")'
     ),

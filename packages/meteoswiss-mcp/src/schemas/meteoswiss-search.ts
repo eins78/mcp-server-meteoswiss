@@ -7,6 +7,7 @@ export const searchMeteoSwissContentSchema = z.object({
   query: z
     .string()
     .min(1, { message: 'Search query cannot be empty. Please provide at least one character.' })
+    .max(200, { message: 'Search query must be at most 200 characters.' })
     .describe('The search query string'),
   language: z
     .enum(['de', 'fr', 'it', 'en'], {
@@ -29,6 +30,7 @@ export const searchMeteoSwissContentSchema = z.object({
     .number({ message: 'Page must be a number' })
     .int({ message: 'Page must be a whole number' })
     .positive({ message: 'Page number must be greater than 0' })
+    .max(1000, { message: 'Page number must be at most 1000.' })
     .optional()
     .default(1)
     .describe(

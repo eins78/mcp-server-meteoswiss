@@ -18,9 +18,10 @@ export const GetClimateDataParamsSchema = z.object({
   station: z
     .string()
     .min(1)
+    .max(200, { message: 'Station must be at most 200 characters.' })
     .optional()
     .describe(
-      'Climate station name or abbreviation (e.g., "Zurich", "BAS", "Davos"). Part of the National Basic Climatic Network (29 climate + 46 precipitation stations).'
+      'Climate station name or abbreviation (e.g., "Zurich", "BAS", "Davos"). Part of the National Basic Climatic Network (29 climate + 46 precipitation stations). Provide either this or `coordinates`; if both are given, `coordinates` takes precedence.'
     ),
   coordinates: CoordinatesParamSchema.optional(),
   resolution: z
