@@ -1,0 +1,22 @@
+{
+  "name": "meteoswiss-docs-site",
+  "type": "module",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "sync-content": "tsx scripts/sync-content.ts",
+    "dev": "pnpm run sync-content && astro dev",
+    "start": "astro dev",
+    "build": "pnpm run sync-content && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.3",
+    "astro": "^7.0.2",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.0"
+  }
+}
