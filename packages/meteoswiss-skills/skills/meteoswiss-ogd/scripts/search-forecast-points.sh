@@ -24,7 +24,7 @@ if [[ -z "$QUERY" || "$1" == "--help" || "$1" == "-h" ]]; then
   echo "  $(basename "$0") 8001       # Zurich postal code"
   echo "  $(basename "$0") Bern       # place name"
   echo "  $(basename "$0") SMA        # station abbreviation"
-  exit "${QUERY:+1}"
+  if [[ -z "$QUERY" ]]; then exit 1; else exit 0; fi
 fi
 
 QUERY_LOWER=$(echo "$QUERY" | tr '[:upper:]' '[:lower:]')

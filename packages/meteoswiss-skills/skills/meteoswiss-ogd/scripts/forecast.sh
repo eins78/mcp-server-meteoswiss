@@ -24,7 +24,7 @@ if [[ -z "$POINT_ID" || "$1" == "--help" || "$1" == "-h" ]]; then
   echo "Examples:"
   echo "  $(basename "$0") 71       # Zurich station"
   echo "  $(basename "$0") 71 1     # explicit station type"
-  exit "${POINT_ID:+1}"
+  if [[ -z "$POINT_ID" ]]; then exit 1; else exit 0; fi
 fi
 
 STAC_BASE="https://data.geo.admin.ch/api/stac/v1"
