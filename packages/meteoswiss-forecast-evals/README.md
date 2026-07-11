@@ -83,7 +83,36 @@ Two clearly separated tiers — one runs in CI, one never does:
   uncovered by the repo-root CI; the dedicated `forecast-evals` job closes that gap.
 - The **paid LLM evals must never run in CI.** They cost money and require `OPENROUTER_API_KEY`.
   Run them locally, on demand (see [Quick start](#quick-start)). Do not add them to any workflow,
-  and do not put `OPENROUTER_API_KEY` in CI secrets for this package.
+  and do not put `OPENROUTER_API_KEY` in CI secrets for this package. This applies to the
+  `mcp-vs-skills:*` commands below too — they are real OpenRouter spend, never CI.
+
+## The MCP-vs-skills track
+
+A second, independent track (`src/mcp-vs-skills/`) answers a different question: for
+real-world weather Q&A, how do the two access methods this repo ships — the MCP server's
+structured tools vs the `meteoswiss-ogd` skill's direct HTTP/bash approach — compare on
+accuracy, tokens, and cost? Findings from the first run (2026-07-12): see
+[`docs/results/2026-07-12-mcp-vs-skills.md`](./docs/results/2026-07-12-mcp-vs-skills.md).
+
+Unlike the fixture-based comprehension track above, this one runs **agentic loops against
+live data**: custom promptfoo providers drive an OpenRouter tool-calling loop, where the
+`mcp/*` providers talk to a locally started `meteoswiss-mcp` (real `tools/list` schemas,
+real tool dispatch) and the `skill/*` providers get the SKILL.md body plus one guarded
+`bash` tool (allowlisted read-only pipelines, MeteoSwiss-hosts-only URLs). Ground truth is
+captured from the same live OGD data minutes before each run and scored with per-question
+tolerances — see the results doc's Methodology section for the full story, including the
+fairness rules and the budget guard (hard abort at `MCP_SKILLS_BUDGET_USD`, default $4).
+
+```bash
+pnpm run mcp-skills:smoke      # 1 model x both methods x 3 questions (~$0.05)
+pnpm run mcp-skills:eval       # full sweep: 2 models x 2 methods x 12 questions (~$0.65)
+pnpm run mcp-skills:summarize  # accuracy/token/cost tables from the last run
+pnpm run mcp-skills:charts     # SVG charts into docs/results/<date>-mcp-vs-skills/
+```
+
+The runner starts the MCP server itself if none is listening (and reads the OpenRouter
+key from the env, `.env`, or the macOS keychain item `openrouter-evals`). Results are
+only comparable within one run — live data moves — so rows are never cached.
 
 ## Reading the output
 
