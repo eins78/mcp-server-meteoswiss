@@ -3,17 +3,20 @@ name: Deploy Docs Site
 on:
   push:
     branches: [main]
-    paths:
+    paths: &docs-site-paths
       - 'docs/**'
       - 'packages/meteoswiss-forecast-evals/docs/results/**'
       - 'packages/meteoswiss-docs-site/**'
       - '.github/workflows/pages.yml'
+  # Build-only validation on PRs — this package sits outside the root pnpm workspace, so
+  # pr-ci.yml's `pnpm --filter meteoswiss-mcp` checks never touch it. The deploy job below is
+  # gated to `push` only; PR runs never carry Pages deploy permissions.
+  pull_request:
+    paths: *docs-site-paths
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Only one Pages deployment at a time; a newer push should win over an in-flight older one
 # rather than queuing behind it.
@@ -37,7 +40,11 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
