@@ -18,10 +18,11 @@ on:
 permissions:
   contents: read
 
-# Only one Pages deployment at a time; a newer push should win over an in-flight older one
-# rather than queuing behind it.
+# Scoped per ref: a newer push to `main` cancels an in-flight older deploy for "newer wins"
+# semantics, without unrelated PR build-validation runs canceling each other (or being canceled
+# by a `main` push) since each ref gets its own group.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
