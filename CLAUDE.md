@@ -313,13 +313,17 @@ Or create manually in `.changeset/`:
 Description of the change.
 ```
 
+For a **skill-facing change** (anything under `packages/meteoswiss-skills/`), add a `"meteoswiss-skills"` changeset the same way — it's a first-class changesets package, not tied to `meteoswiss-mcp`. A change that touches both packages should list both (bump each independently).
+
 **Automated flow:**
 1. PRs with changesets merge to `main`
-2. The "Version Packages" workflow creates/updates a PR that bumps `package.json` versions and generates `CHANGELOG.md`
+2. The "Version Packages" workflow runs `pnpm run version` (= `changeset version` + the skills manifest sync + CHANGELOG date stamping, see below) and creates/updates a PR that bumps `package.json` versions and generates `CHANGELOG.md`
 3. Merging the "Version Packages" PR finalizes the version bump
 4. Create a GitHub Release: `meteoswiss-mcp-vX.Y.Z` triggers npm + Docker publishing; `meteoswiss-skills-vX.Y.Z` triggers skill validation
 
 **Tag format:** `{package-name}-v{version}` (e.g., `meteoswiss-mcp-v2.1.0`, `meteoswiss-skills-v1.0.0`)
+
+**meteoswiss-skills version sync.** The skills package is also a Claude Code / Cursor plugin, so its version is mirrored in four files that changesets doesn't manage: `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (`plugins[]`), `.cursor-plugin/plugin.json`, and each `skills/*/SKILL.md` frontmatter (`metadata.version`). `package.json` is the single source of truth; `scripts/sync-skill-manifest-versions.mjs` (run by the root `version` script, right after `changeset version`) propagates the bumped version into those mirrors. It's a no-op when nothing changed, so MCP-only releases are unaffected. Don't hand-edit those version fields — let the sync own them.
 
 **Not every PR needs a changeset.** Skip for: docs-only changes, CI config, dev tooling, test-only changes.
 
