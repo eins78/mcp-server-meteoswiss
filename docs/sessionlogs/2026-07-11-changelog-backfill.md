@@ -72,3 +72,18 @@ bump arithmetic (every bump now has a matching change of the right type).
 
 All ten versions reconstructed with high confidence — every entry is triangulated against commit
 dates, GitHub release notes, and semver bump type. No version was left uncertain.
+
+## Follow-up: dated version headers
+
+Per Max's request, every version header was changed from bare `## X.Y.Z` to
+`## X.Y.Z - YYYY-MM-DD` using the tag creation dates
+(`git tag --format='%(refname:short) %(creatordate:short)'`), unbracketed to match the
+changesets header style. This keeps the past entries (hand-authored here) consistent with the
+format %6's automation will apply to future releases.
+
+Dates applied: 2.3.2 → 2026-04-20; 2.3.1 / 2.3.0 → 2026-04-18; 2.2.1 / 2.2.0 → 2026-04-03;
+2.1.0 / 2.0.2 / 2.0.1 / 2.0.0 / 1.0.0 → 2026-03-29.
+
+One caveat worth recording: `1.0.0`'s *tag* date is 2026-03-29 (the tags were recreated during
+the monorepo restructure), whereas the original MVP was published 2025-06-09. Tag dates were
+used as instructed, so the header reads 2026-03-29.
