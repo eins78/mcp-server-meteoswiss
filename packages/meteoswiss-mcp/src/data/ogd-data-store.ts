@@ -107,6 +107,27 @@ export type CacheTier = keyof typeof CACHE_TTL;
 
 const CACHE_DIR = process.env.OGD_CACHE_DIR || path.join(os.tmpdir(), 'meteoswiss-ogd');
 
+/** Total-bytes ceiling for the on-disk cache before LRU eviction kicks in. */
+const CACHE_MAX_BYTES = envNumber('OGD_CACHE_MAX_BYTES', 268_435_456); // 256 MiB
+
+/**
+ * Resolve a cache key to an absolute path and assert it stays under CACHE_DIR.
+ *
+ * Cache keys are currently built from server-controlled STAC metadata and
+ * validated enums (not raw user input), so this is defense-in-depth: it makes a
+ * future `..`/absolute-path key a hard failure instead of a path traversal.
+ *
+ * @throws {Error} If the resolved path escapes CACHE_DIR
+ */
+export function resolveCachePath(cacheKey: string): string {
+  const resolved = path.resolve(CACHE_DIR, cacheKey);
+  const root = path.resolve(CACHE_DIR);
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    throw new Error(`Unsafe cache key escapes cache directory: ${cacheKey}`);
+  }
+  return resolved;
+}
+
 /**
  * Write data to disk cache atomically (write to .tmp then rename).
  */
@@ -116,6 +137,81 @@ async function writeToDiskCache(cachePath: string, data: string | Buffer): Promi
   const tmpPath = `${cachePath}.${Date.now()}.tmp`;
   await fs.writeFile(tmpPath, data);
   await fs.rename(tmpPath, cachePath);
+}
+
+/**
+ * Recursively collect regular files under `dir` with their size and mtime.
+ * Missing directory → empty list.
+ */
+async function listCacheFiles(
+  dir: string
+): Promise<Array<{ path: string; size: number; mtimeMs: number; isTmp: boolean }>> {
+  const out: Array<{ path: string; size: number; mtimeMs: number; isTmp: boolean }> = [];
+  const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => null);
+  if (entries === null) {
+    return out;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...(await listCacheFiles(full)));
+    } else if (entry.isFile()) {
+      try {
+        const stat = await fs.stat(full);
+        out.push({
+          path: full,
+          size: stat.size,
+          mtimeMs: stat.mtimeMs,
+          isTmp: entry.name.endsWith('.tmp'),
+        });
+      } catch {
+        // file vanished between readdir and stat — ignore
+      }
+    }
+  }
+  return out;
+}
+
+/** Serializes prune passes so concurrent fetches don't double-evict. */
+let prunePromise: Promise<void> | null = null;
+
+/**
+ * Bound the on-disk cache: delete orphaned `.tmp` files, then evict oldest
+ * entries (LRU by mtime) until total size is under CACHE_MAX_BYTES. Best-effort
+ * and never throws — a cache-maintenance failure must not fail a data request.
+ */
+async function pruneDiskCache(): Promise<void> {
+  if (prunePromise) return prunePromise;
+  prunePromise = (async () => {
+    try {
+      const files = await listCacheFiles(CACHE_DIR);
+      let totalBytes = 0;
+      const live: Array<{ path: string; size: number; mtimeMs: number }> = [];
+      for (const file of files) {
+        if (file.isTmp) {
+          await fs.rm(file.path, { force: true });
+          continue;
+        }
+        totalBytes += file.size;
+        live.push(file);
+      }
+      if (totalBytes <= CACHE_MAX_BYTES) return;
+
+      // Evict oldest-first until under the ceiling.
+      live.sort((a, b) => a.mtimeMs - b.mtimeMs);
+      for (const file of live) {
+        if (totalBytes <= CACHE_MAX_BYTES) break;
+        await fs.rm(file.path, { force: true });
+        totalBytes -= file.size;
+        debugData('[ogd-store] Evicted cache file %s (%d bytes)', file.path, file.size);
+      }
+    } catch (error) {
+      debugData('[ogd-store] Cache prune failed (non-fatal): %O', error);
+    } finally {
+      prunePromise = null;
+    }
+  })();
+  return prunePromise;
 }
 
 /**
@@ -160,7 +256,7 @@ export async function getCsvData(
     throw new Error(`No test fixture for URL: ${url}. Add a mapping in resolveFixturePath.`);
   }
 
-  const cachePath = path.join(CACHE_DIR, cacheKey);
+  const cachePath = resolveCachePath(cacheKey);
   const ttl = CACHE_TTL[tier];
 
   const cached = await readCacheUtf8(cachePath, ttl);
@@ -173,6 +269,7 @@ export async function getCsvData(
   const text = await fetchWithRetry(url, { useCache: false, timeout: 60_000 });
   await writeToDiskCache(cachePath, text);
   debugData('[ogd-store] Cached %d bytes to %s', text.length, cacheKey);
+  void pruneDiskCache();
   return parseCsv(text, filter);
 }
 
@@ -202,7 +299,7 @@ export async function getLatin1CsvData(
     throw new Error(`No test fixture for URL: ${url}. Add a mapping in resolveFixturePath.`);
   }
 
-  const cachePath = path.join(CACHE_DIR, cacheKey);
+  const cachePath = resolveCachePath(cacheKey);
   const ttl = CACHE_TTL[tier];
 
   // Cache stores the decoded UTF-8 text
@@ -217,5 +314,6 @@ export async function getLatin1CsvData(
   const text = LATIN1_DECODER.decode(buffer);
   await writeToDiskCache(cachePath, text);
   debugData('[ogd-store] Cached %d bytes (decoded) to %s', text.length, cacheKey);
+  void pruneDiskCache();
   return parseCsv(text, filter);
 }
