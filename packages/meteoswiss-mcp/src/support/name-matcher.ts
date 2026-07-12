@@ -3,11 +3,42 @@
  * Word-boundary-aware scoring prevents "Bern" matching "Bernina" over "Bern / Zollikofen".
  */
 
+import { normalize } from './normalize.js';
+
 /**
  * Escape special regex characters in a string.
  */
 export function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Returns true if the user's query has at least one token (≥3 chars) that
+ * appears as a substring in the geocoded place name, or vice versa.
+ *
+ * Guards against gibberish queries (e.g., "NOTASTATION") that the live swisstopo
+ * API fuzzy-matches to an unrelated Swiss coordinate. Shared by all three station
+ * resolvers (SMN, NBCN, forecast) so the guard cannot drift between them.
+ *
+ * @param query - The raw user query
+ * @param geocodedName - The place name returned by the geocoder
+ * @returns Whether the two share a meaningful token
+ */
+export function geocodedNameMatchesQuery(query: string, geocodedName: string): boolean {
+  const queryNorm = normalize(query.trim());
+  const nameNorm = normalize(geocodedName);
+
+  const queryTokens = queryNorm.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of queryTokens) {
+    if (nameNorm.includes(token)) return true;
+  }
+
+  const nameTokens = nameNorm.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of nameTokens) {
+    if (queryNorm.includes(token)) return true;
+  }
+
+  return false;
 }
 
 /**

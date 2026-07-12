@@ -150,6 +150,7 @@ export type ParityFinding = {
     | 'stale-exclusion'
     | 'excluded-but-marked'
     | 'stale-exception-source'
+    | 'stale-exception-skill'
     | 'stale-canonical-source';
   message: string;
 };
@@ -252,12 +253,21 @@ export function checkParity(args: {
     }
   }
 
-  // 5. Exception-source staleness: mapped residual files must still exist.
+  // 5. Exception staleness: both the mapped source AND the skill target must
+  //    still exist. The skill target may carry a `#anchor` — strip it before the
+  //    file-existence probe (a deleted REFERENCE.md section would otherwise pass).
   for (const exception of exceptions.exceptions) {
     if (!fileExists(exception.source)) {
       findings.push({
         kind: 'stale-exception-source',
         message: `parity-exceptions.yml maps "${exception.source}" → "${exception.skill}", but the source file no longer exists. Update or remove the entry.`,
+      });
+    }
+    const skillFile = exception.skill.split('#')[0];
+    if (skillFile && !fileExists(skillFile)) {
+      findings.push({
+        kind: 'stale-exception-skill',
+        message: `parity-exceptions.yml maps "${exception.source}" → "${exception.skill}", but the skill file no longer exists. Update or remove the entry.`,
       });
     }
   }

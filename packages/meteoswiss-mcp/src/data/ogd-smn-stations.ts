@@ -8,7 +8,7 @@ import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric, type CsvRow } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
-import { scoreNameMatch } from '../support/name-matcher.js';
+import { scoreNameMatch, geocodedNameMatchesQuery } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation, type GeocodeOrigin } from '../support/geocode.js';
 import { classifyQuery } from '../support/query-classifier.js';
@@ -150,29 +150,6 @@ export async function findNearestStation(
     result.distance_km
   );
   return { station: result.item, distance_km: result.distance_km };
-}
-
-/**
- * Returns true if the user's query has at least one token (≥3 chars) that
- * appears as a substring in the geocoded place name, or vice versa.
- * Guards against gibberish queries (e.g., "NOTASTATION") that the live
- * swisstopo API fuzzy-matches to an unrelated Swiss coordinate.
- */
-function geocodedNameMatchesQuery(query: string, geocodedName: string): boolean {
-  const queryNorm = normalize(query.trim());
-  const nameNorm = normalize(geocodedName);
-
-  const queryTokens = queryNorm.split(/\s+/).filter((t) => t.length >= 3);
-  for (const token of queryTokens) {
-    if (nameNorm.includes(token)) return true;
-  }
-
-  const nameTokens = nameNorm.split(/\s+/).filter((t) => t.length >= 3);
-  for (const token of nameTokens) {
-    if (queryNorm.includes(token)) return true;
-  }
-
-  return false;
 }
 
 /**

@@ -117,16 +117,21 @@ function utcTimestampToZurichDate(ts: string): string {
 }
 
 /**
- * Get today's date in YYYY-MM-DD format (UTC).
- * In test fixture mode, uses the earliest date from the data to avoid
- * filtering out all fixture dates.
+ * Get today's date in YYYY-MM-DD format as the **Europe/Zurich** local calendar
+ * date. Forecast days are bucketed by Zurich-local date (see
+ * {@link utcTimestampToZurichDate}); comparing them against a UTC "today" dropped
+ * the wrong day every night between local midnight and 01:00/02:00 UTC-offset
+ * (FUN-2). In test fixture mode, returns a far-past date so no fixture day is
+ * filtered out.
  */
-function todayUtc(): string {
+function todayZurich(): string {
   if (process.env.USE_TEST_FIXTURES === 'true') {
     // Don't filter dates in test mode — fixture dates are static
     return '1900-01-01';
   }
-  return new Date().toISOString().slice(0, 10);
+  const parts = zurichFormatter.formatToParts(new Date());
+  const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 /**
@@ -239,12 +244,7 @@ function buildStationForecast(
   paramData: Map<string, Map<string, number | null>>,
   days: number
 ): DailyForecast[] {
-  const tempMaxData = paramData.get('tre200dx') ?? new Map<string, number | null>();
-  const today = todayUtc();
-  const dates = [...new Set([...tempMaxData.keys()].map(timestampToDate))]
-    .sort()
-    .filter((d) => d >= today)
-    .slice(0, days);
+  const today = todayZurich();
 
   const dateKeyed = new Map(
     [...paramData.entries()].map(([param, tsMap]) => [
@@ -259,6 +259,16 @@ function buildStationForecast(
   // stations only report a subset of parameters) from "this point supports hourly data but
   // none was available for this specific day" ([] per day, handled below).
   const hourlyTrulyUnavailable = hourlyByDate.size === 0;
+
+  // Date set = union of EVERY official daily-aggregate's dates AND the hourly days,
+  // not just tre200dx's. Deriving from tre200dx alone returned an empty forecast
+  // when that single asset was missing even though hourly data was in hand (FUN-6);
+  // this mirrors the union the hourly-aggregated path already uses.
+  const dailyDates = DAILY_PARAMS.flatMap((param) => [...(dateKeyed.get(param)?.keys() ?? [])]);
+  const dates = [...new Set([...dailyDates, ...hourlyByDate.keys()])]
+    .sort()
+    .filter((d) => d >= today)
+    .slice(0, days);
 
   return dates.map((date) => {
     const iconCode = dateKeyed.get('jp2000d0')?.get(date) ?? null;
@@ -347,7 +357,7 @@ function buildHourlyAggregatedForecast(
   // dropped from `forecast[]` entirely instead of appearing with `hourly: []`, silently hiding
   // a day the forecast run does cover.
   const iconDates = new Set([...hourlyIcon.keys()].map(utcTimestampToZurichDate));
-  const today = todayUtc();
+  const today = todayZurich();
   const dates = [...new Set([...hourlyByDate.keys(), ...iconDates])]
     .sort()
     .filter((d) => d >= today)

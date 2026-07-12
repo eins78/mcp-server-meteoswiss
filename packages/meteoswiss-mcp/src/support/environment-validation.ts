@@ -79,6 +79,22 @@ const envSchema = z.object({
     }),
   CORS_ORIGIN: z.string().optional().default('*'),
   REQUEST_SIZE_LIMIT: z.string().optional().default('10mb'),
+  TRUST_PROXY: z
+    .string()
+    .optional()
+    .default('1') // number of trusted proxy hops in front of the app (Caddy = 1)
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => !isNaN(val) && val >= 0, {
+      message: 'TRUST_PROXY must be a non-negative integer (number of proxy hops)',
+    }),
+  MAX_RESPONSE_BYTES: z
+    .string()
+    .optional()
+    .default('52428800') // 50 MiB — hard ceiling on any single upstream response body
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => !isNaN(val) && val > 0, {
+      message: 'MAX_RESPONSE_BYTES must be a positive number',
+    }),
   PUBLIC_URL: z
     .string()
     .optional()
@@ -111,6 +127,8 @@ export function validateEnv(): EnvConfig {
     RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS,
     CORS_ORIGIN: process.env.CORS_ORIGIN,
     REQUEST_SIZE_LIMIT: process.env.REQUEST_SIZE_LIMIT,
+    TRUST_PROXY: process.env.TRUST_PROXY,
+    MAX_RESPONSE_BYTES: process.env.MAX_RESPONSE_BYTES,
     PUBLIC_URL: process.env.PUBLIC_URL,
     METRICS_ENABLED: process.env.METRICS_ENABLED,
   });

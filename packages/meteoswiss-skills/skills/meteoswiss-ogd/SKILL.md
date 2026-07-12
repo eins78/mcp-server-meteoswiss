@@ -121,7 +121,7 @@ Monthly columns use `m` in place of `y` (e.g. `ths200m0`); daily uses `d` (`ths2
 
 - **Station not found**: Check metadata CSV (Section 2) for valid abbreviations
 - **Empty data**: Station may be offline — try a nearby station
-- **403/404 on pollen**: Verify abbreviation is lowercase and is a pollen station (~13 total)
+- **403/404 on pollen**: Verify abbreviation is lowercase and is a pollen station (16 total; see the list in the pollen section)
 - **Garbled text**: You're reading Latin1 as UTF-8 — add `iconv -f latin1 -t utf-8`
 
 ## Bundled Scripts
@@ -133,7 +133,7 @@ ${CLAUDE_SKILL_DIR}/scripts/current-weather.sh SMA          # current weather fo
 ${CLAUDE_SKILL_DIR}/scripts/search-stations.sh zurich        # find weather stations
 ${CLAUDE_SKILL_DIR}/scripts/search-forecast-points.sh 8001   # find forecast point_id by postal code
 ${CLAUDE_SKILL_DIR}/scripts/forecast.sh 71                   # forecast for Zurich (point_id=71)
-${CLAUDE_SKILL_DIR}/scripts/pollen.sh ZUE                    # pollen data for Zurich
+${CLAUDE_SKILL_DIR}/scripts/pollen.sh PZH                    # pollen data for Zurich
 ```
 
 All scripts accept `--help` for usage details. Requires: `curl`, `awk`, `iconv`. Forecast also needs `jq`.

@@ -12,6 +12,7 @@ export const fetchMeteoSwissContentSchema = z.object({
   id: z
     .string()
     .min(1, { message: 'id cannot be empty. Use the search tool to find valid page URLs.' })
+    .max(2048, { message: 'id must be at most 2048 characters (it is a page URL).' })
     .describe(
       'Identifier of a MeteoSwiss page to fetch. For this server the id is a full URL returned by the search tool. Example: https://www.meteoschweiz.admin.ch/klima/klimawandel/steigende-temperaturen.html'
     ),

@@ -31,9 +31,11 @@ describe('Search tool - Multi-word queries', () => {
       expect(content.type).toBe('text');
       
       const searchResults = JSON.parse(content.text);
-      expect(searchResults.totalResults).toBeGreaterThanOrEqual(0);
-      expect(searchResults.results).toBeDefined();
-      expect(Array.isArray(searchResults.results)).toBe(true);
+      // Fixture-backed query: assert real content, not just an array shape — an
+      // empty array would otherwise pass and hide a regression (TEST-3).
+      expect(searchResults.results.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].title.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].url.length).toBeGreaterThan(0);
     });
 
     it('should handle three-word queries without errors', async () => {
@@ -50,9 +52,11 @@ describe('Search tool - Multi-word queries', () => {
       expect(content.type).toBe('text');
       
       const searchResults = JSON.parse(content.text);
-      expect(searchResults.totalResults).toBeGreaterThanOrEqual(0);
-      expect(searchResults.results).toBeDefined();
-      expect(Array.isArray(searchResults.results)).toBe(true);
+      // Fixture-backed query: assert real content, not just an array shape — an
+      // empty array would otherwise pass and hide a regression (TEST-3).
+      expect(searchResults.results.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].title.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].url.length).toBeGreaterThan(0);
     });
 
     it('should handle four-word queries without errors', async () => {
@@ -69,9 +73,11 @@ describe('Search tool - Multi-word queries', () => {
       expect(content.type).toBe('text');
       
       const searchResults = JSON.parse(content.text);
-      expect(searchResults.totalResults).toBeGreaterThanOrEqual(0);
-      expect(searchResults.results).toBeDefined();
-      expect(Array.isArray(searchResults.results)).toBe(true);
+      // Fixture-backed query: assert real content, not just an array shape — an
+      // empty array would otherwise pass and hide a regression (TEST-3).
+      expect(searchResults.results.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].title.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].url.length).toBeGreaterThan(0);
     });
 
     it('should handle queries with special characters', async () => {
@@ -88,9 +94,11 @@ describe('Search tool - Multi-word queries', () => {
       expect(content.type).toBe('text');
       
       const searchResults = JSON.parse(content.text);
-      expect(searchResults.totalResults).toBeGreaterThanOrEqual(0);
-      expect(searchResults.results).toBeDefined();
-      expect(Array.isArray(searchResults.results)).toBe(true);
+      // Fixture-backed query: assert real content, not just an array shape — an
+      // empty array would otherwise pass and hide a regression (TEST-3).
+      expect(searchResults.results.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].title.length).toBeGreaterThan(0);
+      expect(searchResults.results[0].url.length).toBeGreaterThan(0);
     });
   });
 });

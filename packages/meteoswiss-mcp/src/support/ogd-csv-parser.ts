@@ -41,11 +41,16 @@ export function parseCsv(csvText: string, filter?: (row: CsvRow) => boolean): Cs
 /**
  * Parse a numeric value from a CSV cell, returning null for missing data.
  *
+ * Uses `Number.isFinite`, so the non-finite forms `Number()` would otherwise
+ * accept — `Infinity`, `-Infinity`, and overflow like `1e309` (→ `Infinity`) —
+ * are rejected as null rather than flowing into measurement objects, where
+ * `Infinity` JSON-serializes to `null` or trips the SDK's output validation. — FUN-18.
+ *
  * @param value - Raw string value from a CSV cell, or null
- * @returns Parsed number, or null if the value is missing or not numeric
+ * @returns Parsed finite number, or null if the value is missing or not a finite number
  */
 export function parseNumeric(value: string | null): number | null {
   if (value === null) return null;
   const num = Number(value);
-  return Number.isNaN(num) ? null : num;
+  return Number.isFinite(num) ? num : null;
 }

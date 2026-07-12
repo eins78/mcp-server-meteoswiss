@@ -8,10 +8,11 @@ import { getCollection } from './ogd-stac-client.js';
 import { getLatin1CsvData } from './ogd-data-store.js';
 import { parseNumeric, type CsvRow } from '../support/ogd-csv-parser.js';
 import { normalize } from '../support/normalize.js';
-import { scoreNameMatch } from '../support/name-matcher.js';
+import { scoreNameMatch, geocodedNameMatchesQuery } from '../support/name-matcher.js';
 import { findNearest } from '../support/haversine.js';
 import { geocodeSwissLocation, type GeocodeOrigin } from '../support/geocode.js';
 import { classifyQuery } from '../support/query-classifier.js';
+import { isBlocklisted } from '../support/location-blocklist.js';
 import { debugData } from '../support/logging.js';
 import { OGD_COLLECTIONS } from '../schemas/ogd-shared.js';
 
@@ -138,6 +139,18 @@ export async function resolveNbcnStation(query: string): Promise<NbcnStation> {
     );
   }
 
+  // Reject well-known international city names before any lookup (mirrors the SMN
+  // resolver). Switzerland has hamlets named after major cities (e.g. "Paris" in
+  // Vaud, ~3 km from Payerne) that the geocoder would otherwise silently accept
+  // and return decades of an unrelated station's climate data.
+  if (isBlocklisted(query.trim())) {
+    throw new Error(
+      `"${query}" is a well-known international city name, not a Swiss climate station. ` +
+        `Use a specific Swiss location instead (postal code, canton, or place name). ` +
+        `Use meteoswissStations to discover available stations.`
+    );
+  }
+
   const exact = stationByAbbr.get(q);
   if (exact) return exact;
 
@@ -162,7 +175,16 @@ export async function resolveNbcnStation(query: string): Promise<NbcnStation> {
   const origins: GeocodeOrigin = kind === 'address' ? 'all' : 'place';
   debugData('[ogd-nbcn] No direct match for "%s", geocoding (origins=%s)...', query, origins);
   const geocoded = await geocodeSwissLocation(query, { origins });
-  if (geocoded) {
+  if (geocoded && !geocodedNameMatchesQuery(query, geocoded.name)) {
+    // Reject geocoding hits whose place name bears no textual resemblance to the
+    // query (mirrors the SMN resolver) — prevents gibberish from resolving to
+    // whatever swisstopo happens to return within the acceptance radius.
+    debugData(
+      '[ogd-nbcn] Geocoded name "%s" does not match query "%s" — rejected',
+      geocoded.name,
+      query
+    );
+  } else if (geocoded) {
     const { station, distance_km } = await findNearestNbcnStation(geocoded.lat, geocoded.lon);
     if (distance_km > MAX_GEOCODE_DISTANCE_KM) {
       debugData(

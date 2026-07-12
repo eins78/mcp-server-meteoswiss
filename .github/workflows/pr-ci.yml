@@ -13,7 +13,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -51,7 +51,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -88,7 +88,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -108,6 +108,36 @@ jobs:
       - name: Skills-MCP parity (structural gate)
         run: pnpm --filter meteoswiss-mcp run lint:parity
 
+  forecast-evals:
+    name: Forecast Evals — Scoring Unit Tests (offline, no API)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # `pnpm test` here = the OFFLINE scoring unit tests (ground truth + scorer):
+      # `node --test src/*.test.ts`. No OpenRouter/LLM calls, no API keys, no cost.
+      # The paid LLM evals (`pnpm eval` / `smoke` / `eval:judge`) are local-dev-only
+      # and MUST NEVER run in CI — see packages/meteoswiss-forecast-evals/README.md
+      # "CI policy". Deliberately not a workspace member (see pnpm-workspace.yaml), so
+      # we install and run in its own directory.
+      - name: Install forecast-evals dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: packages/meteoswiss-forecast-evals
+
+      - name: Run forecast-evals scoring unit tests (offline)
+        run: pnpm test
+        working-directory: packages/meteoswiss-forecast-evals
+
   security-audit:
     name: Security & Dependency Check
     runs-on: ubuntu-latest
@@ -115,7 +145,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         
       - name: Setup pnpm
         uses: pnpm/action-setup@v6

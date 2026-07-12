@@ -18,6 +18,7 @@ import type {
   MeasurementValue,
 } from '../schemas/ogd-current-weather.js';
 import type { CsvRow } from '../support/ogd-csv-parser.js';
+import { normalizeOgdTimestamp } from '../support/ogd-timestamp.js';
 import type { SmnStation } from './ogd-smn-stations.js';
 
 const REALTIME_CSV_URL = 'https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv';
@@ -36,9 +37,18 @@ async function getCachedReverseGeocode(
   if (reverseGeoCache.has(stationAbbr)) {
     return reverseGeoCache.get(stationAbbr) ?? null;
   }
-  const result = await reverseGeocodeSwiss(lat, lon).catch(() => null);
-  reverseGeoCache.set(stationAbbr, result);
-  return result;
+  try {
+    // Cache only resolved outcomes (a hit, or a genuine "no result" null).
+    const result = await reverseGeocodeSwiss(lat, lon);
+    reverseGeoCache.set(stationAbbr, result);
+    return result;
+  } catch (error) {
+    // A transient network error is NOT cached, so a later request can retry —
+    // otherwise one blip would suppress this station's municipality until restart
+    // (FUN-10). municipality is enrichment; canton falls back to metadata.
+    debugData('[ogd-weather] Reverse geocode failed for %s (not cached): %O', stationAbbr, error);
+    return null;
+  }
 }
 
 /**
@@ -184,7 +194,7 @@ export async function getCurrentWeather(
       distance_km,
       network: station.network,
     },
-    timestamp: row.Date ?? row.reference_timestamp ?? '',
+    timestamp: normalizeOgdTimestamp(row.Date ?? row.reference_timestamp ?? ''),
     measurements: {
       temperature: measurement(row, 'tre200s0', '\u00B0C'),
       humidity: measurement(row, 'ure200s0', '%'),

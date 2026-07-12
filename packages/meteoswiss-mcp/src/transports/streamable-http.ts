@@ -34,6 +34,22 @@ interface StreamableHttpOptions {
   config: EnvConfig;
 }
 
+/**
+ * Tool names advertised on the informational `/` endpoint. Kept as a single
+ * source so the two JSON responses (HTML-fallback and API) cannot drift, and so
+ * a newly registered tool (e.g. meteoswissClimateData, previously omitted here)
+ * is easy to add in one place. Mirrors the tools registered in server.ts.
+ */
+const ADVERTISED_TOOLS = [
+  'meteoswissLocalForecast',
+  'meteoswissCurrentWeather',
+  'meteoswissStations',
+  'meteoswissPollenData',
+  'meteoswissClimateData',
+  'search',
+  'fetch',
+] as const;
+
 /** HTTP server interface returned by {@link createHttpServer} */
 export interface HttpServerInterface {
   app: express.Application;
@@ -103,13 +119,26 @@ export async function createHttpServer(
   debugTransport('Creating HTTP server on port %d, host %s', port, host);
   debugTransport('Configuration: %O', config);
 
+  /** The Node HTTP listener, retained so stop() can close it. */
+  let httpServer: ReturnType<express.Application['listen']> | undefined;
+
   const app = express();
 
-  // Configure CORS for production
+  // Trust the reverse proxy (Caddy) so `req.ip` reflects the real client via
+  // X-Forwarded-For instead of always resolving to the proxy's address. A fixed
+  // hop count is used deliberately — `trust proxy: true` would let clients spoof
+  // their IP by prepending a forged X-Forwarded-For, defeating per-IP rate limiting.
+  app.set('trust proxy', config.TRUST_PROXY);
+
+  // Configure CORS for production.
+  // credentials is deliberately false: this is a public, read-only service with
+  // no cookies/auth, and reflecting an arbitrary Origin *with* credentials is the
+  // exact combination the CORS spec forbids for wildcards — a latent footgun the
+  // day any credentialed response is added (SEC-7).
   app.use(
     cors({
       origin: config.CORS_ORIGIN === '*' ? true : config.CORS_ORIGIN,
-      credentials: true,
+      credentials: false,
     })
   );
 
@@ -168,14 +197,7 @@ export async function createHttpServer(
           usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
           health: `/health`,
           capabilities: {
-            tools: [
-              'meteoswissLocalForecast',
-              'meteoswissCurrentWeather',
-              'meteoswissStations',
-              'meteoswissPollenData',
-              'search',
-              'fetch',
-            ],
+            tools: ADVERTISED_TOOLS,
             prompts: ['wetterNordschweiz', 'wetterSchweiz', 'meteoSuisseRomande', 'meteoTicino'],
           },
         });
@@ -197,14 +219,7 @@ export async function createHttpServer(
           usage: `npx mcp-remote ${getMcpEndpointUrl(config)}`,
           health: `/health`,
           capabilities: {
-            tools: [
-              'meteoswissLocalForecast',
-              'meteoswissCurrentWeather',
-              'meteoswissStations',
-              'meteoswissPollenData',
-              'search',
-              'fetch',
-            ],
+            tools: ADVERTISED_TOOLS,
             prompts: ['wetterNordschweiz', 'wetterSchweiz', 'meteoSuisseRomande', 'meteoTicino'],
           },
         });
@@ -248,6 +263,14 @@ export async function createHttpServer(
       let isNewTransport = false;
       if (!transport) {
         if (req.method === 'POST') {
+          // Enforce the session cap here so it surfaces as a proper 503 up front.
+          // The manager also throws inside onsessioninitialized, but that path
+          // returns a generic 500 and can double-close the transport (FUN-13).
+          if (sessionManager.size >= config.MAX_SESSIONS) {
+            debugTransport('Session capacity reached (%d), rejecting', config.MAX_SESSIONS);
+            res.status(503).json({ error: 'Server capacity reached' });
+            return;
+          }
           // Could be an initialize request — create a new transport + server pair
           try {
             transport = await createAndRegisterTransport(createMcpServer, sessionManager);
@@ -338,6 +361,9 @@ export async function createHttpServer(
         reject(err);
       });
 
+      // Retain the listener so stop() can actually close it (see below).
+      httpServer = server;
+
       // Store server reference for tests to access
       // This is a workaround for test compatibility
       (app as express.Application & { __server?: unknown }).__server = server;
@@ -354,7 +380,13 @@ export async function createHttpServer(
   const stop = (): void => {
     debugTransport('Stopping HTTP server, cleaning up %d sessions', sessionManager.size);
     sessionManager.stop();
-    // Note: Express app handles server cleanup internally
+    // Close the HTTP listener too — Express does NOT do this for us, so without
+    // it the listener stayed open (harmless today only because callers
+    // process.exit after stop(), but a silent trap for future graceful shutdown).
+    if (httpServer) {
+      httpServer.close();
+      httpServer = undefined;
+    }
     debugTransport('Server stopped');
   };
 

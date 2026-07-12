@@ -6,7 +6,11 @@ import { z } from 'zod';
 import { CoordinatesSchema } from './ogd-shared.js';
 
 export const ListStationsParamsSchema = z.object({
-  search: z.string().optional().describe('Search by station name or abbreviation'),
+  search: z
+    .string()
+    .max(200, { message: 'Search must be at most 200 characters.' })
+    .optional()
+    .describe('Search by station name or abbreviation'),
   canton: z
     .string()
     .length(2)

@@ -23,7 +23,7 @@ if [[ -z "$STATION" || "$1" == "--help" || "$1" == "-h" ]]; then
   echo "  $(basename "$0") SMA    # Zurich"
   echo "  $(basename "$0") BER    # Bern"
   echo "  $(basename "$0") GVE    # Geneva"
-  exit "${STATION:+1}"
+  if [[ -z "$STATION" ]]; then exit 1; else exit 0; fi
 fi
 
 STATION=$(echo "$STATION" | tr '[:lower:]' '[:upper:]')

@@ -84,4 +84,10 @@ describe('parseNumeric', () => {
   it('should return null for null input', () => {
     expect(parseNumeric(null)).toBeNull();
   });
+
+  it('should return null for non-finite values (FUN-18)', () => {
+    expect(parseNumeric('Infinity')).toBeNull();
+    expect(parseNumeric('-Infinity')).toBeNull();
+    expect(parseNumeric('1e309')).toBeNull(); // overflows to Infinity
+  });
 });

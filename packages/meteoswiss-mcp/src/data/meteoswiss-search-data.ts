@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { z } from 'zod';
 import { fetchJson, HttpRequestError } from '../support/http-communication.js';
 import { debugData } from '../support/logging.js';
 import type {
@@ -12,24 +13,32 @@ import type {
 
 export type { SearchResultItem, SearchResults } from '../schemas/meteoswiss-search.js';
 
-// Solr response types
-interface SolrDocument {
-  path?: string;
-  id?: string;
-  title?: string;
-  lead?: string;
-  description?: string;
-  pageType?: string;
-  modificationDate?: string;
-  publicationDate?: string;
-  content?: string;
-}
+// Solr response schemas. Validated (not just cast) so a valid-JSON error payload
+// or a shape change throws instead of silently degrading to "0 results" (FUN-9).
+const SolrDocumentSchema = z.object({
+  path: z.string().optional(),
+  id: z.string().optional(),
+  title: z.string().optional(),
+  lead: z.string().optional(),
+  description: z.string().optional(),
+  pageType: z.string().optional(),
+  modificationDate: z.string().optional(),
+  publicationDate: z.string().optional(),
+  content: z.string().optional(),
+});
 
-interface SolrResponse {
-  response?: {
-    numFound?: number;
-    docs?: SolrDocument[];
-  };
+const SolrResponseSchema = z.object({
+  response: z.object({
+    numFound: z.number().optional(),
+    // Required array — an error envelope lacking it fails validation and throws.
+    docs: z.array(SolrDocumentSchema),
+  }),
+});
+type SolrResponse = z.infer<typeof SolrResponseSchema>;
+
+/** Parse and validate a raw Solr response, throwing on shape mismatch. */
+function parseSolrResponse(raw: unknown): SolrResponse {
+  return SolrResponseSchema.parse(raw);
 }
 
 // Language to domain mapping for MeteoSwiss
@@ -143,7 +152,7 @@ async function searchFromApi(
 
   try {
     debugData('Searching MeteoSwiss API: %s', url.toString());
-    const response = await fetchJson<SolrResponse>(url.toString());
+    const response = parseSolrResponse(await fetchJson(url.toString()));
 
     debugData('API response received: %d documents found', response.response?.numFound || 0);
 
@@ -198,12 +207,16 @@ async function searchFromTestFixtures(
 ): Promise<SearchResults> {
   // Get the base domain for this language
   const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
-  // Replace spaces with hyphens for fixture filename, consistent with how we name fixture files
+  // Slugify the query into a fixture filename. Diacritics are stripped (NFD +
+  // combining-mark removal) so "météo" resolves to `meteo-results.json` by exact
+  // match instead of relying on the removed first-file fallback (TEST-2).
   const fixtureFile = path.join(
     TEST_FIXTURES_ROOT,
     language,
     `${query
       .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '-')}-results.json`
   );
@@ -214,7 +227,7 @@ async function searchFromTestFixtures(
   if (existsSync(fixtureFile)) {
     debugData('Loading test fixture from: %s', fixtureFile);
     const data = await fs.readFile(fixtureFile, 'utf-8');
-    const response = JSON.parse(data) as SolrResponse;
+    const response = parseSolrResponse(JSON.parse(data));
 
     // Transform fixture data to our format
     const results: SearchResultItem[] =
@@ -257,51 +270,17 @@ async function searchFromTestFixtures(
     };
   }
 
-  // Try to find any fixture file for the language
-  const langDir = path.join(TEST_FIXTURES_ROOT, language);
-  if (existsSync(langDir)) {
-    const files = await fs.readdir(langDir);
-    if (files.length > 0 && files[0]) {
-      const firstFile = files[0];
-      const data = await fs.readFile(path.join(langDir, firstFile), 'utf-8');
-      const response = JSON.parse(data) as SolrResponse;
-
-      // Filter results by query in fixtures
-      const allDocs = response.response?.docs || [];
-      const filteredDocs = allDocs.filter(
-        (doc: SolrDocument) =>
-          doc.title?.toLowerCase().includes(query.toLowerCase()) ||
-          doc.lead?.toLowerCase().includes(query.toLowerCase()) ||
-          doc.content?.toLowerCase().includes(query.toLowerCase())
-      );
-
-      const baseDomain = LANGUAGE_DOMAIN_MAP[language] || LANGUAGE_DOMAIN_MAP.de;
-      const results: SearchResultItem[] = filteredDocs.map((doc: SolrDocument) => ({
-        id: doc.path ? `${baseDomain}${doc.path}` : doc.id || '',
-        title: doc.title || 'Untitled',
-        url: doc.path ? `${baseDomain}${doc.path}` : '',
-        description: doc.lead || doc.description || '',
-        contentType: doc.pageType || 'content',
-        lastModified: doc.modificationDate || doc.publicationDate,
-        path: doc.path,
-        lead: doc.lead,
-        publicationDate: doc.publicationDate,
-      }));
-
-      // Mirror the live API's fixed upstream page size (see UPSTREAM_PAGE_SIZE).
-      const startIndex = (page - 1) * UPSTREAM_PAGE_SIZE;
-      const paginatedResults = results.slice(startIndex, startIndex + UPSTREAM_PAGE_SIZE);
-
-      return {
-        totalResults: results.length,
-        page,
-        pageSize: paginatedResults.length,
-        results: paginatedResults,
-      };
-    }
-  }
-
-  // Return empty results if no fixtures found
+  // No exact fixture: return empty (a genuine "no match", the same shape the
+  // live API gives for an unmatched query). The previous behaviour — read the
+  // first file in the language directory and substring-filter it — could return
+  // "whatever sorts first" for a missing/renamed fixture, silently masking the
+  // gap with unrelated results (TEST-2). Diacritic-insensitive slugging above
+  // means real fixtures (e.g. "météo" → meteo) resolve by exact match instead.
+  debugData(
+    'No exact search fixture for query "%s" (%s) — returning empty results',
+    query,
+    language
+  );
   return {
     totalResults: 0,
     page,

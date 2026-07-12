@@ -12,7 +12,7 @@
   },
   "scripts": {
     "test": "skills add . --list",
-    "postinstall": "skills add . --global --skill '*' --agent claude-code -y < /dev/null"
+    "install-skill": "skills add . --global --skill '*' --agent claude-code -y < /dev/null"
   },
   "devDependencies": {
     "skills": "^1.1.6"

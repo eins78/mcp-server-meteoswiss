@@ -5,8 +5,6 @@ import { debugHttp } from './logging.js';
  */
 interface CacheEntry<T> {
   data: T;
-  etag?: string;
-  lastModified?: string;
   expiresAt: number;
   cachedAt: number;
 }
@@ -17,6 +15,17 @@ interface CacheEntry<T> {
 export class HttpCache {
   private cache = new Map<string, CacheEntry<unknown>>();
   private readonly minCacheDuration = 60 * 1000; // 1 minute minimum cache
+  /**
+   * Hard cap on entry count. Without it the Map grows unbounded with URL
+   * cardinality (SEC-6). Map iteration order is insertion order, so the first
+   * key is the least-recently-inserted; reads promote their key to the end,
+   * making eviction least-recently-*used*.
+   */
+  private readonly maxEntries: number;
+
+  constructor(maxEntries = Number(process.env.HTTP_CACHE_MAX_ENTRIES) || 1000) {
+    this.maxEntries = maxEntries > 0 ? maxEntries : 1000;
+  }
 
   /**
    * Get a cached response if valid
@@ -24,7 +33,7 @@ export class HttpCache {
    * @param key Cache key (usually URL)
    * @returns Cached data or undefined if not found/expired
    */
-  get<T>(key: string): { data: T; etag?: string; lastModified?: string } | undefined {
+  get<T>(key: string): { data: T } | undefined {
     const entry = this.cache.get(key);
 
     if (!entry) {
@@ -41,12 +50,12 @@ export class HttpCache {
       return undefined;
     }
 
+    // Promote to most-recently-used (re-insert moves the key to the end).
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+
     debugHttp('Cache hit for key: %s', key);
-    return {
-      data: entry.data as T,
-      etag: entry.etag,
-      lastModified: entry.lastModified,
-    };
+    return { data: entry.data as T };
   }
 
   /**
@@ -83,47 +92,21 @@ export class HttpCache {
 
     const entry: CacheEntry<T> = {
       data,
-      etag: this.getHeader(headers, 'etag'),
-      lastModified: this.getHeader(headers, 'last-modified'),
       expiresAt: now + ttl,
       cachedAt: now,
     };
 
+    // Re-insert so an updated key becomes most-recently-used, then evict the
+    // oldest entries while over the cap.
+    this.cache.delete(key);
     this.cache.set(key, entry);
-    debugHttp('Cached response for key: %s, TTL: %dms', key, ttl);
-  }
-
-  /**
-   * Check if we have a potentially stale cache entry (for conditional requests)
-   *
-   * @param key Cache key
-   * @returns ETag and Last-Modified if available
-   */
-  getStaleEntry(key: string): { etag?: string; lastModified?: string } | undefined {
-    const entry = this.cache.get(key);
-
-    if (!entry || (!entry.etag && !entry.lastModified)) {
-      return undefined;
+    while (this.cache.size > this.maxEntries) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest === undefined) break;
+      this.cache.delete(oldest);
+      debugHttp('Evicted LRU cache entry: %s', oldest);
     }
-
-    return {
-      etag: entry.etag,
-      lastModified: entry.lastModified,
-    };
-  }
-
-  /**
-   * Update cache entry if server returned 304 Not Modified
-   *
-   * @param key Cache key
-   * @param headers New response headers
-   */
-  updateNotModified(key: string, headers: Record<string, string | string[] | undefined>): void {
-    const entry = this.cache.get(key);
-    if (!entry) return;
-
-    // Update cache expiry based on new headers
-    this.set(key, entry.data, headers);
+    debugHttp('Cached response for key: %s, TTL: %dms', key, ttl);
   }
 
   /**

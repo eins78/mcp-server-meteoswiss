@@ -9,6 +9,7 @@ import { parseNumeric } from '../support/ogd-csv-parser.js';
 import { roundByUnit } from '../support/round-measurements.js';
 import { normalize } from '../support/normalize.js';
 import { debugData } from '../support/logging.js';
+import { normalizeOgdTimestamp } from '../support/ogd-timestamp.js';
 import { OGD_COLLECTIONS, SOURCE_ATTRIBUTION } from '../schemas/ogd-shared.js';
 import type {
   GetPollenDataParams,
@@ -94,7 +95,10 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
     }
   }
 
-  // Fetch data for each station concurrently
+  // Fetch data for each station concurrently. Per-station failures degrade to
+  // null (resilient), but a captured error lets us distinguish "no pollen
+  // measured" from "every fetch failed" below.
+  const fetchErrors: Error[] = [];
   const stationResults = await Promise.all(
     filteredStations.map(async (stationRow): Promise<StationPollenData | null> => {
       const abbr = stationRow.station_abbr ?? '';
@@ -167,17 +171,29 @@ export async function getPollenData(params: GetPollenDataParams): Promise<Pollen
               lon: parseNumeric(stationRow.station_coordinates_wgs84_lon ?? null) ?? 0,
             },
           },
-          timestamp: latestRow.reference_timestamp ?? latestRow.Date ?? '',
+          timestamp: normalizeOgdTimestamp(latestRow.reference_timestamp ?? latestRow.Date ?? ''),
           pollen,
         };
       } catch (error) {
         debugData('[ogd-pollen] Failed to fetch data for station %s: %O', abbr, error);
+        fetchErrors.push(error instanceof Error ? error : new Error(String(error)));
         return null;
       }
     })
   );
 
   const stations = stationResults.filter((s): s is StationPollenData => s !== null);
+
+  // Fail loudly on a total outage: if no station yielded any data, returning an
+  // empty success would be reported by the model as "no pollen data available"
+  // when the real cause is an upstream outage or a renamed data path (FUN-4).
+  if (stations.length === 0 && filteredStations.length > 0) {
+    const detail = fetchErrors[0] ? `: ${fetchErrors[0].message}` : '';
+    throw new Error(
+      `Failed to fetch pollen data for all ${filteredStations.length} station(s)${detail}. ` +
+        `This usually indicates a MeteoSwiss upstream outage or a changed data path.`
+    );
+  }
 
   return { stations, source: SOURCE_ATTRIBUTION };
 }

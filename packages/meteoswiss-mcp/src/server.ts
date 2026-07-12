@@ -40,6 +40,21 @@ import type { McpPromptResponse } from './types/mcp-prompts.js';
 import { getVersion } from './support/version.js';
 
 /**
+ * Sanitize a user-supplied value for a single-line stderr log entry: truncate
+ * and JSON-stringify so embedded newlines / control characters cannot forge
+ * additional log lines (e.g. fake `[MCP Server Error]` entries) — SEC-10.
+ *
+ * @param value - The raw user input to log
+ * @param maxLength - Maximum characters to retain before truncation
+ * @returns A quoted, escaped, length-bounded representation safe to interpolate
+ */
+function logSafe(value: unknown, maxLength = 200): string {
+  const str = typeof value === 'string' ? value : String(value);
+  const truncated = str.length > maxLength ? `${str.slice(0, maxLength)}…` : str;
+  return JSON.stringify(truncated);
+}
+
+/**
  * Create and configure the MeteoSwiss MCP server
  * @returns Configured MCP server instance
  */
@@ -81,7 +96,7 @@ export function createServer(): McpServer {
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing search request: query="${params.query}", language=${params.language || 'de'}`
+          `Processing search request: query=${logSafe(params.query)}, language=${logSafe(params.language || 'de')}`
         );
         debugTools('search called with params: %O', params);
         const results = await meteoswissSearchTool(params);
@@ -129,7 +144,7 @@ export function createServer(): McpServer {
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing fetch request: id="${params.id}", format=${params.format || 'markdown'}`
+          `Processing fetch request: id=${logSafe(params.id)}, format=${logSafe(params.format || 'markdown')}`
         );
         debugTools('fetch called with params: %O', params);
         const content = await meteoswissFetchTool(params);
@@ -212,7 +227,7 @@ useful for judging *when* rain, sun, or wind is expected, not just the daily sum
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing getLocalForecast request for location: ${params.location}, days: ${params.days}`
+          `Processing getLocalForecast request for location: ${logSafe(params.location)}, days: ${params.days}`
         );
         debugTools('getLocalForecast called with params: %O', params);
         const result = await getLocalForecast(params);
@@ -263,7 +278,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing meteoswissCurrentWeather request: station=${params.station ?? ''}, coords=${params.coordinates ? `${params.coordinates.lat},${params.coordinates.lon}` : ''}`
+          `Processing meteoswissCurrentWeather request: station=${logSafe(params.station ?? '')}, coords=${params.coordinates ? `${params.coordinates.lat},${params.coordinates.lon}` : ''}`
         );
         debugTools('getCurrentWeather called with params: %O', params);
         const result = await getCurrentWeather(params);
@@ -303,7 +318,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing meteoswissStations request: search=${params.search ?? ''}, canton=${params.canton ?? ''}`
+          `Processing meteoswissStations request: search=${logSafe(params.search ?? '')}, canton=${logSafe(params.canton ?? '')}`
         );
         debugTools('listStations called with params: %O', params);
         const result = await listStations(params);
@@ -343,7 +358,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing meteoswissPollenData request: station=${params.station ?? 'all'}`
+          `Processing meteoswissPollenData request: station=${logSafe(params.station ?? 'all')}`
         );
         debugTools('getPollenData called with params: %O', params);
         const result = await getPollenData(params);
@@ -389,7 +404,7 @@ Accepts station names ("Zurich", "Basel"), abbreviations ("SMA", "BAS"), or WGS8
       const _t0 = performance.now();
       try {
         console.error(
-          `Processing meteoswissClimateData request: station=${params.station ?? ''}, resolution=${params.resolution ?? 'monthly'}`
+          `Processing meteoswissClimateData request: station=${logSafe(params.station ?? '')}, resolution=${logSafe(params.resolution ?? 'monthly')}`
         );
         debugTools('getClimateData called with params: %O', params);
         const result = await getClimateData(params);

@@ -44,13 +44,18 @@ export async function getCollection(collectionId: string): Promise<StacCollectio
   debugData('[ogd-stac] Fetching collection: %s', collectionId);
 
   if (USE_TEST_FIXTURES) {
+    // Fail-fast: never fall through to live network in fixture mode (mirrors the
+    // OGD CSV store's contract) — FUN-19.
     const fixture = COLLECTION_FIXTURES[collectionId];
-    if (fixture) {
-      const data = JSON.parse(
-        await fs.readFile(path.join(OGD_FIXTURES_ROOT, 'stac', fixture), 'utf-8')
+    if (!fixture) {
+      throw new Error(
+        `No STAC collection fixture for: ${collectionId}. Add a mapping in COLLECTION_FIXTURES.`
       );
-      return StacCollectionSchema.parse(data);
     }
+    const data = JSON.parse(
+      await fs.readFile(path.join(OGD_FIXTURES_ROOT, 'stac', fixture), 'utf-8')
+    );
+    return StacCollectionSchema.parse(data);
   }
 
   const url = `${STAC_BASE}/collections/${collectionId}`;
@@ -71,16 +76,18 @@ export async function getLatestItem(collectionId: string): Promise<StacItem> {
 
   let parsed;
   if (USE_TEST_FIXTURES) {
+    // Fail-fast: never fall through to live network in fixture mode — FUN-19.
     const fixture = ITEMS_FIXTURES[collectionId];
-    if (fixture) {
-      const data = JSON.parse(
-        await fs.readFile(path.join(OGD_FIXTURES_ROOT, 'stac', fixture), 'utf-8')
+    if (!fixture) {
+      throw new Error(
+        `No STAC items fixture for: ${collectionId}. Add a mapping in ITEMS_FIXTURES.`
       );
-      parsed = StacItemCollectionSchema.parse(data);
     }
-  }
-
-  if (!parsed) {
+    const data = JSON.parse(
+      await fs.readFile(path.join(OGD_FIXTURES_ROOT, 'stac', fixture), 'utf-8')
+    );
+    parsed = StacItemCollectionSchema.parse(data);
+  } else {
     const url = `${STAC_BASE}/collections/${collectionId}/items?limit=10`;
     const raw = await fetchJson(url);
     parsed = StacItemCollectionSchema.parse(raw);

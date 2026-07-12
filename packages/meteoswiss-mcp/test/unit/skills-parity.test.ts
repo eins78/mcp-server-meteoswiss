@@ -212,7 +212,7 @@ describe('checkParity', () => {
     expect(findings[0]!.kind).toBe('excluded-but-marked');
   });
 
-  it('flags exception sources and canonical-source paths that no longer exist', () => {
+  it('flags exception sources, skill targets, and canonical-source paths that no longer exist', () => {
     const exceptions: ParityExceptions = {
       'excluded-tools': [],
       exceptions: [{ source: 'src/gone.ts', skill: 'SKILL.md', reason: 'points at a deleted file' }],
@@ -225,8 +225,39 @@ describe('checkParity', () => {
     });
     expect(findings.map((f) => f.kind).sort()).toEqual([
       'stale-canonical-source',
+      'stale-exception-skill',
       'stale-exception-source',
     ]);
+  });
+
+  it('strips the #anchor before probing an exception skill target (TEST-4)', () => {
+    const exceptions: ParityExceptions = {
+      'excluded-tools': [],
+      exceptions: [
+        { source: 'src/x.ts', skill: 'REFERENCE.md#weather-icon-codes', reason: 'anchored target' },
+      ],
+    };
+    // File exists only for the anchor-stripped path; the raw `…#anchor` string does not.
+    const existing = new Set(['src/x.ts', 'REFERENCE.md']);
+    const findings = checkParity({
+      ...base,
+      exceptions,
+      fileExists: (p) => existing.has(p),
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it('flags a deleted exception skill file even when the source still exists', () => {
+    const exceptions: ParityExceptions = {
+      'excluded-tools': [],
+      exceptions: [{ source: 'src/x.ts', skill: 'GONE.md#sec', reason: 'skill target deleted' }],
+    };
+    const findings = checkParity({
+      ...base,
+      exceptions,
+      fileExists: (p) => p === 'src/x.ts',
+    });
+    expect(findings.map((f) => f.kind)).toEqual(['stale-exception-skill']);
   });
 });
 

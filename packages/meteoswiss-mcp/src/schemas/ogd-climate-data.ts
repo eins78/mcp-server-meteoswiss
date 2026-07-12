@@ -18,9 +18,10 @@ export const GetClimateDataParamsSchema = z.object({
   station: z
     .string()
     .min(1)
+    .max(200, { message: 'Station must be at most 200 characters.' })
     .optional()
     .describe(
-      'Climate station name or abbreviation (e.g., "Zurich", "BAS", "Davos"). Part of the National Basic Climatic Network (29 climate + 46 precipitation stations).'
+      'Climate station name or abbreviation (e.g., "Zurich", "BAS", "Davos"). Part of the National Basic Climatic Network (29 climate + 46 precipitation stations). Provide either this or `coordinates`; if both are given, `coordinates` takes precedence.'
     ),
   coordinates: CoordinatesParamSchema.optional(),
   resolution: z
@@ -31,10 +32,12 @@ export const GetClimateDataParamsSchema = z.object({
     ),
   start_date: z
     .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .optional()
     .describe('Start date filter (YYYY-MM-DD). Only rows on or after this date are returned.'),
   end_date: z
     .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .optional()
     .describe('End date filter (YYYY-MM-DD). Only rows on or before this date are returned.'),
   limit: z
@@ -92,7 +95,7 @@ export const ClimateDataResponseSchema = z.object({
     network: z
       .string()
       .describe(
-        'NBCN network kind ("climate" full climate series, "precipitation" precipitation-only)'
+        'NBCN network kind: "nbcn" (full climate series) or "nbcn-precip" (precipitation-only)'
       ),
   }),
   resolution: z.enum(CLIMATE_RESOLUTIONS).describe('Resolution the returned rows are in'),
