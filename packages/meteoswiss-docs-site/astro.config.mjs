@@ -10,6 +10,9 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'MeteoSwiss LLM Tools',
+			// Matches the default Starlight resolves anyway (public/favicon.svg) — set explicitly
+			// so the weather-emoji favicon is documented, not just an accident of file placement.
+			favicon: '/favicon.svg',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/eins78/meteoswiss-llm-tools' },
 			],
