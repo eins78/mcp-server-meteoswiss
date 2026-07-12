@@ -37,6 +37,23 @@ Executed the 29-commit FIX PLAN from `docs/reviews/2026-07-11-security-functiona
 - [ ] After #118 merges, retarget #130 to `main` so the gated CI runs; expected green (both gates verified locally).
 - [ ] Optional follow-ups: FUN-11 `getLatestItem` ordering (verify live API first); TEST-6 residual disk-cache TTL-refetch case.
 
+## Addendum — 2026-07-12 CI job clarity refinement (post-approval)
+Max approved keeping the new `forecast-evals` CI job but asked for two clarity refinements so no
+future reader mistakes it for the paid LLM evals:
+- **Renamed the CI job** `Forecast Evals Tests` → `Forecast Evals — Scoring Unit Tests (offline,
+  no API)` in `.github/workflows/pr-ci.yml`; job id `forecast-evals` kept stable (branch-protection
+  matches on id, not display name). Rewrote the inline comment to spell out that `pnpm test` here is
+  `node --test src/*.test.ts` (offline, no keys, no cost) and that `pnpm eval`/`smoke`/`eval:judge`
+  must never run in CI, pointing at the README.
+- **Added a `## CI policy` section** to `packages/meteoswiss-forecast-evals/README.md` — a two-row
+  table drawing the boundary (offline `pnpm test` runs in CI as a regression gate; paid LLM evals
+  are local-dev-only, need `OPENROUTER_API_KEY`, never in CI). Also tightened the older "Not run in
+  CI" line, which was now imprecise (the offline tests _do_ run in CI).
+- **Replied on PR #130** (`gh pr comment`) with the rationale: the job runs only offline scoring
+  unit tests, previously uncovered by root CI because the package is deliberately not a workspace
+  member; linked the new README policy section.
+- Verified `pnpm test` green (40/40, no network) before committing. No retarget, no merge.
+
 ## Repository State
 - Committed: `e39285e` — docs(review): flag retarget-gated CI + review-only commits in status
 - Branch: `secreview` (base `worktree-quatico-showcase-docs`, PR #130 OPEN/MERGEABLE), pushed.

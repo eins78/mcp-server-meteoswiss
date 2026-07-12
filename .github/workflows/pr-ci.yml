@@ -109,7 +109,7 @@ jobs:
         run: pnpm --filter meteoswiss-mcp run lint:parity
 
   forecast-evals:
-    name: Forecast Evals Tests
+    name: Forecast Evals — Scoring Unit Tests (offline, no API)
     runs-on: ubuntu-latest
 
     steps:
@@ -124,13 +124,17 @@ jobs:
         with:
           node-version: 24
 
-      # Deliberately not a workspace member (see pnpm-workspace.yaml) — install and
-      # run its offline test suite in its own directory. No API keys needed.
+      # `pnpm test` here = the OFFLINE scoring unit tests (ground truth + scorer):
+      # `node --test src/*.test.ts`. No OpenRouter/LLM calls, no API keys, no cost.
+      # The paid LLM evals (`pnpm eval` / `smoke` / `eval:judge`) are local-dev-only
+      # and MUST NEVER run in CI — see packages/meteoswiss-forecast-evals/README.md
+      # "CI policy". Deliberately not a workspace member (see pnpm-workspace.yaml), so
+      # we install and run in its own directory.
       - name: Install forecast-evals dependencies
         run: pnpm install --frozen-lockfile
         working-directory: packages/meteoswiss-forecast-evals
 
-      - name: Run forecast-evals tests
+      - name: Run forecast-evals scoring unit tests (offline)
         run: pnpm test
         working-directory: packages/meteoswiss-forecast-evals
 

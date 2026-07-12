@@ -13,8 +13,10 @@ before shipping instead of assumed. This suite compares JSON *formats* across mo
 it does **not** compare the agent skill against the MCP server; see
 [docs/skill-vs-mcp.md](../../docs/skill-vs-mcp.md) for that (qualitative) comparison.
 
-**Not run in CI.** This is a manual, on-demand suite — run it when you're about to change the
-forecast JSON shape, or periodically to catch regressions in legibility as models change.
+**The paid LLM evals are not run in CI** — they're a manual, on-demand suite you run when you're
+about to change the forecast JSON shape, or periodically to catch regressions in legibility as
+models change. The **offline scoring unit tests** (`pnpm test`) _do_ run in CI as a cheap
+regression gate. See [CI policy](#ci-policy) below for the exact boundary.
 
 **Not a pnpm workspace member.** This package has its own `pnpm-workspace.yaml` +
 `pnpm-lock.yaml`, independent of the repo root's (see "Why this package isn't a workspace member"
@@ -65,6 +67,23 @@ cp .env.example .env
 `scripts/run.sh` sources `.env` automatically if present, and `promptfoo` itself also loads
 `.env`. If `OPENROUTER_API_KEY` is still unset when a paid run starts, `run.sh` fails fast with
 a message pointing back here.
+
+## CI policy
+
+Two clearly separated tiers — one runs in CI, one never does:
+
+| Command | What it does | Cost | In CI? |
+|---------|--------------|------|--------|
+| `pnpm test` | **Offline scoring unit tests** — ground-truth + scorer, `node --test src/*.test.ts` | $0, no network, no keys | **Yes** — regression gate (`forecast-evals` job in `.github/workflows/pr-ci.yml`) |
+| `pnpm eval` / `smoke` / `eval:judge` | **Paid LLM evals** — real OpenRouter model calls | Real money (~cents to ~$3), needs `OPENROUTER_API_KEY` | **Never** — local-dev-only |
+
+- The **offline unit tests run in CI** so the ground-truth generator and scorer can't silently
+  break. They make no network calls and need no secrets. Because this package is deliberately
+  [not a workspace member](#why-this-package-isnt-a-workspace-member), they were previously
+  uncovered by the repo-root CI; the dedicated `forecast-evals` job closes that gap.
+- The **paid LLM evals must never run in CI.** They cost money and require `OPENROUTER_API_KEY`.
+  Run them locally, on demand (see [Quick start](#quick-start)). Do not add them to any workflow,
+  and do not put `OPENROUTER_API_KEY` in CI secrets for this package.
 
 ## Reading the output
 
