@@ -7,12 +7,15 @@
 
 MCP server for MeteoSwiss weather data — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website.
 
+This package is the *server* half of the repo's [skill vs. MCP case study](../../docs/skill-vs-mcp.md) — the same data is also available as a no-infrastructure [agent skill](../meteoswiss-skills/).
+
 **[meteoswiss-mcp.ars.is](https://meteoswiss-mcp.ars.is/)** — try it now, no setup needed.
 
 - **Multi-day forecasts** for ~6000 Swiss locations (postal codes, stations, place names)
-- **Real-time measurements** from ~160 automatic weather stations, updated every 10 minutes
+- **Real-time measurements** from ~300 stations (~160 full weather + ~140 precipitation-only), updated every 10 minutes
 - **Station discovery** by name, canton, or GPS coordinates
 - **Pollen monitoring** from ~15 stations across Switzerland
+- **Climate series** from the National Basic Climatic Network (NBCN), going back decades
 - **MeteoSwiss website** search and content retrieval
 
 ## Use the Hosted Service
@@ -65,6 +68,7 @@ Go to **Settings** → **Integrations** → **Add MCP Server** → paste `https:
 | `meteoswissCurrentWeather` | Real-time measurements from automatic weather stations (temperature, wind, humidity, pressure) |
 | `meteoswissStations` | Search and browse the MeteoSwiss station network by name, canton, or coordinates |
 | `meteoswissPollenData` | Current pollen concentration data from monitoring stations |
+| `meteoswissClimateData` | NBCN climate series — temperature, precipitation, sunshine, and climate indicators going back decades |
 | `search` | Search MeteoSwiss website content (DE, FR, IT, EN) |
 | `fetch` | Fetch full content from MeteoSwiss pages in markdown, text, or HTML |
 

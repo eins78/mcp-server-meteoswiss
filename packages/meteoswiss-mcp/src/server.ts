@@ -295,7 +295,7 @@ Accepts station names ("Zurich"), abbreviations ("SMA"), addresses ("Bahnhofplat
   server.registerTool(
     'meteoswissStations',
     {
-      description: `List and search MeteoSwiss automatic weather stations. Filter by name, canton, or browse the full network of ~160 stations across Switzerland.`,
+      description: `List and search MeteoSwiss measurement stations. Filter by name, canton, or browse the full network of ~300 stations (~160 full weather + ~140 precipitation-only) across Switzerland.`,
       inputSchema: ListStationsParamsSchema.shape,
       outputSchema: StationListResponseSchema.shape,
     },

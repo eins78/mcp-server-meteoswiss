@@ -2,7 +2,7 @@
   "name": "meteoswiss-forecast-evals",
   "version": "0.1.0",
   "private": true,
-  "description": "Eval suite measuring how well LLMs understand meteoswissLocalForecast JSON, especially the hourly precipitation time-series (PR #99)",
+  "description": "Eval suite measuring how well LLMs read meteoswissLocalForecast JSON \u2014 eval-driven interface design for tool outputs",
   "author": "Max Albrecht <1@178.is>",
   "license": "CC0-1.0",
   "type": "module",

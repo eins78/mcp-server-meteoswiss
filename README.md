@@ -7,29 +7,47 @@
 [![next](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmeteoswiss-mcp-demo-test.cloud.kiste.li%2Fhealth&query=%24.version&label=next&color=lightgrey)](https://meteoswiss-mcp-demo-test.cloud.kiste.li/)
 [![Cursor Directory](https://img.shields.io/badge/Cursor_Directory-Add_to_Cursor-blue)](https://cursor.directory/plugins/meteoswiss-llm-tools)
 
-Swiss weather data for AI assistants — powered by [MeteoSwiss Open Data](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website. Free, no API key required.
+Swiss weather data for AI assistants — powered by [MeteoSwiss Open Government Data (OGD)](https://opendatadocs.meteoswiss.ch/), the same data behind the MeteoSwiss app and website. Free, no API key required.
 
 **[meteoswiss-mcp.ars.is](https://meteoswiss-mcp.ars.is/)** — try the hosted service instantly, no setup needed.
 
+This repo is also a working answer to a design question: **how should you give AI agents access to a public dataset?** It implements the same MeteoSwiss data access twice — as an [agent skill](packages/meteoswiss-skills/) (markdown instructions plus bash scripts, no server) and as an [MCP server](packages/meteoswiss-mcp/) (structured tools, fuzzy matching, caching, hosted). The two approaches are compared honestly in the [skill vs. MCP case study](docs/skill-vs-mcp.md).
+
+A third piece, [meteoswiss-forecast-evals](packages/meteoswiss-forecast-evals/), demonstrates eval-driven interface design: a [promptfoo](https://promptfoo.dev/) suite measuring how well 13 LLMs read the forecast JSON, which settled a real design decision — local-time timestamps beat UTC, with hour-level lookups scoring ~100% vs. ~0%.
+
+What the tools provide:
+
 - **Multi-day forecasts** for ~6000 Swiss locations (postal codes, stations, place names)
-- **Real-time measurements** from ~160 automatic weather stations, updated every 10 minutes
+- **Real-time measurements** from ~300 stations (~160 full weather + ~140 precipitation-only), updated every 10 minutes
 - **Station discovery** by name, canton, or GPS coordinates
 - **Pollen monitoring** from ~15 stations across Switzerland
+- **Climate series** from the National Basic Climatic Network (NBCN), going back decades
 - **MeteoSwiss website** search and content retrieval
 
-## Choose Your Approach
+## What this repo demonstrates
 
-This monorepo offers two ways to bring Swiss weather data into AI assistants:
+- **An agent skill** — teach an agent to fetch open data directly with `curl`/`awk`/`jq`: ~630 lines of markdown and bash, zero infrastructure. → [packages/meteoswiss-skills](packages/meteoswiss-skills/)
+- **An MCP server** — the same data as structured, validated tools with fuzzy station matching, geocoding, TTL-tiered caching, a real test suite, Docker, and a hosted instance. → [packages/meteoswiss-mcp](packages/meteoswiss-mcp/)
+- **Eval-driven interface design** — treat tool output as an interface for a language model, and measure its legibility before shipping. → [packages/meteoswiss-forecast-evals](packages/meteoswiss-forecast-evals/)
+
+Read the comparison: **[Skill vs. MCP Server: Two Ways to Give AI Agents the Same Data](docs/skill-vs-mcp.md)**.
+
+## Choose your approach
+
+Both approaches answer the same weather questions. Which to install depends on your agent:
 
 | | [MCP Server](packages/meteoswiss-mcp/) | [Agent Skill](packages/meteoswiss-skills/) |
 |---|---|---|
-| **How it works** | Standalone server exposing structured tools via MCP | Teaches agents to call MeteoSwiss APIs directly via HTTP |
-| **Best for** | Claude Desktop, Claude.ai, any MCP client | Claude Code, Cursor, agents without MCP support |
-| **Features** | Fuzzy station matching, geocoding, structured JSON, prompts | Lightweight, no server process, shell scripts included |
-| **Install** | One-liner or Docker | Skill package or symlink |
-| **Requires** | Node.js 22+ (or Docker) | `curl`, `awk`, `jq` |
+| **What it is** | Standalone server exposing 7 structured tools via MCP | Markdown instructions + 5 bash scripts the agent runs directly |
+| **Works with** | Claude Desktop, Claude.ai, Cursor, any MCP client | Claude Code, Cursor, any agent with shell access |
+| **Coverage** | Forecasts, current weather, stations, pollen, climate series, website search | Forecasts, current weather, stations, pollen |
+| **Extras** | Fuzzy matching, geocoding, caching, DE/FR/IT prompts, structured JSON | No server, no Node.js — just `curl`, `awk`, `jq` |
+| **Size** | ~6.6k lines TypeScript, tested in CI | ~630 lines markdown + bash |
+| **Install** | One-liner (hosted), npm, or Docker | Plugin marketplace, Skills CLI, or symlink |
 
-### MCP Server — Quickstart
+Full comparison — parity matrix, engineering trade-offs, context cost, when to choose which: [docs/skill-vs-mcp.md](docs/skill-vs-mcp.md).
+
+### MCP server — quickstart
 
 Use the hosted instance (no installation):
 
@@ -48,7 +66,7 @@ docker run -p 3000:3000 ghcr.io/eins78/meteoswiss-mcp:latest
 
 See the [meteoswiss-mcp README](packages/meteoswiss-mcp/README.md) for Claude Desktop setup, environment variables, and full documentation.
 
-### Agent Skill — Quickstart
+### Agent skill — quickstart
 
 Install via the Claude Code plugin marketplace:
 
@@ -65,7 +83,7 @@ pnpx skills add https://github.com/eins78/meteoswiss-llm-tools.git#packages/mete
 
 See the [meteoswiss-skills README](packages/meteoswiss-skills/README.md) for manual installation and details.
 
-## Available Tools (MCP Server)
+## Available tools (MCP server)
 
 | Tool | Description |
 |------|-------------|
@@ -73,10 +91,11 @@ See the [meteoswiss-skills README](packages/meteoswiss-skills/README.md) for man
 | `meteoswissCurrentWeather` | Real-time measurements (temperature, wind, humidity, pressure) |
 | `meteoswissStations` | Search station network by name, canton, or coordinates |
 | `meteoswissPollenData` | Pollen concentration data from monitoring stations |
+| `meteoswissClimateData` | NBCN climate series — temperature, precipitation, sunshine, and climate indicators going back decades |
 | `search` | Search MeteoSwiss website content (DE, FR, IT, EN) |
 | `fetch` | Fetch full content from MeteoSwiss pages |
 
-## Example Questions
+## Example questions
 
 Works with both approaches — just ask in any of Switzerland's four languages:
 
@@ -91,6 +110,14 @@ Works with both approaches — just ask in any of Switzerland's four languages:
 |---------|---------|-------------|
 | [`meteoswiss-mcp`](packages/meteoswiss-mcp/) | [![npm](https://img.shields.io/npm/v/meteoswiss-mcp)](https://www.npmjs.com/package/meteoswiss-mcp) | MCP server with structured tools, fuzzy matching, and geocoding |
 | [`meteoswiss-skills`](packages/meteoswiss-skills/) | 1.0.0 | Agent skill — direct HTTP access, no server needed |
+| [`meteoswiss-forecast-evals`](packages/meteoswiss-forecast-evals/) | — | LLM eval suite for the forecast JSON format (standalone, not a workspace member) |
+
+## Documentation
+
+- [Skill vs. MCP case study](docs/skill-vs-mcp.md) — the honest comparison of the two approaches
+- [Eval results: forecast JSON comprehension](packages/meteoswiss-forecast-evals/docs/results/2026-07-09-forecast-json-comprehension.md) — the local-time-vs-UTC sweep
+- [MCP server user guide](packages/meteoswiss-mcp/docs/user-guide.md)
+- [Documentation index](docs/README.md)
 
 ## Development
 
@@ -104,7 +131,7 @@ See each package's README for package-specific commands. The repo uses [changese
 
 Manual, point-in-time test reports (e.g. live MCP tool test passes) live in `docs/test-reports/`.
 
-## Data Source
+## Data source
 
 All weather data comes from [MeteoSwiss Open Government Data (OGD)](https://opendatadocs.meteoswiss.ch/) — the official free data offering from Switzerland's Federal Office of Meteorology and Climatology. The same data powers the MeteoSwiss app and website.
 

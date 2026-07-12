@@ -162,9 +162,9 @@ The server fully implements the Model Context Protocol specification:
 Beyond `meteoswissWeatherReport`, the server provides these OGD-based tools:
 
 - **meteoswissLocalForecast** — Multi-day weather forecast for ~6000 Swiss locations (postal codes, stations, mountain POIs)
-- **meteoswissCurrentWeather** — Real-time measurements from ~160 automatic weather stations
+- **meteoswissCurrentWeather** — Real-time measurements from ~300 measurement stations (~160 full weather + ~140 precipitation-only)
 - **meteoswissStations** — List and search MeteoSwiss automatic weather stations
-- **meteoswissClimateNormals** — 1991-2020 climate normal values (30-year averages)
+- **meteoswissClimateData** — Homogeneous NBCN climate series (daily/monthly/yearly, decades back)
 - **meteoswissPollenData** — Current pollen concentration data from ~15 monitoring stations
 - **search** — Search MeteoSwiss website content (DE, FR, IT, EN)
 - **fetch** — Fetch full content from MeteoSwiss webpages
