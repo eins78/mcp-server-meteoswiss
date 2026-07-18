@@ -63,6 +63,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -114,6 +115,15 @@ jobs:
           else
             npm publish --access public --provenance
           fi
+
+      - name: Comment pre-release on Version Packages PR
+        # Keeps RC publishes visible from the standing Version Packages PR;
+        # no-ops cleanly if there's no open PR at the time.
+        if: steps.version.outputs.prerelease == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_VERSION: ${{ steps.version.outputs.version }}
+        run: .github/scripts/comment-prerelease-pr.sh meteoswiss-mcp "$PACKAGE_VERSION"
 
   publish-docker:
     name: Publish to GHCR

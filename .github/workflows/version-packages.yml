@@ -37,6 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Create or update version PR
+        id: changesets
         uses: changesets/action@c8bada60c408975afd1a20b3db81d6eee6789308 # v1
         with:
           title: 'Version Packages'
@@ -47,3 +48,14 @@ jobs:
           version: pnpm run version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set dynamic Version Packages PR title
+        # Only runs when changesets/action actually created/updated a PR —
+        # a push with no pending changesets leaves pullRequestNumber unset.
+        if: steps.changesets.outputs.pullRequestNumber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.changesets.outputs.pullRequestNumber }}
+        run: |
+          git fetch origin changeset-release/main
+          .github/scripts/compute-version-pr-title.sh origin/changeset-release/main "$PR_NUMBER"
