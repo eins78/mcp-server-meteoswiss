@@ -1,45 +1,19 @@
 ---
-title: MeteoSwiss LLM Tools — Docs
-description: Engineering plans, sessionlogs, research, test reports, and eval results for meteoswiss-llm-tools.
-template: splash
-hero:
-  tagline: Engineering reports and eval results for the MeteoSwiss MCP server and forecast-evals suite.
-  actions:
-    # hero.actions[].link is passed straight to an <a href> with no `base` rewriting (verified
-    # against node_modules/@astrojs/starlight/components/Hero.astro) — unlike sidebar
-    # autogenerate entries, which Starlight resolves from routing. Relative (no leading `/`)
-    # rather than an absolute path hardcoding BASE: the homepage is served at exactly `{BASE}/`,
-    # so a relative href resolves correctly against it without risking drift from site.config.mjs.
-    - text: Browse plans
-      link: plans/
-      icon: right-arrow
-    - text: Forecast eval results
-      link: forecast-evals/results/
-      icon: external
-      variant: minimal
+title: MeteoSwiss Forecast-JSON Comprehension Evals
+description: How well do LLMs understand the JSON meteoswissLocalForecast returns? promptfoo eval runs and the editorial explaining them.
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
+import runs from '../../data/runs.generated.json';
 
-## What's here
+Eval runs testing how well LLMs understand the JSON returned by MeteoSwiss's
+`meteoswissLocalForecast` tool — timestamp labeling, field shape, what changes comprehension and
+what doesn't. Each run below is a dated, immutable snapshot: a new finding adds a new run rather
+than editing an old one.
 
-<CardGrid stagger>
-	<Card title="Plans" icon="document">
-		Design docs for features and infra work, before implementation.
-	</Card>
-	<Card title="Sessionlogs" icon="pencil">
-		Narrative record of what shipped in each working session and why.
-	</Card>
-	<Card title="Research" icon="magnifier">
-		Investigation writeups — API surveys, UX reviews, release-candidate test reports.
-	</Card>
-	<Card title="Test Reports" icon="approve-check">
-		Point-in-time manual test passes against the deployed MCP server.
-	</Card>
-	<Card title="Forecast Evals — Results" icon="seti:json">
-		LLM-comprehension eval results for `meteoswissLocalForecast`'s JSON output, including
-		full-sweep static snapshots of the underlying [promptfoo](https://promptfoo.dev) runs.
-	</Card>
-</CardGrid>
+{runs.map((run) => (
+  <LinkCard title={run.title} description={run.teaser} href={run.href} />
+))}
 
 Source: [github.com/eins78/meteoswiss-llm-tools](https://github.com/eins78/meteoswiss-llm-tools)
+· Eval suite: [`packages/meteoswiss-forecast-evals`](https://github.com/eins78/meteoswiss-llm-tools/tree/main/packages/meteoswiss-forecast-evals)

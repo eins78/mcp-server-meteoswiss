@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths: &docs-site-paths
-      - 'docs/**'
+      # NOT repo-root docs/** — this site publishes only the eval runs + editorial about them
+      # (2026-07-18 re-scope), so changes to plans/sessionlogs/internal docs don't affect it.
       - 'packages/meteoswiss-forecast-evals/docs/results/**'
       - 'packages/meteoswiss-docs-site/**'
       - '.github/workflows/pages.yml'
