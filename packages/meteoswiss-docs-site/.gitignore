@@ -1,0 +1,31 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# content synced from outside this package by scripts/sync-content.ts — regenerated on every
+# `pnpm run dev`/`build`, never hand-edited. index.mdx (the homepage) is the one hand-authored
+# exception.
+src/content/docs/*
+!src/content/docs/index.mdx
+public/forecast-evals-results/
+
+# runs.generated.json (the homepage's teaser-list data) is also sync-content.ts output.
+src/data/

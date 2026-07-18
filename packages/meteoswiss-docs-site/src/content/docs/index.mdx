@@ -1,0 +1,19 @@
+---
+title: MeteoSwiss Forecast-JSON Comprehension Evals
+description: How well do LLMs understand the JSON meteoswissLocalForecast returns? promptfoo eval runs and the editorial explaining them.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+import runs from '../../data/runs.generated.json';
+
+Eval runs testing how well LLMs understand the JSON returned by MeteoSwiss's
+`meteoswissLocalForecast` tool — timestamp labeling, field shape, what changes comprehension and
+what doesn't. Each run below is a dated, immutable snapshot: a new finding adds a new run rather
+than editing an old one.
+
+{runs.map((run) => (
+  <LinkCard title={run.title} description={run.teaser} href={run.href} />
+))}
+
+Source: [github.com/eins78/meteoswiss-llm-tools](https://github.com/eins78/meteoswiss-llm-tools)
+· Eval suite: [`packages/meteoswiss-forecast-evals`](https://github.com/eins78/meteoswiss-llm-tools/tree/main/packages/meteoswiss-forecast-evals)

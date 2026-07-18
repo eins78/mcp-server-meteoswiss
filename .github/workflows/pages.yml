@@ -1,0 +1,56 @@
+name: Deploy Docs Site
+
+on:
+  push:
+    branches: [main]
+    paths: &docs-site-paths
+      # NOT repo-root docs/** — this site publishes only the eval runs + editorial about them
+      # (2026-07-18 re-scope), so changes to plans/sessionlogs/internal docs don't affect it.
+      - 'packages/meteoswiss-forecast-evals/docs/results/**'
+      - 'packages/meteoswiss-docs-site/**'
+      - '.github/workflows/pages.yml'
+  # Build-only validation on PRs — this package sits outside the root pnpm workspace, so
+  # pr-ci.yml's `pnpm --filter meteoswiss-mcp` checks never touch it. The deploy job below is
+  # gated to `push` only; PR runs never carry Pages deploy permissions.
+  pull_request:
+    paths: *docs-site-paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Scoped per ref: a newer push to `main` cancels an in-flight older deploy for "newer wins"
+# semantics, without unrelated PR build-validation runs canceling each other (or being canceled
+# by a `main` push) since each ref gets its own group.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Build Starlight site
+        uses: withastro/action@v6
+        with:
+          path: packages/meteoswiss-docs-site
+          node-version: 24
+          package-manager: pnpm@10.34.5
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
