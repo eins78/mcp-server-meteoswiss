@@ -29,7 +29,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BASE } from '../site.config.mjs';
 
@@ -55,6 +55,11 @@ const FORECAST_EVALS_RESULTS_DIR = join(
   'docs',
   'results',
 );
+// The source write-ups are immutable records that link to sibling repo files with relative
+// paths (e.g. `../../README.md`) — correct within the repo, but there is no repo checkout on
+// the published site, so those 404 once synced. Rewritten to absolute GitHub blob URLs at sync
+// time rather than editing the immutable source.
+const GITHUB_BLOB_BASE = 'https://github.com/eins78/meteoswiss-llm-tools/blob/main';
 
 type RunManifestEntry = {
   slug: string;
@@ -93,6 +98,21 @@ function ensureFrontmatter(markdown: string, fallbackName: string): string {
   // still-unescaped quote's escape sequence.
   const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   return `---\ntitle: "${escapedTitle}"\n---\n\n${markdown}`;
+}
+
+/**
+ * Rewrites markdown links whose href is relative (starts with `../`, resolved against the
+ * source write-up's own directory) to absolute GitHub blob URLs. The source write-ups
+ * (immutable — never hand-edited) link to sibling repo files like `../../README.md` or
+ * `../spec.md`; those resolve fine in a repo checkout but there is no checkout on the published
+ * site, so left as-is they 404 (see docs/sessionlogs — the 2026-07-18 defect Max found).
+ */
+function rewriteRelativeLinks(markdown: string, sourceFile: string): string {
+  const sourceDir = dirname(sourceFile);
+  return markdown.replace(/\]\((\.\.\/[^)]+)\)/g, (_match, href: string) => {
+    const repoRelativePath = relative(REPO_ROOT, resolve(sourceDir, href)).split(sep).join('/');
+    return `](${GITHUB_BLOB_BASE}/${repoRelativePath})`;
+  });
 }
 
 /**
@@ -182,7 +202,7 @@ function syncRuns(snapshotSlugs: Set<string>): RunManifestEntry[] {
       );
       continue;
     }
-    const raw = readFileSync(file, 'utf8');
+    const raw = rewriteRelativeLinks(readFileSync(file, 'utf8'), file);
     const withFrontmatter = ensureFrontmatter(raw, rel);
     const title = titleFromContent(raw, rel);
     const destPath = join(RUNS_DEST_DIR, rel);
