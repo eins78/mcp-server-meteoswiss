@@ -199,16 +199,60 @@ Final stable URLs (base `https://code.178.is/meteoswiss-llm-tools/`):
 Re-verified the same way as every other check in this doc: local + real tailnet route, both new
 URLs 200, the old `forecast-evals/results/` path now 404s.
 
+## Two defects from Max's preview review (2026-07-18)
+
+Max previewed the re-scoped, permalink-stable site and found two real problems.
+
+**Defect 1 — the actual promptfoo exports weren't on the page.** Each run page only had the
+editorial write-up; the promptfoo results themselves were a link away
+(`[View the full static run snapshot →]`), not visible on the page. Fixed by embedding the
+static HTML snapshot directly via `<iframe>` in `injectSiteContent` (`scripts/sync-content.ts`) —
+Astro passes raw HTML through untouched in `.md` content (verified against a real production
+build, not just dev), so the iframe renders inline; a plain "open in a new tab" link stays as a
+fallback for full-page viewing and for clients that don't render iframes.
+
+Run 1 (`2026-07-09-forecast-json-comprehension`) already had its HTML snapshot committed. Run 2
+(`2026-07-11-hourly-multiseries-shape-refinement`) didn't — needed to identify the right eval in
+the local promptfoo DB (`~/.promptfoo/promptfoo.db`) among 20 same-day candidates, without
+re-running the paid eval (standing cost guardrail). Matched by row/provider count against the
+write-up's stated "342 total graded rows... 6 providers": `eval-HBa-2026-07-11T13:40:07`
+(confirmed further via provider list — 2 tiny/2 cheap/2 frontier models exactly matching the
+write-up's "Model slice" section, and a content spot-check for `ms-argmax-gust`, a question ID
+only this run has). Exported at $0 cost via `promptfoo export eval <id> -o
+docs/results/<slug>.html` (the extension-dispatch trick — same mechanism used for run 1's
+existing snapshot, confirmed by re-exporting run 1's own eval and diffing sizes byte-for-byte).
+
+**Defect 2 — broken relative links.** The immutable run write-ups link to sibling repo files with
+paths relative to their own directory (`../../README.md`, `../spec.md`) — correct inside a repo
+checkout, 404 once synced into `/runs/<slug>/` with no repo checkout backing the site. Fixed with
+a general `rewriteRelativeLinks` step in the sync script: any markdown link matching `](../...)`
+gets resolved against the source file's directory and rewritten to an absolute
+`github.com/.../blob/main/...` URL. General regex, not a per-link list, so future dated write-ups
+get the same treatment without touching the script again. The source files themselves stay
+untouched, per their own "immutable" convention.
+
+Verified end-to-end: rebuilt, crawled the built `dist/` output for every internal `href`/`src`
+and confirmed each resolves to a real file, spot-checked every rewritten `github.com` link
+against the actual repo path it now points at, and re-checked both run pages plus the two
+snapshot HTML files return 200 over the real tailnet route
+(`https://mac-zrh.siren-trout.ts.net:4322/meteoswiss-llm-tools/`).
+
+One incidental fix along the way: the tailnet preview backend had to move off port 4322 to a
+free port (`--host 127.0.0.1 --port 4327`, then `tailscale serve --bg --https=4322
+http://127.0.0.1:4327`) — `tailscale serve`'s own reverse-proxy listener for that port conflicts
+with a plain `astro preview` bind attempt on it, so the actual dev/preview backend now runs on
+4327 while the public-facing tailnet URL Max already has stays `:4322` unchanged.
+
 ## Delivery status
 
 Per Max's standing no-autonomous-merge policy (2026-07-11, applies to all open PRs while he's
-away): PR #129 is CI-green and review-converged (6 real Copilot rounds fixed, 2 blocked by quota)
-plus the favicon and content re-scope above, but **not merged** — waiting on Max, who's previewing
-live over Tailscale before deciding.
+away): PR #129 is CI-green and review-converged (6 real Copilot rounds fixed, 2 blocked by
+quota), plus the favicon, content re-scope, stable permalinks, and the two defect fixes above —
+but **not merged** — waiting on Max.
 
 ## Pending / follow-ups
-- [ ] Max: review the re-scoped preview, then merge PR #129 with a merge commit (never squash,
-      per standing policy) when ready.
+- [ ] Max: review the fixed preview (real exports embedded, no broken links), then merge PR #129
+      with a merge commit (never squash, per standing policy) when ready.
 - [ ] The editorial stubs for both existing runs are light drafts, not final voice — Max will
       likely want to rewrite them himself.
 - [ ] After merge: flip the repo's Pages source to `build_type=workflow`
