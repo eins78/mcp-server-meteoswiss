@@ -264,22 +264,49 @@ link renders immediately, no scrolling (through or past the iframe) required to 
 homepage's teaser `LinkCard`s were already rendering correctly (confirmed via Playwright
 screenshot) — the gap was specific to the run pages' export link.
 
+## Rebase onto main + merge (2026-07-18, same day, third round)
+
+Max approved merging after the scroll-trap fix, with one condition: PR #131 (MCP-vs-skills evals)
+had just merged into `main` in the meantime, so the branch needed to rebase and adapt before
+merging. `git rebase origin/main` (61 commits behind, 22 ahead) applied clean — no conflicts, no
+overlap between this branch's changes and #131's (#131 only touched
+`packages/meteoswiss-forecast-evals/{src,docs,package.json,.gitignore}` for its own new
+MCP-vs-skills track; this branch's only touch in that package was adding one `.html` snapshot
+under a different slug).
+
+#131 landed a third run write-up, `docs/results/2026-07-12-mcp-vs-skills.md` (+ SVG charts, no
+paired promptfoo `.html` export — different eval methodology). Re-ran `sync-content` post-rebase
+to confirm the existing "skip runs without a paired `editorial/<slug>.md` stub" behavior held:
+it did, with a clear `⚠️ skipping 2026-07-12-mcp-vs-skills.md` warning and a successful build of
+the 2 already-published runs — no editorial stub was written for it, so it stays unpublished
+until someone deliberately adds one. Also re-verified via Playwright (real browser, not just
+`curl`) that the export-link-before-iframe fix survived the rebase on both run pages.
+
+Pushed the rebase (`git push --force-with-lease`), CI went green again, `mergeStateStatus: CLEAN`,
+merged with `gh pr merge 129 --merge` (merge commit, never squash — standing policy) → merge SHA
+`ae926d57bb3009bfa7ec57b52a5bf3dc357b7163`.
+
+## Pages source flip + live deploy (2026-07-18, same day)
+
+Flipped the repo's Pages source: `gh api repos/eins78/meteoswiss-llm-tools/pages -X PUT -f
+build_type=workflow` (was `legacy`, branch `main` path `/docs` — the old Jekyll branch-deploy).
+The merge's push to `main` had already triggered `pages.yml`; its `build` job completed before
+the flip landed and its `deploy` job (gated on `build`) ran after, succeeding cleanly against the
+new `build_type`. Pages API status went `errored` → `built`.
+
+Verified the real public URL, `https://code.178.is/meteoswiss-llm-tools/`: homepage 200, both run
+pages 200, both promptfoo HTML snapshots 200, the unpublished `2026-07-12-mcp-vs-skills` run
+correctly 404s. Re-confirmed via Playwright against the live production URL (not just the
+tailnet preview) that the export link still renders before the iframe on both run pages.
+
 ## Delivery status
 
-Per Max's standing no-autonomous-merge policy (2026-07-11, applies to all open PRs while he's
-away): PR #129 is CI-green and review-converged (6 real Copilot rounds fixed, 2 blocked by
-quota), plus the favicon, content re-scope, stable permalinks, and the three defect fixes above —
-but **not merged** — waiting on Max.
+**Live and merged.** PR #129 merged 2026-07-18 (merge SHA `ae926d5`), Pages source flipped to
+`workflow`, deploy succeeded, `https://code.178.is/meteoswiss-llm-tools/` is the real public site.
 
 ## Pending / follow-ups
-- [ ] Max: review the fixed preview (export link now immediately visible on both run pages, real
-      exports embedded, no broken links), then merge PR #129 with a merge commit (never squash,
-      per standing policy) when ready.
-- [ ] The editorial stubs for both existing runs are light drafts, not final voice — Max will
-      likely want to rewrite them himself.
-- [ ] After merge: flip the repo's Pages source to `build_type=workflow`
-      (`gh api repos/eins78/meteoswiss-llm-tools/pages -X PUT -f build_type=workflow`) — this is
-      what actually stops the legacy Jekyll branch-deploy from serving instead of the new
-      workflow.
-- [ ] After the flip: confirm the real `deploy` job (not just `build`) succeeds on a `push` to
-      `main`, and verify `https://code.178.is/meteoswiss-llm-tools/` is reachable.
+- [ ] The editorial stubs for both existing runs are light drafts, not final voice — Max may
+      still want to rewrite them himself.
+- [ ] The new `2026-07-12-mcp-vs-skills` run (from #131) has no `editorial/<slug>.md` stub yet, so
+      it stays unpublished by design — write one (and confirm whether it needs its own promptfoo
+      `.html` snapshot, given its different eval methodology) when it's ready to go public.
