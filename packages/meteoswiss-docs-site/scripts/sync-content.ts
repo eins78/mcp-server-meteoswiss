@@ -114,21 +114,37 @@ function loadEditorial(slug: string): { teaser: string; body: string } | null {
 }
 
 /**
- * Inserts the editorial blurb and (if present) the snapshot link right after the frontmatter,
- * before the run's own content — orienting a public reader before the more technical write-up.
+ * Inserts the editorial blurb and (if present) the embedded promptfoo results snapshot right
+ * after the frontmatter, before the run's own write-up — orienting a public reader with the
+ * actual eval output before the more technical prose. The snapshot is an iframe (Astro's
+ * markdown passes raw HTML through untouched, verified against a real build) so the promptfoo
+ * result table/matrix is visible on the page itself, not just linked away from it — plus a
+ * plain link as an escape hatch for full-page viewing and for the (rare) case a reader's client
+ * can't render iframes.
  */
 function injectSiteContent(
   markdown: string,
   slug: string,
+  title: string,
   editorialBody: string,
   snapshotSlugs: Set<string>,
 ): string {
   const parts = [`## About this run\n\n${editorialBody}`];
   if (snapshotSlugs.has(slug)) {
-    // Root-relative markdown links are NOT rewritten by Astro's `base` handling at build time
-    // (verified: an unprefixed link survived a full build unchanged) — the prefix has to be
-    // baked in here.
-    parts.push(`[View the full static run snapshot →](${BASE}/${PUBLIC_RESULTS_SUBPATH}/${slug}.html)`);
+    // Root-relative markdown links/URLs are NOT rewritten by Astro's `base` handling at build
+    // time (verified: an unprefixed link survived a full build unchanged) — the prefix has to
+    // be baked in here.
+    const snapshotUrl = `${BASE}/${PUBLIC_RESULTS_SUBPATH}/${slug}.html`;
+    const escapedTitle = title.replace(/"/g, '&quot;');
+    parts.push(
+      [
+        '## Full results',
+        '',
+        `<iframe src="${snapshotUrl}" title="${escapedTitle} — promptfoo eval results" loading="lazy" style="width: 100%; height: 85vh; min-height: 480px; border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem;"></iframe>`,
+        '',
+        `[Open the full results in a new tab ↗](${snapshotUrl})`,
+      ].join('\n'),
+    );
   }
   const frontmatterEnd = markdown.indexOf('---\n', 4) + 4; // markdown already has frontmatter here
   return `${markdown.slice(0, frontmatterEnd)}\n${parts.join('\n\n')}\n\n${markdown.slice(frontmatterEnd)}`;
@@ -173,7 +189,7 @@ function syncRuns(snapshotSlugs: Set<string>): RunManifestEntry[] {
     mkdirSync(dirname(destPath), { recursive: true });
     writeFileSync(
       destPath,
-      injectSiteContent(withFrontmatter, slug, editorial.body, snapshotSlugs),
+      injectSiteContent(withFrontmatter, slug, title, editorial.body, snapshotSlugs),
       'utf8',
     );
     manifest.push({
