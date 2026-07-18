@@ -52,10 +52,17 @@ jobs:
       - name: Set dynamic Version Packages PR title
         # Only runs when changesets/action actually created/updated a PR —
         # a push with no pending changesets leaves pullRequestNumber unset.
+        #
+        # BEFORE_SHA is this push's pre-bump commit; AFTER_REF is HEAD
+        # because changesets/action already checked out and committed the
+        # version bump onto changeset-release/main in this same working
+        # tree (see its `git checkout -b` + `git reset --hard` + `git push
+        # origin HEAD:changeset-release/main` in the step above) — no
+        # fetch needed, and comparing against local disk instead of
+        # BEFORE_SHA would always show zero diff.
         if: steps.changesets.outputs.pullRequestNumber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.changesets.outputs.pullRequestNumber }}
-        run: |
-          git fetch origin changeset-release/main
-          .github/scripts/compute-version-pr-title.sh origin/changeset-release/main "$PR_NUMBER"
+          BEFORE_SHA: ${{ github.sha }}
+        run: .github/scripts/compute-version-pr-title.sh "$BEFORE_SHA" HEAD "$PR_NUMBER"
