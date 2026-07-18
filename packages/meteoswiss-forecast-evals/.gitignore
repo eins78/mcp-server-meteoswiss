@@ -13,3 +13,8 @@ generated/results*.json
 # never committed from this path. To publish a snapshot, deliberately copy it into
 # docs/results/<date>-<slug>.html (see docs/results/ convention in the README).
 generated/*.html
+
+# MCP-vs-skills run outputs (ground truth + tests ARE committed after a published run;
+# the spend ledger and per-run transcripts are local run state)
+generated/.spend-mcp-skills.jsonl
+generated/transcripts-mcp-skills/

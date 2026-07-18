@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="380" viewBox="0 0 640 380" role="img" aria-label="Cost per correct answer">
+<rect x="0" y="0" width="640" height="100%" rx="8" fill="#fcfcfb"/>
+<text x="24" y="34" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="16" font-weight="600" fill="#0b0b0b">Cost per correct answer</text>
+<text x="24" y="54" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">Total OpenRouter cost of all 12 attempts divided by correct answers (US cents)</text>
+<circle cx="70" cy="72" r="5" fill="#2a78d6"/>
+<text x="80" y="76" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">MCP server</text>
+<circle cx="170" cy="72" r="5" fill="#1baf7a"/>
+<text x="180" y="76" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">OGD skill</text>
+<line x1="70" y1="320" x2="610" y2="320" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="324" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">0¢</text>
+<line x1="70" y1="245.22468000978122" x2="610" y2="245.22468000978122" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="249.22468000978122" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">1¢</text>
+<line x1="70" y1="170.44936001956245" x2="610" y2="170.44936001956245" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="174.44936001956245" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">2¢</text>
+<path d="M148,145.04770419940837 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v174.95229580059163 h-56 z" fill="#2a78d6"/>
+<text x="176" y="135.04770419940837" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">2.39¢</text>
+<path d="M206,136.17391304347825 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v183.82608695652175 h-56 z" fill="#1baf7a"/>
+<text x="234" y="126.17391304347825" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">2.51¢</text>
+<text x="205" y="340" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">haiku-4.5</text>
+<path d="M418,309.2185506994608 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v10.781449300539192 h-56 z" fill="#2a78d6"/>
+<text x="446" y="299.2185506994608" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">0.20¢</text>
+<path d="M476,299.6168557922077 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v20.383144207792306 h-56 z" fill="#1baf7a"/>
+<text x="504" y="289.6168557922077" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">0.33¢</text>
+<text x="475" y="340" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">gpt-5-mini</text>
+<line x1="70" y1="320" x2="610" y2="320" stroke="#c3c2b7" stroke-width="1"/>
+</svg>

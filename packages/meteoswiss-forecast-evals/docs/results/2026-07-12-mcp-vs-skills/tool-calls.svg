@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="380" viewBox="0 0 640 380" role="img" aria-label="Tool calls per question">
+<rect x="0" y="0" width="640" height="100%" rx="8" fill="#fcfcfb"/>
+<text x="24" y="34" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="16" font-weight="600" fill="#0b0b0b">Tool calls per question</text>
+<text x="24" y="54" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">Mean number of tool invocations the model needed per answer</text>
+<circle cx="70" cy="72" r="5" fill="#2a78d6"/>
+<text x="80" y="76" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">MCP server</text>
+<circle cx="170" cy="72" r="5" fill="#1baf7a"/>
+<text x="180" y="76" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">OGD skill</text>
+<line x1="70" y1="320" x2="610" y2="320" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="324" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">0</text>
+<line x1="70" y1="273.04347826086956" x2="610" y2="273.04347826086956" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="277.04347826086956" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">1</text>
+<line x1="70" y1="226.08695652173913" x2="610" y2="226.08695652173913" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="230.08695652173913" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">2</text>
+<line x1="70" y1="179.1304347826087" x2="610" y2="179.1304347826087" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="183.1304347826087" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">3</text>
+<line x1="70" y1="132.17391304347825" x2="610" y2="132.17391304347825" stroke="#e1e0d9" stroke-width="1"/>
+<text x="62" y="136.17391304347825" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" fill="#898781" style="font-variant-numeric: tabular-nums">4</text>
+<path d="M148,210.52173913043478 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v109.47826086956522 h-56 z" fill="#2a78d6"/>
+<text x="176" y="200.52173913043478" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">2.4</text>
+<path d="M206,187.04347826086956 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v132.95652173913044 h-56 z" fill="#1baf7a"/>
+<text x="234" y="177.04347826086956" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">2.9</text>
+<text x="205" y="340" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">haiku-4.5</text>
+<path d="M418,253.56521739130434 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v66.43478260869566 h-56 z" fill="#2a78d6"/>
+<text x="446" y="243.56521739130434" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">1.5</text>
+<path d="M476,136.17391304347825 a4,4 0 0 1 4,-4 h48 a4,4 0 0 1 4,4 v183.82608695652175 h-56 z" fill="#1baf7a"/>
+<text x="504" y="126.17391304347825" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b0b0b" style="font-variant-numeric: tabular-nums">4.0</text>
+<text x="475" y="340" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" fill="#52514e">gpt-5-mini</text>
+<line x1="70" y1="320" x2="610" y2="320" stroke="#c3c2b7" stroke-width="1"/>
+</svg>

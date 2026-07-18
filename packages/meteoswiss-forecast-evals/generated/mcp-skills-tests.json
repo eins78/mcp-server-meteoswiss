@@ -1,0 +1,194 @@
+[
+  {
+    "description": "current-temp-zurich",
+    "vars": {
+      "qid": "current-temp-zurich",
+      "family": "current",
+      "question": "What is the current air temperature in Zürich (station Zürich / Fluntern)?",
+      "schemaHint": "{\"temperature_c\": <number>}",
+      "expectedJson": "{\"fields\":{\"temperature_c\":{\"kind\":\"number\",\"value\":22.3,\"tolerance\":1.5}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "current-wind-saentis",
+    "vars": {
+      "qid": "current-wind-saentis",
+      "family": "current",
+      "question": "What is the current average wind speed on Säntis (the 10-minute mean, not gusts)?",
+      "schemaHint": "{\"wind_kmh\": <number>}",
+      "expectedJson": "{\"fields\":{\"wind_kmh\":{\"kind\":\"number\",\"value\":20.9,\"tolerance\":10.45}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "current-warmest-station",
+    "vars": {
+      "qid": "current-warmest-station",
+      "family": "current",
+      "question": "Which MeteoSwiss weather station reports the highest air temperature right now? Give the station name.",
+      "schemaHint": "{\"station\": \"<station name>\"}",
+      "expectedJson": "{\"fields\":{\"station\":{\"kind\":\"oneof\",\"accepted\":[\"GES\",\"Gersau\",\"LEI\",\"Leibstadt\",\"MAG\",\"Magadino / Cadenazzo\",\"MOE\",\"Möhlin\",\"PUY\",\"Pully\",\"RUE\",\"Rünenberg\",\"VEV\",\"Vevey / Corseaux\"]}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "forecast-rain-zurich",
+    "vars": {
+      "qid": "forecast-rain-zurich",
+      "family": "forecast",
+      "question": "Will it rain in Zürich on Monday (2026-07-13) between 12:00 and 18:00 local time?",
+      "schemaHint": "{\"will_rain\": <true|false>}",
+      "expectedJson": "{\"fields\":{\"will_rain\":{\"kind\":\"boolean\",\"value\":false}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "forecast-low-bern",
+    "vars": {
+      "qid": "forecast-low-bern",
+      "family": "forecast",
+      "question": "How cold will it get in Bern in the early morning of Monday (2026-07-13, between 00:00 and 08:00 local time)? Give the minimum temperature.",
+      "schemaHint": "{\"min_temperature_c\": <number>}",
+      "expectedJson": "{\"fields\":{\"min_temperature_c\":{\"kind\":\"number\",\"value\":14.2,\"tolerance\":1.5}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "forecast-jacket-basel",
+    "vars": {
+      "qid": "forecast-jacket-basel",
+      "family": "forecast",
+      "question": "What is the forecast maximum temperature in Basel on Monday (2026-07-13), and would you recommend taking a jacket for the afternoon?",
+      "schemaHint": "{\"max_temperature_c\": <number>, \"jacket_recommended\": <true|false>}",
+      "expectedJson": "{\"fields\":{\"max_temperature_c\":{\"kind\":\"number\",\"value\":33.6,\"tolerance\":1.5},\"jacket_recommended\":{\"kind\":\"boolean\",\"value\":false}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "forecast-two-days-lugano",
+    "vars": {
+      "qid": "forecast-two-days-lugano",
+      "family": "forecast",
+      "question": "What are the forecast maximum temperatures in Lugano for Monday (2026-07-13) and Tuesday (2026-07-14)?",
+      "schemaHint": "{\"day1_max_c\": <number>, \"day2_max_c\": <number>}",
+      "expectedJson": "{\"fields\":{\"day1_max_c\":{\"kind\":\"number\",\"value\":30.1,\"tolerance\":2},\"day2_max_c\":{\"kind\":\"number\",\"value\":32.1,\"tolerance\":2}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "forecast-sunshine-geneva",
+    "vars": {
+      "qid": "forecast-sunshine-geneva",
+      "family": "forecast",
+      "question": "How many hours of sunshine are forecast for Geneva on Tuesday (2026-07-14)?",
+      "schemaHint": "{\"sunshine_hours\": <number>}",
+      "expectedJson": "{\"fields\":{\"sunshine_hours\":{\"kind\":\"number\",\"value\":11.666666666666666,\"tolerance\":1.5}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "pollen-grasses-zurich",
+    "vars": {
+      "qid": "pollen-grasses-zurich",
+      "family": "pollen",
+      "question": "According to the most recent daily measurement, what is the grass pollen concentration in Zürich, in particles per cubic metre?",
+      "schemaHint": "{\"grass_pollen_per_m3\": <number>}",
+      "expectedJson": "{\"fields\":{\"grass_pollen_per_m3\":{\"kind\":\"number\",\"value\":30,\"tolerance\":6}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "pollen-types-basel",
+    "vars": {
+      "qid": "pollen-types-basel",
+      "family": "pollen",
+      "question": "Which of the seven measured pollen types show a nonzero concentration in the most recent daily measurement for Basel?",
+      "schemaHint": "{\"pollen_types\": [\"<type>\", ...]}",
+      "expectedJson": "{\"fields\":{\"pollen_types\":{\"kind\":\"set-match\",\"expected\":[\"grasses\"]}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "stations-graubuenden",
+    "vars": {
+      "qid": "stations-graubuenden",
+      "family": "stations",
+      "question": "Name three MeteoSwiss automatic weather stations located in canton Graubünden.",
+      "schemaHint": "{\"stations\": [\"<name>\", \"<name>\", \"<name>\"]}",
+      "expectedJson": "{\"fields\":{\"stations\":{\"kind\":\"subset-of\",\"universe\":[\"AND\",\"Andeer\",\"ARO\",\"Arosa\",\"BEH\",\"Passo del Bernina\",\"BIV\",\"Bivio\",\"BUF\",\"Buffalora\",\"CHU\",\"Chur\",\"CMA\",\"Crap Masegn\",\"COV\",\"Piz Corvatsch\",\"DAV\",\"Davos\",\"DIS\",\"Disentis\",\"GRO\",\"Grono\",\"ILZ\",\"Ilanz\",\"LAT\",\"Bergün / Latsch\",\"NAS\",\"Naluns / Schlivera\",\"PMA\",\"Piz Martegnas\",\"ROB\",\"Poschiavo / Robbia\",\"SAM\",\"Samedan\",\"SBE\",\"S. Bernardino\",\"SCU\",\"Scuol\",\"SIA\",\"Segl-Maria\"],\"minCount\":3}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  },
+  {
+    "description": "climate-may-zurich",
+    "vars": {
+      "qid": "climate-may-zurich",
+      "family": "climate",
+      "question": "What was the monthly mean air temperature at Zürich / Fluntern in May 2026, according to the MeteoSwiss climate series?",
+      "schemaHint": "{\"mean_temperature_c\": <number>}",
+      "expectedJson": "{\"fields\":{\"mean_temperature_c\":{\"kind\":\"number\",\"value\":15.3,\"tolerance\":0.3}}}"
+    },
+    "assert": [
+      {
+        "type": "javascript",
+        "value": "file://src/mcp-vs-skills/scorer.ts"
+      }
+    ]
+  }
+]

@@ -30,9 +30,11 @@ fi
 STAC_BASE="https://data.geo.admin.ch/api/stac/v1"
 COLLECTION="ch.meteoschweiz.ogd-local-forecasting"
 
-# Step 1: Get latest forecast item
+# Step 1: Get latest forecast item THAT HAS ASSETS. A fresh item can appear with its
+# assets not yet uploaded (observed for the day's item just after midnight) — naively
+# taking the newest id then yields no_data for every parameter.
 ITEM=$(curl -sf "$STAC_BASE/collections/$COLLECTION/items?limit=10" \
-  | jq -r '[.features[].id] | sort | reverse | .[0]') || { echo "Error: failed to fetch STAC items" >&2; exit 1; }
+  | jq -r '[.features[] | select((.assets | length) > 0) | .id] | sort | reverse | .[0]') || { echo "Error: failed to fetch STAC items" >&2; exit 1; }
 
 ITEM_URL="$STAC_BASE/collections/$COLLECTION/items/$ITEM"
 ITEM_JSON=$(curl -sf "$ITEM_URL") || { echo "Error: failed to fetch item $ITEM" >&2; exit 1; }
