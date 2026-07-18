@@ -136,11 +136,13 @@ function loadEditorial(slug: string): { teaser: string; body: string } | null {
 /**
  * Inserts the editorial blurb and (if present) the embedded promptfoo results snapshot right
  * after the frontmatter, before the run's own write-up — orienting a public reader with the
- * actual eval output before the more technical prose. The snapshot is an iframe (Astro's
- * markdown passes raw HTML through untouched, verified against a real build) so the promptfoo
- * result table/matrix is visible on the page itself, not just linked away from it — plus a
- * plain link as an escape hatch for full-page viewing and for the (rare) case a reader's client
- * can't render iframes.
+ * actual eval output before the more technical prose. The link to the snapshot comes BEFORE the
+ * iframe, not after: the iframe is ~full-viewport tall and scrolls its own huge embedded report
+ * internally, so a reader whose cursor is over it while scrolling never reaches page content
+ * placed after it (confirmed as the cause of Max's "I don't see any export links" 2026-07-18
+ * report — the link existed, just past a scroll trap). Astro passes raw HTML through untouched
+ * in markdown (verified against a real build), so the iframe itself renders fine; it's kept
+ * below the link as a secondary, "expand inline" affordance.
  */
 function injectSiteContent(
   markdown: string,
@@ -160,9 +162,9 @@ function injectSiteContent(
       [
         '## Full results',
         '',
-        `<iframe src="${snapshotUrl}" title="${escapedTitle} — promptfoo eval results" loading="lazy" style="width: 100%; height: 85vh; min-height: 480px; border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem;"></iframe>`,
+        `**[Open the full promptfoo results ↗](${snapshotUrl})** — the complete, interactive report (all providers, all rows, searchable). Also embedded below, scrollable in place:`,
         '',
-        `[Open the full results in a new tab ↗](${snapshotUrl})`,
+        `<iframe src="${snapshotUrl}" title="${escapedTitle} — promptfoo eval results" loading="lazy" style="width: 100%; height: 85vh; min-height: 480px; border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem;"></iframe>`,
       ].join('\n'),
     );
   }
