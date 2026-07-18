@@ -243,16 +243,38 @@ http://127.0.0.1:4327`) — `tailscale serve`'s own reverse-proxy listener for t
 with a plain `astro preview` bind attempt on it, so the actual dev/preview backend now runs on
 4327 while the public-facing tailnet URL Max already has stays `:4322` unchanged.
 
+## Export link scroll trap (2026-07-18, same day, second round)
+
+Max re-reviewed after the two defect fixes above and reported, verbatim: "in the preview i did
+not see any links to exported evals export." Reproduced with Playwright against the exact preview
+build (both `localhost:4327` directly and the real tailnet route) — the link and iframe were both
+genuinely present in the DOM and rendered correctly when tested directly. Root cause found by
+scrolling the page the way a reader would rather than just checking the DOM: the "Full results"
+section put the `<iframe>` (an ~85vh-tall embed of the full promptfoo report, which has its own
+internal scroll) *before* the "Open the full results in a new tab" link. A reader whose cursor is
+over the iframe while scrolling has their scroll events captured by the iframe's own scrollable
+content — they scroll through hundreds of embedded table rows and never reach the link sitting
+just past the iframe's bottom edge. The link existed; it just wasn't reachable by scrolling
+through the page the way a human naturally would.
+
+Fixed by reordering `injectSiteContent` in `scripts/sync-content.ts`: the link now comes first, as
+a bold, always-visible line right under the "Full results" heading, with the iframe kept below as
+a secondary "expand inline" view. Verified over the real tailnet route on both run pages — the
+link renders immediately, no scrolling (through or past the iframe) required to see it. The
+homepage's teaser `LinkCard`s were already rendering correctly (confirmed via Playwright
+screenshot) — the gap was specific to the run pages' export link.
+
 ## Delivery status
 
 Per Max's standing no-autonomous-merge policy (2026-07-11, applies to all open PRs while he's
 away): PR #129 is CI-green and review-converged (6 real Copilot rounds fixed, 2 blocked by
-quota), plus the favicon, content re-scope, stable permalinks, and the two defect fixes above —
+quota), plus the favicon, content re-scope, stable permalinks, and the three defect fixes above —
 but **not merged** — waiting on Max.
 
 ## Pending / follow-ups
-- [ ] Max: review the fixed preview (real exports embedded, no broken links), then merge PR #129
-      with a merge commit (never squash, per standing policy) when ready.
+- [ ] Max: review the fixed preview (export link now immediately visible on both run pages, real
+      exports embedded, no broken links), then merge PR #129 with a merge commit (never squash,
+      per standing policy) when ready.
 - [ ] The editorial stubs for both existing runs are light drafts, not final voice — Max will
       likely want to rewrite them himself.
 - [ ] After merge: flip the repo's Pages source to `build_type=workflow`
