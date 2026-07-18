@@ -37,9 +37,12 @@ const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const REPO_ROOT = join(PACKAGE_ROOT, '..', '..');
 
 const CONTENT_DOCS_DIR = join(PACKAGE_ROOT, 'src', 'content', 'docs');
+// This site is public and gets linked to from blog posts / other docs — the permalink prefix is
+// a deliberate, final choice (2026-07-18, per Max), not an accident of the source directory
+// layout. Do not rename without checking: it breaks every external link already handed out.
 // URL path (always forward-slash), independent of RUNS_DEST_DIR's filesystem join below.
-const RUNS_URL_PREFIX = 'forecast-evals/results';
-const RUNS_DEST_DIR = join(CONTENT_DOCS_DIR, 'forecast-evals', 'results');
+const RUNS_URL_PREFIX = 'runs';
+const RUNS_DEST_DIR = join(CONTENT_DOCS_DIR, 'runs');
 const EDITORIAL_DIR = join(PACKAGE_ROOT, 'editorial');
 const DATA_DIR = join(PACKAGE_ROOT, 'src', 'data');
 const RUNS_MANIFEST_PATH = join(DATA_DIR, 'runs.generated.json');

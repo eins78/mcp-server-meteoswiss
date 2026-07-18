@@ -176,6 +176,29 @@ Verified via the same `curl --resolve` tailnet method as the favicon check: home
 the 2-run teaser list, `/plans/` and any sessionlog path now 404, both locally and over the real
 tailnet route.
 
+## Stable public permalinks (2026-07-18, same day as the re-scope)
+
+Addendum from Max, arriving right after the re-scope above: this site is public and will be
+linked to from a company blog post and other docs, pointing at *specific* runs — so each run's
+URL has to be a stable permalink that won't churn once he starts handing out links.
+
+The re-scope itself hadn't changed any URLs (`forecast-evals/results/<slug>/` throughout), so
+nothing had already drifted. But that path is a mouthful for a public blog link and leaks
+internal directory naming (`forecast-evals`, the package name; `results`, the source dir) that a
+blog reader has no reason to care about. Since nothing is public yet, this was the free,
+last-chance moment to fix that rather than live with a clunky permalink forever — so simplified
+the URL prefix to `/runs/<slug>/`, a one-time deliberate decision, documented with a "do not
+rename" comment at the point of definition (`RUNS_URL_PREFIX` in `scripts/sync-content.ts`) and
+in the README. The slugs themselves were already good (dated, descriptive, tied to the
+`docs/results/` immutable-file naming convention in `meteoswiss-forecast-evals`) — unchanged.
+
+Final stable URLs (base `https://code.178.is/meteoswiss-llm-tools/`):
+- `/runs/2026-07-09-forecast-json-comprehension/`
+- `/runs/2026-07-11-hourly-multiseries-shape-refinement/`
+
+Re-verified the same way as every other check in this doc: local + real tailnet route, both new
+URLs 200, the old `forecast-evals/results/` path now 404s.
+
 ## Delivery status
 
 Per Max's standing no-autonomous-merge policy (2026-07-11, applies to all open PRs while he's

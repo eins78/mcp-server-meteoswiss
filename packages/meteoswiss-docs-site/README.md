@@ -18,9 +18,11 @@ field plus light "what this tests / how to read it" prose). Everything else is a
 build time by `scripts/sync-content.ts`:
 
 - `packages/meteoswiss-forecast-evals/docs/results/*.md` (the run write-ups) →
-  `src/content/docs/forecast-evals/results/`, each with its paired `editorial/<slug>.md` content
-  injected right after the frontmatter. **A run without a paired editorial stub is skipped
-  entirely** — not published without the explanatory framing.
+  `src/content/docs/runs/` (public URL: `/runs/<slug>/` — a deliberate, final choice since this
+  site is linked to publicly; do not rename without checking with Max first, it breaks every
+  external link already handed out), each with its paired `editorial/<slug>.md` content injected
+  right after the frontmatter. **A run without a paired editorial stub is skipped entirely** —
+  not published without the explanatory framing.
 - `packages/meteoswiss-forecast-evals/docs/results/*.html` (the promptfoo static snapshots) →
   `public/forecast-evals-results/`, served byte-for-byte, outside the content-collection
   pipeline, linked inline from the matching run page.

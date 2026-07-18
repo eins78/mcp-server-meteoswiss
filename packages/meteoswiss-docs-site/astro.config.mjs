@@ -21,9 +21,7 @@ export default defineConfig({
 			// why `forecast-evals-results` (the raw promptfoo HTML snapshots in public/) isn't listed
 			// here — autogenerate only scans src/content/docs/, and those files are deliberately
 			// outside that pipeline.
-			sidebar: [
-				{ label: 'Eval Runs', items: [{ autogenerate: { directory: 'forecast-evals/results' } }] },
-			],
+			sidebar: [{ label: 'Eval Runs', items: [{ autogenerate: { directory: 'runs' } }] }],
 		}),
 	],
 });
