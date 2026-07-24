@@ -35,7 +35,6 @@
     },
     "auditConfig": {
       "ignoreGhsas": [
-        "GHSA-pm4m-ph32-ghv5",
         "GHSA-frvp-7c67-39w9"
       ]
     }
