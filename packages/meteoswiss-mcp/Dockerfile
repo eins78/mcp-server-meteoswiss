@@ -1,40 +1,48 @@
-# Multi-stage build for MeteoSwiss MCP Server
+# Multi-stage build for the MeteoSwiss MCP Server.
+#
+# IMPORTANT: this image builds from the REPOSITORY ROOT context (`context: .`), not the
+# package directory. That is deliberate: the server must be installed from the frozen
+# workspace lockfile (`/pnpm-lock.yaml`) so that the root-level `pnpm.overrides` security
+# pins (path-to-regexp, hono, undici, ws, form-data, ip-address, fast-uri, brace-expansion…)
+# are applied to the shipped image. A single-package `--no-frozen-lockfile` build re-resolves
+# against the live registry and drops those overrides — see the CI workflows' `context:`.
 
-# Stage 1: Build stage
+# ------------------------------------------------------------------------------------------------
+# Stage 1: Build (full workspace install from the frozen lockfile, then build + prod deploy)
 FROM node:24-alpine AS builder
-
-# Set working directory
 WORKDIR /app
 
 # Run pnpm non-interactively (auto-confirm node_modules purge, no TTY in Docker build)
 ENV CI=true
 
-# Install pnpm using npm and corepack
+# Install pnpm via corepack (version pinned by root package.json "packageManager")
 RUN npm i -g corepack && pnpm -v
 
-# fetch dependencies with pnpm store cache
-COPY .npmrc pnpm-lock.yaml ./
+# Copy workspace manifests + lockfile first for a cacheable, frozen install.
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc package.json ./
+COPY packages/meteoswiss-mcp/package.json ./packages/meteoswiss-mcp/
+COPY packages/meteoswiss-skills/package.json ./packages/meteoswiss-skills/
+
+# Install the workspace exactly as locked (overrides applied, minimumReleaseAge satisfied).
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm fetch --no-optional --no-frozen-lockfile
+    pnpm install --frozen-lockfile
 
-# Copy source code and configuration
-COPY package.json tsconfig.json ./
-COPY src ./src
-# Copy test fixtures for runtime (if USE_TEST_FIXTURES is enabled)
-COPY test/__fixtures__ ./test/__fixtures__
+# Copy the MCP package source and compile it (tsc → dist).
+COPY packages/meteoswiss-mcp ./packages/meteoswiss-mcp
+RUN pnpm --filter meteoswiss-mcp run build
 
-# Install dependencies
+# Produce a self-contained, production-only deployment (real node_modules, no dev deps).
+# `pnpm deploy` copies the package's `files` (dist, src/views, README) + a flattened
+# production node_modules tree resolved from the frozen lockfile. `--legacy` is required
+# because meteoswiss-mcp has no injected workspace dependencies (pnpm v10 otherwise refuses
+# to deploy unless inject-workspace-packages=true); legacy deploy resolves straight from the
+# workspace lockfile, which is exactly what we want.
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm install --no-frozen-lockfile --no-optional --ignore-scripts
-
-# Build the application
-RUN pnpm run build
+    pnpm --filter meteoswiss-mcp deploy --prod --legacy /app/deploy
 
 # ------------------------------------------------------------------------------------------------
-
-# Stage 2: Runtime stage
+# Stage 2: Runtime (copy only the self-contained deployment)
 FROM node:24-alpine AS runtime
 
 LABEL org.opencontainers.image.title="meteoswiss-mcp"
@@ -43,48 +51,23 @@ LABEL org.opencontainers.image.source="https://github.com/eins78/meteoswiss-llm-
 LABEL org.opencontainers.image.url="https://meteoswiss-mcp.ars.is"
 LABEL org.opencontainers.image.licenses="CC0-1.0"
 
-# Run pnpm non-interactively (auto-confirm node_modules purge, no TTY in Docker build)
-ENV CI=true
-
-# Install pnpm using npm and corepack (needed for pnpm run start)
-RUN npm i -g corepack && pnpm -v
-
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Set working directory
 WORKDIR /app
 
-# fetch dependencies with pnpm store cache
-COPY --from=builder /app/.npmrc /app/pnpm-lock.yaml ./
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm fetch --production --no-optional --no-frozen-lockfile 
+# Copy the self-contained production deployment (package.json, dist, src/views, node_modules).
+COPY --from=builder /app/deploy ./
 
-# Copy package files and built application from builder
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
-COPY --from=builder /app/dist ./dist
-
-# Install production dependencies
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm config set store-dir /root/.local/share/pnpm/store && \
-    pnpm install --production  --no-optional --offline --no-frozen-lockfile --ignore-scripts
-
-# Copy test fixtures for runtime (if USE_TEST_FIXTURES is enabled)
-COPY --from=builder /app/test/__fixtures__ ./test/__fixtures__
-
-# Copy views for homepage
-COPY --from=builder /app/src/views ./src/views
+# Test fixtures for the optional USE_TEST_FIXTURES runtime mode (parity with prior image).
+COPY --from=builder /app/packages/meteoswiss-mcp/test/__fixtures__ ./test/__fixtures__
 
 # Change ownership to nodejs user
 RUN chown -R nodejs:nodejs /app
 
 # Switch to non-root user
 USER nodejs
-
-# Ensure pnpm version required by the application is installed in the image, for the runtime user
-RUN pnpm -v 
 
 # Expose the port (default 3000)
 EXPOSE 3000
@@ -97,5 +80,5 @@ ENV PUBLIC_URL=""
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"
 
-# Start the server using the built JavaScript
-CMD ["pnpm", "run", "start"]
+# Start the server directly with node (no pnpm/corepack needed in the runtime image).
+CMD ["node", "dist/index.js"]
