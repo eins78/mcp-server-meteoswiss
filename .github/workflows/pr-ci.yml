@@ -59,7 +59,7 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v7
         with:
-          context: packages/meteoswiss-mcp
+          context: .
           file: packages/meteoswiss-mcp/Dockerfile
           push: false
           load: true

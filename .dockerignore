@@ -1,0 +1,29 @@
+# Root .dockerignore for the repo-root Docker build context.
+# The meteoswiss-mcp image builds from the repository root (context: .) so the
+# frozen workspace lockfile with all root-level pnpm.overrides is applied. Keep the
+# build context small and avoid recursively sending worktrees / installed modules.
+
+# Installed dependencies (re-installed inside the image from the frozen lockfile)
+node_modules
+**/node_modules
+
+# Build output (rebuilt inside the image)
+**/dist
+
+# VCS, agent worktrees (recursive!), local tooling
+.git
+.github
+.claude
+.vscode
+.devcontainer
+
+# Non-MCP workspace packages not needed to build the server (large, standalone)
+packages/meteoswiss-docs-site
+packages/meteoswiss-forecast-evals
+
+# Docs we don't need in the image build
+docs
+**/*.log
+.env
+.env.*
+.DS_Store
