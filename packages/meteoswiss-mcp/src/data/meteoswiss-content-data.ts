@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cachified, type Cache, type CacheEntry } from '@epic-web/cachified';
 import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
@@ -103,7 +104,84 @@ function writeConversionMemo(key: string, value: ContentResponse): void {
  */
 export function clearContentConversionMemo(): void {
   conversionMemo.clear();
+  contentCacheStore.clear();
 }
+
+/** Read a positive-number env var, falling back when unset or malformed. */
+function envMs(name: string, fallback: number): number {
+  const raw = Number(process.env[name]);
+  return Number.isFinite(raw) && raw >= 0 ? raw : fallback;
+}
+
+/** How long a converted page is served without revalidating. */
+const CONTENT_TTL_MS = envMs('CONTENT_CACHE_TTL_MS', 5 * 60_000);
+/**
+ * Window after the TTL in which an expired page is returned immediately while a
+ * refresh runs behind it.
+ *
+ * This is also what provides stale-if-error here: the caller already has the
+ * stale page before the background refresh runs, so an unreachable MeteoSwiss
+ * degrades to slightly-old content instead of an error. Deliberately generous
+ * for that reason.
+ *
+ * Note `cachified`'s `fallbackToCache` option does NOT cover this case — it is
+ * gated on `forceFresh` (`if (forceFresh && fallbackToCache > 0)` in its source)
+ * and this path never forces a refresh, so setting it would imply a property we
+ * would not actually get.
+ */
+const CONTENT_SWR_MS = envMs('CONTENT_CACHE_SWR_MS', 55 * 60_000);
+/** Entry cap for the converted-page cache. Entries are ~9 KB of markdown. */
+const CONTENT_CACHE_MAX_ENTRIES = (() => {
+  const raw = Number(process.env.CONTENT_CACHE_MAX_ENTRIES);
+  return Number.isFinite(raw) && raw > 0 ? raw : 200;
+})();
+
+const contentCacheStore = new Map<string, CacheEntry<ContentResponse>>();
+
+/**
+ * Store backing the converted-page cache, in the shape `cachified` expects.
+ *
+ * `cachified` ships no store — it is a wrapper — so this supplies one. It is
+ * in-process, which is the same sharing scope the rest of the server's caches
+ * have: one container, one node process, all sessions hitting the same maps.
+ *
+ * What `cachified` adds over the plain memo below it:
+ *  - **single-flight**: concurrent requests for the same page trigger ONE fetch
+ *    and ONE conversion instead of N, which is the CPU saving that matters most
+ *    when several sessions ask at once;
+ *  - **stale-while-revalidate**: an expired page is served immediately while a
+ *    refresh runs behind it, so nobody waits on the conversion;
+ *  - **stale-if-error**: an expired entry inside the revalidate window is returned
+ *    before the refresh is attempted, so upstream being down degrades to a
+ *    slightly stale page rather than an error.
+ *
+ * Bounded by entry count with least-recently-used eviction; insertion order is
+ * recency order, so the first key is the least recently used.
+ */
+const contentCache: Cache<ContentResponse> = {
+  name: 'meteoswiss-content',
+  get: (key) => {
+    const entry = contentCacheStore.get(key);
+    if (entry === undefined) {
+      return undefined;
+    }
+    contentCacheStore.delete(key);
+    contentCacheStore.set(key, entry);
+    return entry;
+  },
+  set: (key, entry) => {
+    contentCacheStore.delete(key);
+    contentCacheStore.set(key, entry);
+    while (contentCacheStore.size > CONTENT_CACHE_MAX_ENTRIES) {
+      const oldest = contentCacheStore.keys().next().value;
+      if (oldest === undefined) break;
+      contentCacheStore.delete(oldest);
+    }
+  },
+  delete: (key) => {
+    contentCacheStore.delete(key);
+  },
+};
 
 /**
  * Hard cap on HTML size before parsing. `new JSDOM(html)` is synchronous and
@@ -224,9 +302,33 @@ async function fetchFromWeb(
 
   debugData('Fetching content from URL: %s', fullUrl);
 
-  // Validate scheme, port, and domain up front (thrown directly to the caller).
+  // Validated OUTSIDE the cache on purpose: a rejected URL must never consult,
+  // populate or be served from it.
   assertAllowedContentUrl(fullUrl);
 
+  const cached = await cachified({
+    cache: contentCache,
+    key: `${fullUrl} ${format} ${includeMetadata}`,
+    ttl: CONTENT_TTL_MS,
+    // Serves a stale page rather than nothing when MeteoSwiss is unreachable —
+    // for a briefing that runs once a morning, an hour-old article beats an error.
+    staleWhileRevalidate: CONTENT_SWR_MS,
+    getFreshValue: () => fetchAndConvert(fullUrl, format, includeMetadata),
+  });
+
+  // cachified hands every caller the same object; clone so one caller mutating
+  // the response cannot corrupt what the next one receives.
+  return structuredClone(cached);
+}
+
+/**
+ * Fetch a page and convert it. The uncached path behind `fetchFromWeb`'s cache.
+ */
+async function fetchAndConvert(
+  fullUrl: string,
+  format: 'markdown' | 'text',
+  includeMetadata: boolean
+): Promise<ContentResponse> {
   try {
     debugData('Making HTTP request to fetch content');
     // Re-validate every redirect hop so an upstream open redirect cannot escape
@@ -254,7 +356,7 @@ async function fetchFromWeb(
     debugData('Content fetch error: %o', error);
     if (error instanceof HttpRequestError && error.statusCode === 404) {
       throw new Error(
-        `Content not found: ${id}. Use the search tool to discover valid page URLs.`,
+        `Content not found: ${fullUrl}. Use the search tool to discover valid page URLs.`,
         { cause: error }
       );
     }
