@@ -138,12 +138,40 @@ false.
 - **Not restarting the production container.** The env vars are committed and pushed but inert until
   restart; reconnecting sessions trip the deploy health check, so the timing is Max's call.
 
+## One unrelated commit, on purpose
+
+`dbc688e` refreshes stale `pnpm.overrides` security pins. It has nothing to do with the cache and is
+a separate commit so it can be reviewed or dropped independently — but the Security & Dependency
+Check was red and would not go green without it.
+
+It is drift, not this branch. `main` last ran CI on 2026-07-24 and `pnpm audit` queries live data;
+six weeks of chained advisories had overtaken pins the repo already owned, each advisory now covering
+the pinned version itself (`fast-uri` 4.1.1 vs `<4.1.3`, `undici` 8.7.0 vs `<8.9.0`, `qs` 6.15.3 vs
+`<6.16.0`, `js-yaml`, `ip-address`, `hono`, and three `brace-expansion` ranges). `browserslist` and
+`@humanfs/node` were newly flagged with no pin at all. `main` would fail this check today too.
+
+Ruled out that the two new dependencies caused it rather than assuming: neither appears in any of the
+11 advisory paths, `@epic-web/cachified` has zero dependencies, and `write-file-atomic@5.0.1` was
+already in the tree — the lockfile gained a specifier line, not a package.
+
+34 vulnerabilities (16 high) → 5, of which 4 are `low` and 1 is the already-documented Windows-only
+`@hono/node-server` advisory. Every target version was checked against pnpm's 24 h
+minimum-release-age *before* pinning (freshest: `fast-uri` 4.1.3, two weeks old), so nothing is
+age-blocked, **no advisory was added to the ignore list, and the policy is not weakened**. No major
+bumps of `jest`, `mcp-remote` or the MCP inspector — that stops being mechanical and belongs in its
+own PR.
+
 ## Verification
 
 `pnpm run lint` clean (TypeScript, ESLint, skills parity). Full suite **32 suites / 262 passed /
 1 skipped / 0 failed**; 5 suites are new here. Every new test was confirmed to fail against the
 unfixed code before being kept — the resilience test 2/2, the memo tests 1-vs-2 conversions, the
 stale test with the SWR window zeroed.
+
+All six required checks green on #146: Lint/Build/Test, Security & Dependency Check, Docker Build
+Test, Skill Validation, Forecast Evals, dependency-diff. The overrides on
+`minimatch`/`brace-expansion` reach into Jest's own file matching, so the suite is the guard there
+and it stayed at 32/262.
 
 ## Follow-ups
 
