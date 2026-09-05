@@ -350,6 +350,18 @@ For a **skill-facing change** (anything under `packages/meteoswiss-skills/`), ad
 - **OGD over HTML scraping**: MeteoSwiss launched Open Government Data in May 2025. All structured data now comes from the STAC API + CSV downloads, not HTML scraping.
 - **Disk-based CSV cache**: TTL-tiered (60s realtime, 1h forecast, 24h metadata). Low memory, fast after initial download.
 - **Fuzzy station resolution**: Map-indexed exact match (O(1)), then substring with diacritic normalization, then swisstopo geocoding fallback.
+- **Cache writes are best-effort**: a cache is an optimisation, so a failed cache write logs and
+  returns the fetched data rather than failing the request. An awaited write on the success path
+  caused a production outage (2026-09-05); don't reintroduce one.
+- **`write-file-atomic` for disk-cache writes**: its temp names mix pid + thread id + a monotonic
+  counter and it serialises concurrent writes per path, which is why there is no hand-rolled temp
+  file scheme and no `.tmp` sweep in `pruneDiskCache`. Two races that both produced
+  `ENOENT … rename` came from having those.
+- **Two independent caches, on purpose**: `httpCache` (in-memory, URL-keyed, upstream-header TTLs)
+  caches *fetched bytes*; the conversion memo in `meteoswiss-content-data.ts` caches *converted
+  markdown*, keyed on a hash of the input HTML so it is a pure-function memo and needs no TTL of its
+  own. `cachified` sits above the memo for single-flight and stale-while-revalidate. Note its
+  `fallbackToCache` option is gated on `forceFresh` and does **not** apply to this path.
 - **`meteoswiss` prefix on tools**: LLM tool selection reliability — helps models distinguish weather tools from other MCP servers.
 
 ## References
